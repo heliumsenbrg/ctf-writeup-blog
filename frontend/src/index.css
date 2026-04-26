@@ -1,0 +1,69 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cyber-cyan: #00f5ff;
+  --cyber-blue: #0080ff;
+  --cyber-purple: #8000ff;
+  --cyber-grid: #8a9abe;
+}
+
+body {
+  background-color: #080818;
+  color: #e0e8f0;
+}
+
+.cyber-grid-bg {
+  background-image: 
+    linear-gradient(rgba(90, 106, 142, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(90, 106, 142, 0.15) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.cyber-border {
+  border: 1px solid rgba(138, 154, 190, 0.4);
+}
+
+.cyber-glow {
+  text-shadow: 0 0 8px rgba(0, 245, 255, 0.6);
+}
+
+.cyber-card {
+  background: rgba(20, 24, 44, 0.8);
+  border: 1px solid rgba(138, 154, 190, 0.3);
+  backdrop-filter: blur(8px);
+}
+
+.cyber-card:hover {
+  border-color: rgba(0, 245, 255, 0.5);
+  box-shadow: 0 0 15px rgba(0, 245, 255, 0.1);
+}
+
+.comment {
+  color: #b0bdd0;
+  line-height: 1.7;
+}
+
+.code-keyword {
+  color: #a78bfa;
+}
+
+.code-string {
+  color: #6ee7b7;
+}
+
+.code-comment {
+  color: #5a7090;
+}
+
+@layer components {
+  .text-cyber-grid { color: #8a9abe !important; }
+  .text-cyber-cyan { color: #00f5ff !important; }
+  .text-cyber-blue { color: #60a5fa !important; }
+  .text-cyber-purple { color: #a78bfa !important; }
+  .bg-cyber-grid { background-color: #8a9abe !important; }
+  .bg-cyber-dark { background-color: #080818 !important; }
+  .bg-cyber-darker { background-color: #04040c !important; }
+  .border-cyber-grid { border-color: #8a9abe !important; }
+}
