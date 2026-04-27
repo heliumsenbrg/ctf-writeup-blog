@@ -1,7 +1,66 @@
-﻿import { motion } from 'framer-motion'
+﻿import { motion, AnimatePresence } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Terminal, Copy, Check } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowLeft, Terminal, Copy, Check, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+
+// Easter egg trigger words
+const triggerWords = ['flag', '一血', 'RCE', 'shellcode', 'JWT', 'IDOR', '越权', '伪造', 'bypass', '绕过']
+
+function EasterEgg() {
+  const [show, setShow] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const handleSelection = () => {
+      const selection = window.getSelection()
+      const text = selection.toString().toLowerCase()
+      
+      if (text && triggerWords.some(word => text.includes(word.toLowerCase()))) {
+        const range = selection.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        setPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 50
+        })
+        setShow(true)
+        
+        setTimeout(() => setShow(false), 3000)
+      }
+    }
+
+    document.addEventListener('mouseup', handleSelection)
+    return () => document.removeEventListener('mouseup', handleSelection)
+  }, [])
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 10 }}
+          className="fixed z-50 pointer-events-none"
+          style={{ left: position.x, top: position.y, transform: 'translateX(-50%)' }}
+        >
+          <div className="bg-cyber-darker/95 border border-cyber-pink/50 rounded-lg px-4 py-2 shadow-lg shadow-cyber-pink/20">
+            <div className="flex items-center gap-2">
+              <span className="text-cyber-pink text-sm font-bold whitespace-nowrap">
+                你知道的太多了
+              </span>
+              <button 
+                onClick={() => setShow(false)}
+                className="pointer-events-auto text-cyber-grid hover:text-cyber-pink transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-cyber-pink/50" />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
 
 const articles = {
   infoleak: {
@@ -460,11 +519,13 @@ export default function Article() {
   }
   
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="min-h-screen py-20"
-    >
+    <>
+      <EasterEgg />
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen py-20"
+      >
       <div className="max-w-4xl mx-auto px-6">
         {/* Back button */}
         <Link to="/">
@@ -508,5 +569,6 @@ export default function Article() {
         </motion.div>
       </div>
     </motion.div>
+    </>
   )
 }
