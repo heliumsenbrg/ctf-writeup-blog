@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown } from 'lucide-react'
+import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 const categories = [
   {
@@ -57,9 +58,70 @@ const stats = [
   { label: 'Success Rate', value: '100', suffix: '%' }
 ]
 
+// Easter egg trigger words
+const triggerWords = ['flag', '一血', 'RCE', 'shellcode', 'JWT', 'IDOR', '越权', '伪造', 'bypass', '绕过']
+
+function EasterEgg() {
+  const [show, setShow] = useState(false)
+  const [position, setPosition] = useState({ x: 0, y: 0 })
+
+  useEffect(() => {
+    const handleSelection = () => {
+      const selection = window.getSelection()
+      const text = selection.toString().toLowerCase()
+      
+      if (text && triggerWords.some(word => text.includes(word.toLowerCase()))) {
+        const range = selection.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        setPosition({
+          x: rect.left + rect.width / 2,
+          y: rect.top - 50
+        })
+        setShow(true)
+        
+        // Auto hide after 3 seconds
+        setTimeout(() => setShow(false), 3000)
+      }
+    }
+
+    document.addEventListener('mouseup', handleSelection)
+    return () => document.removeEventListener('mouseup', handleSelection)
+  }, [])
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 10 }}
+          className="fixed z-50 pointer-events-none"
+          style={{ left: position.x, top: position.y, transform: 'translateX(-50%)' }}
+        >
+          <div className="bg-cyber-darker/95 border border-cyber-pink/50 rounded-lg px-4 py-2 shadow-lg shadow-cyber-pink/20">
+            <div className="flex items-center gap-2">
+              <span className="text-cyber-pink text-sm font-bold whitespace-nowrap">
+                你知道的太多了
+              </span>
+              <button 
+                onClick={() => setShow(false)}
+                className="pointer-events-auto text-cyber-grid hover:text-cyber-pink transition-colors"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-cyber-pink/50" />
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  )
+}
+
 export default function Home() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      <EasterEgg />
       {/* Hero Section */}
       <section className="relative py-20 md:py-32 overflow-hidden">
         <div className="max-w-7xl mx-auto px-6">
