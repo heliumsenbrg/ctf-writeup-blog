@@ -25,20 +25,23 @@ export function Spoiler({ children, className = '' }) {
         onMouseLeave={handleMouseLeave}
         className={`
           relative cursor-pointer select-none
-          ${isHovered ? 'text-cyber-cyan' : 'text-transparent'}
+          ${isHovered ? 'text-yellow-400' : 'text-transparent'}
           ${className}
         `}
         style={{
-          backgroundColor: isHovered ? 'transparent' : '#1a1a2e',
-          borderRadius: '2px',
-          padding: '0 4px',
-          transition: 'all 0.2s ease'
+          backgroundColor: isHovered ? 'transparent' : '#000',
+          borderRadius: '4px',
+          padding: '2px 8px',
+          minWidth: '40px',
+          display: 'inline-block',
+          transition: 'all 0.15s ease',
+          boxShadow: isHovered ? 'none' : 'inset 0 0 0 1px rgba(255,255,255,0.3)'
         }}
       >
         {!isHovered && (
           <span 
-            className="absolute inset-0 bg-[#0f0f23] border border-cyber-grid/30"
-            style={{ borderRadius: '2px' }}
+            className="absolute inset-0 bg-[#0a0a0a]"
+            style={{ borderRadius: '4px' }}
           />
         )}
         <span className="relative z-10">{children}</span>
@@ -52,10 +55,10 @@ export function Spoiler({ children, className = '' }) {
             exit={{ opacity: 0, scale: 0.8, y: 5 }}
             className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none"
           >
-            <span className="inline-block bg-cyber-darker/95 border border-cyber-pink/50 rounded px-3 py-1.5 text-cyber-pink text-xs font-bold whitespace-nowrap shadow-lg shadow-cyber-pink/20">
+            <span className="inline-block bg-black border border-red-500 rounded px-3 py-1.5 text-red-500 text-xs font-bold whitespace-nowrap">
               你知道的太多了
             </span>
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-cyber-pink/50" />
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500" />
           </motion.span>
         )}
       </AnimatePresence>
