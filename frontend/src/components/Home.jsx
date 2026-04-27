@@ -7,45 +7,54 @@ const categories = [
     id: 'infoleak',
     title: 'Information Leakage',
     subtitle: 'Information Gathering',
-    count: 12,
+    count: 18,
     color: 'cyan',
     icon: Shield,
-    desc: 'HTML comments, response headers, robots.txt, Cookie injection, JWT forging, /proc/self/fd'
+    desc: 'HTML comments, response headers, robots.txt, Cookie IDOR, JWT forging, /proc/self/fd, 302 response body'
+  },
+  {
+    id: 'request',
+    title: 'HTTP Request',
+    subtitle: 'Header Forgery',
+    count: 2,
+    color: 'green',
+    icon: Zap,
+    desc: 'GET+POST同请求, XFF+UA+Via+Cookie五层验证'
   },
   {
     id: 'php',
     title: 'PHP Weak Typing',
     subtitle: 'Type Juggling',
-    count: 8,
+    count: 10,
     color: 'purple',
     icon: Code,
-    desc: 'Array comparison bypass, loose MD5, numeric string bypass, in_array strict=false'
+    desc: 'Array comparison bypass, loose MD5, numeric string bypass, array_search, SHA1绕过'
   },
   {
     id: 'cmd',
     title: 'Command Injection',
     subtitle: 'RCE Techniques',
-    count: 11,
+    count: 12,
     color: 'pink',
     icon: Terminal,
-    desc: 'IFS bypass, null byte RCE, string concatenation, source code disclosure, stderr redirect'
+    desc: 'IFS bypass, no-letter RCE, string concatenation, source code disclosure, stderr redirect'
   },
   {
     id: 'pwn',
     title: 'PWN & Reverse',
     subtitle: 'Binary Exploitation',
-    count: 3,
+    count: 4,
     color: 'blue',
     icon: Flag,
-    desc: 'XOR decryption, shellcode writing, heap layout, code execution flow'
+    desc: 'XOR decryption, shellcode writing, algorithm reverse, password cracking'
   }
 ]
 
 const stats = [
-  { label: 'Solved', value: '38', suffix: '' },
-  { label: 'Categories', value: '4', suffix: '' },
-  { label: 'Total Points', value: '5000+', suffix: 'pts' },
-  { label: 'Platform Rank', value: '#1', suffix: '' }
+  { label: 'Solved', value: '42', suffix: '' },
+  { label: 'First Blood', value: '40', suffix: '' },
+  { label: 'Total Points', value: '8000+', suffix: 'pts' },
+  { label: 'Success Rate', value: '100', suffix: '%' }
 ]
 
 export default function Home() {
@@ -84,7 +93,7 @@ export default function Home() {
               className="text-cyber-grid text-lg md:text-xl max-w-2xl mx-auto mb-8 font-mono"
             >
               <span className="text-cyber-cyan/80">&lt;</span>
-              <span className="text-cyber-cyan/80"> 38 challenges, all solved </span>
+              <span className="text-cyber-cyan/80"> 42 challenges solved, all first blood </span>
               <span className="text-cyber-cyan/80">/&gt;</span>
             </motion.p>
             
