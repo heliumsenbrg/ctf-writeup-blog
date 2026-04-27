@@ -66,4 +66,43 @@ body {
   .bg-cyber-dark { background-color: #080818 !important; }
   .bg-cyber-darker { background-color: #04040c !important; }
   .border-cyber-grid { border-color: #8a9abe !important; }
+  
+  /* 黑幕效果 - 萌娘百科风格 */
+  .spoiler {
+    background-color: #000;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.15s ease;
+    display: inline-block;
+  }
+  
+  .spoiler:hover {
+    background-color: transparent;
+    color: #fbbf24 !important;
+  }
+  
+  .spoiler::after {
+    content: attr(data-text);
+    position: absolute;
+    background: black;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-100%);
+    margin-top: -8px;
+    transition: opacity 0.15s ease;
+  }
+  
+  .spoiler:hover::after {
+    content: "你知道的太多了";
+    opacity: 1;
+  }
 }
