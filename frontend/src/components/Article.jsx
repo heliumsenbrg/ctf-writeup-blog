@@ -1,5 +1,5 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Terminal, Copy, Check, X } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -73,7 +73,7 @@ const articles = {
     content: `
 做信息收集这类题，我最大的感受就是**别放过后台的每一条线索**。很多 flag 其实就藏在眼皮底下，只是我们没注意到。
 
-## HTML 注释与前端泄露
+## [CTFShow] HTML 注释与前端泄露
 
 最早的题目就有隐藏在 HTML 注释里的 base64 字符串。我习惯 Ctrl+U 看源码，结果在注释中发现一串可疑字符串，解码直接出 flag。
 
@@ -90,7 +90,7 @@ JSFuck 是另一个前端混淆的重灾区。页面上看起来是一堆乱码 
 curl -X POST URL -d 'is_admin=1&nickname=test'
 \`\`\`
 
-## 响应头、302 响应体与协议层
+## [CTFShow] 响应头、302 响应体与协议层
 
 用 \`curl -I\` 查响应头是基本功，但我在这道题上吃过亏——当时只看了 body，忽略了 \`X-Flag\` 字段，其实 flag 就藏在响应头里。
 
@@ -125,7 +125,7 @@ curl URL/?a=QCyYdS      # 提交密码
 
 常见的备份文件后缀我一般会批量扫：\`/index.phps\`、\`.bak\`、\`.swp\`、\`.git/config\`、\`/www.zip\`。
 
-## Cookie 注入与认证绕过
+## [CTFShow] Cookie 注入与认证绕过
 
 Cookie 注入（IDOR）有时候比 SQL 注入还隐蔽。题目用 \`$_COOKIE['user']\` 判断权限，直接改 Cookie 比改 URL 参数更直接：
 
@@ -143,7 +143,7 @@ import jwt
 token = jwt.encode({"iss":"admin"}, "ctfshow_jwt_admin", algorithm="HS256")
 \`\`\`
 
-## /proc/self/ 文件系统利用
+## [CTFShow] /proc/self/ 文件系统利用
 
 这道题很巧妙：代码限制了 \`$_GET['filename']\` 长度必须小于 17，但同时用 \`fopen\` 在 \`readfile\` 之前预先打开了一个文件描述符。
 
@@ -165,7 +165,7 @@ curl "URL/?filename=/proc/self/fd/5"
     content: `
 PHP 的弱类型比较是 CTF 中最经典的知识点之一，也是这次刷题里踩坑最多的地方。核心原理很简单：PHP 在用 \`==\` 比较时会自动做类型转换，而 \`===\` 严格比较则不会。
 
-## 弱比较绕过数字判断
+## [QC] 弱比较绕过数字判断
 
 最典型的场景是同时要求一个变量"为真"且"等于 0"。看起来矛盾，但 \`"0abc"\` 就能同时满足：
 
@@ -177,7 +177,7 @@ if($b > 2026)       // "2027a" > 2026
 
 Payload: \`?a=0abc&b=2027a\`
 
-## array_search 弱类型
+## [QC] array_search 弱类型
 
 \`array_search\` 默认用 \`==\` 比较，而 \`"QCCTF" == 0\` 为 true，所以它会错误地匹配到 index 0：
 
@@ -188,7 +188,7 @@ $key = array_search("QCCTF", $qc); // "QCCTF"==0 → key=0（错）
 
 Payload: \`?qc=["a","QCCTF"]\`
 
-## 嵌套弱类型
+## [QC] 嵌套弱类型
 
 更绕的还有嵌套弱类型：要求 \`0 == "QCyyds"\` 但 \`0 !== "QCyyds"\`：
 
@@ -198,7 +198,7 @@ Payload: \`?qc=["a","QCCTF"]\`
 
 Payload: \`?qc={"0":"QCCTF","n":[0]}\`
 
-## MD5 和 SHA1 绕过
+## [QC] MD5 和 SHA1 绕过
 
 0e 开头的哈希值在弱比较下会被当成科学计数法，等于 0：
 
@@ -238,7 +238,7 @@ GET ?a[]=1&b[]=2
     content: `
 命令注入的考点从简单到变态，层层加码，每一道题都在考验对 Linux 命令行和 PHP 函数的理解深度。
 
-## 基础注入与绕过
+## [QC] 基础注入与绕过
 
 最基础的题目输入直接拼进 \`system()\`，没有任何过滤：
 
@@ -258,7 +258,7 @@ POST cmd=ip;cat /flag
 POST cmd=cat\${IFS}/flag
 \`\`\`
 
-## 无字母 RCE ★（一血）
+## [QC] 无字母 RCE ★（一血）
 
 过滤了所有 a-zA-Z 字母，看起来完全没法构造命令。但 Linux 的 \`.\` 命令（等价于 \`source\`）可以读取并执行文件内容，而它本身不是字母：
 
@@ -270,7 +270,7 @@ POST /?cmd=. /????.??? 2>&1
 
 **关键细节**：\`system()\` 只捕获 stdout，而 source 执行不存在文件时错误信息走的是 stderr，必须加 \`2>&1\` 把 stderr 重定向到 stdout 才能看到 flag！
 
-## PHP 函数调用链
+## [QC] PHP 函数调用链
 
 如果题目把命令执行封装在 PHP 的 \`eval\` 或 \`system\` 里：
 
@@ -288,7 +288,7 @@ POST qc=passthru("cat /fl"."ag")
 POST qc=passthru("cat\\t/fl"."ag")
 \`\`\`
 
-## PHP 源码泄露
+## [QC] PHP 源码泄露
 
 用 \`?>\` 提前结束 PHP 标签，后面的内容会被当成纯文本直接输出：
 
@@ -324,7 +324,7 @@ URL 里记得编码为 \`%3F%3E\`。
     content: `
 这次来聊聊 CTF 中两个最"硬核"的方向——PWN 和逆向。我挑了三道有意思的题目，难度从简单到困难都有覆盖。
 
-## X0r — 逆向中的数据提取
+## [QC] X0r — 逆向中的数据提取
 
 给了一个 ELF binary，用 IDA 打开一看，核心逻辑就是两层 XOR。先把数据提取出来：
 
@@ -340,7 +340,7 @@ flag = ''.join(chr((c ^ key1[i%3]) ^ key2[i%3]) for i, c in enumerate(cipher))
 
 **踩坑**：从反汇编提取密文时，第 4 字节我抄成了 0x60，而实际应该是 0x79。结果解密出来第一位不是 \`g\` 而是 \`~\`。做逆向的时候，**数据提取一定要仔细**！
 
-## Pwn's Door — 逆向密码算法
+## [QC] Pwn's Door — 逆向密码算法
 
 这道题更简单，binary 里 scanf 读取了一个整数，然后和 0x6b6579 做比较：
 
@@ -354,7 +354,7 @@ flag = ''.join(chr((c ^ key1[i%3]) ^ key2[i%3]) for i, c in enumerate(cipher))
 flag{6551ffb1-f3f2-42d2-bdc7-86ec5d2f2cca}
 \`\`\`
 
-## input_function — Shellcode 编写 ★（一血）
+## [QC] input_function — Shellcode 编写 ★（一血）
 
 重头戏来了。这道题考的是真正的 PWN 核心：shellcode 编写。
 
@@ -399,8 +399,11 @@ flag{18744bff-3292-47b3-9f74-54a8e4b7f738}
 
 export default function Article() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const initialPlatform = searchParams.get('platform') || 'all'
   const article = articles[id]
   const [copied, setCopied] = useState(false)
+  const [platform, setPlatform] = useState(initialPlatform)
   
   if (!article) {
     return (
@@ -423,7 +426,7 @@ export default function Article() {
   }
   
   // Simple markdown-like rendering
-  const renderContent = (content) => {
+  const renderContent = (content, activePlatform) => {
     const lines = content.trim().split('\n')
     const elements = []
     let inCodeBlock = false
@@ -474,9 +477,30 @@ export default function Article() {
       
       // Headers
       if (line.startsWith('## ')) {
+        const headingText = line.slice(3)
+        // Check for platform marker: ## [CTFShow] or ## [QC]
+        const ctfshowMatch = headingText.match(/^\[CTFShow\]\s*(.+)/)
+        const qcMatch = headingText.match(/^\[QC\]\s*(.+)/)
+        const sectionPlatform = ctfshowMatch ? 'ctfshow' : qcMatch ? 'qc' : null
+        const displayText = ctfshowMatch?.[1] || qcMatch?.[1] || headingText
+        
+        // Hide section if it belongs to a different platform
+        if (sectionPlatform && activePlatform !== 'all' && activePlatform !== sectionPlatform) {
+          return
+        }
+        
         elements.push(
-          <h2 key={i} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title">
-            {line.slice(3)}
+          <h2 key={i} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title flex items-center gap-3">
+            {sectionPlatform && (
+              <span className={`px-2 py-0.5 text-xs rounded font-mono ${
+                sectionPlatform === 'ctfshow'
+                  ? 'bg-cyan-900/40 text-cyber-cyan/80'
+                  : 'bg-purple-900/40 text-cyber-purple/80'
+              }`}>
+                {sectionPlatform === 'ctfshow' ? 'CTFShow' : 'QC'}
+              </span>
+            )}
+            {displayText}
           </h2>
         )
         return
@@ -615,7 +639,30 @@ export default function Article() {
           <p className="text-cyber-grid text-lg font-mono">{article.subtitle}</p>
         </motion.div>
         
-        {/* Article content */}
+        {/* Platform Tabs */}
+        <div className="flex items-center justify-center gap-3 mb-6">
+          {[
+            { key: 'all', label: '全部', desc: 'Combined WriteUps' },
+            { key: 'ctfshow', label: 'CTFShow', desc: 'basic系列' },
+            { key: 'qc', label: 'QC 靶场', desc: 'ez系列' }
+          ].map(p => (
+            <button
+              key={p.key}
+              onClick={() => setPlatform(p.key)}
+              className={`
+                px-4 py-2 rounded-lg font-mono text-xs flex flex-col items-center gap-0.5
+                transition-all duration-200 border
+                ${platform === p.key
+                  ? 'bg-cyber-cyan/15 border-cyber-cyan/50 text-cyber-cyan shadow-lg shadow-cyber-cyan/10'
+                  : 'bg-transparent border-cyber-grid/15 text-cyber-grid/50 hover:border-cyber-grid/30 hover:text-cyber-grid/70'
+                }
+              `}
+            >
+              <span>{p.label}</span>
+              <span className="opacity-60 text-[10px]">{p.desc}</span>
+            </button>
+          ))}
+        </div>
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -623,7 +670,7 @@ export default function Article() {
           className="cyber-card p-8"
         >
           <div className="prose prose-invert max-w-none">
-            {renderContent(article.content)}
+            {renderContent(article.content, platform)}
           </div>
         </motion.div>
       </div>
