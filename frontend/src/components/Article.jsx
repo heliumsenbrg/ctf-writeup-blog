@@ -440,7 +440,7 @@ export default function Article() {
         } else {
           inCodeBlock = false
           elements.push(
-            <div key={`code-${i}`} className="relative my-4">
+            <div key={`code-${i}`} className="relative my-4 spoiler-block">
               <div className="absolute top-2 right-2 flex items-center gap-2">
                 <span className="text-xs text-cyber-grid font-mono">{codeLang}</span>
                 <button
@@ -504,8 +504,8 @@ export default function Article() {
       // Bold text
       let processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-cyber-cyan font-bold">$1</strong>')
       
-      // Inline code
-      processedLine = processedLine.replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">$1</code>')
+      // Inline code with spoiler
+      processedLine = processedLine.replace(/`(.+?)`/g, '<span class="spoiler-code-inline"><code class="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">$1</code></span>')
       
       // Spoiler - wrap sensitive words with a span that can be hovered
       // flag{...}, 一血, RCE, JWT, etc.
@@ -527,6 +527,38 @@ export default function Article() {
       )
       processedLine = processedLine.replace(
         /(\bIDOR\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(\bshellcode\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(\bbypass\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(绕过)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(伪造)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(越权)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(SQL注入)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(XSS)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(命令注入)/gi,
         '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
       )
 
