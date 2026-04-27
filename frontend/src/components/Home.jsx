@@ -1,62 +1,70 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, X } from 'lucide-react'
+import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, X, Layers } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
-const categories = [
-  {
-    id: 'infoleak',
-    title: 'Information Leakage',
-    subtitle: 'Information Gathering',
-    count: 18,
+// Per-platform challenge counts by category
+const platformData = {
+  all: {
+    label: '全部靶场',
+    icon: Layers,
     color: 'cyan',
-    icon: Shield,
-    desc: 'HTML comments, response headers, robots.txt, Cookie IDOR, JWT forging, /proc/self/fd, 302 response body'
+    solved: '42',
+    firstBlood: '10',
+    totalPoints: '8000+',
+    stats: [
+      { label: '总解题', value: '46', suffix: '' },
+      { label: '一血', value: '10', suffix: '' },
+      { label: '总得分', value: '8000+', suffix: 'pts' },
+      { label: '通过率', value: '100', suffix: '%' }
+    ],
+    categories: [
+      { id: 'infoleak', title: 'Information Leakage', subtitle: 'Information Gathering', count: 19, color: 'cyan', icon: Shield, desc: 'HTML comments, response headers, robots.txt, Cookie IDOR, JWT forging' },
+      { id: 'request', title: 'HTTP Request', subtitle: 'Header Forgery', count: 2, color: 'green', icon: Zap, desc: 'GET+POST同请求, XFF+UA+Via+Cookie五层验证' },
+      { id: 'php', title: 'PHP Weak Typing', subtitle: 'Type Juggling', count: 10, color: 'purple', icon: Code, desc: 'Array comparison bypass, loose MD5, numeric string bypass' },
+      { id: 'cmd', title: 'Command Injection', subtitle: 'RCE Techniques', count: 12, color: 'pink', icon: Terminal, desc: 'IFS bypass, no-letter RCE, string concatenation, source disclosure' },
+      { id: 'pwn', title: 'PWN & Reverse', subtitle: 'Binary Exploitation', count: 4, color: 'blue', icon: Flag, desc: 'XOR decryption, shellcode writing, algorithm reverse' }
+    ]
   },
-  {
-    id: 'request',
-    title: 'HTTP Request',
-    subtitle: 'Header Forgery',
-    count: 2,
-    color: 'green',
-    icon: Zap,
-    desc: 'GET+POST同请求, XFF+UA+Via+Cookie五层验证'
-  },
-  {
-    id: 'php',
-    title: 'PHP Weak Typing',
-    subtitle: 'Type Juggling',
-    count: 10,
-    color: 'purple',
-    icon: Code,
-    desc: 'Array comparison bypass, loose MD5, numeric string bypass, array_search, SHA1绕过'
-  },
-  {
-    id: 'cmd',
-    title: 'Command Injection',
-    subtitle: 'RCE Techniques',
-    count: 12,
-    color: 'pink',
-    icon: Terminal,
-    desc: 'IFS bypass, no-letter RCE, string concatenation, source code disclosure, stderr redirect'
-  },
-  {
-    id: 'pwn',
-    title: 'PWN & Reverse',
-    subtitle: 'Binary Exploitation',
-    count: 4,
-    color: 'blue',
+  ctfshow: {
+    label: 'CTFShow',
     icon: Flag,
-    desc: 'XOR decryption, shellcode writing, algorithm reverse, password cracking'
+    color: 'cyan',
+    solved: '18',
+    firstBlood: '7',
+    totalPoints: '3000+',
+    stats: [
+      { label: '总解题', value: '18', suffix: '' },
+      { label: '一血', value: '7', suffix: '' },
+      { label: '总得分', value: '3000+', suffix: 'pts' },
+      { label: '通过率', value: '100', suffix: '%' }
+    ],
+    categories: [
+      { id: 'infoleak', title: 'Information Leakage', subtitle: '基础信息收集', count: 18, color: 'cyan', icon: Shield, desc: 'HTML注释、响应头、robots.txt、Cookie IDOR、JWT伪造、/proc/self/fd' },
+    ]
+  },
+  qc: {
+    label: 'QC 靶场',
+    icon: Terminal,
+    color: 'purple',
+    solved: '28',
+    firstBlood: '3',
+    totalPoints: '5000+',
+    stats: [
+      { label: '总解题', value: '28', suffix: '' },
+      { label: '一血', value: '3', suffix: '' },
+      { label: '总得分', value: '5000+', suffix: 'pts' },
+      { label: '通过率', value: '100', suffix: '%' }
+    ],
+    categories: [
+      { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', count: 1, color: 'cyan', icon: Shield, desc: '目录扫描/备份文件' },
+      { id: 'request', title: 'HTTP Request', subtitle: 'Header Forgery', count: 2, color: 'green', icon: Zap, desc: 'GET+POST同请求, XFF+UA+Via+Cookie五层验证' },
+      { id: 'php', title: 'PHP Weak Typing', subtitle: 'Type Juggling', count: 10, color: 'purple', icon: Code, desc: 'Array comparison bypass, loose MD5, numeric string bypass' },
+      { id: 'cmd', title: 'Command Injection', subtitle: 'RCE Techniques', count: 12, color: 'pink', icon: Terminal, desc: 'IFS bypass, no-letter RCE, string concatenation, source disclosure' },
+      { id: 'pwn', title: 'PWN & Reverse', subtitle: 'Binary Exploitation', count: 4, color: 'blue', icon: Flag, desc: 'XOR decryption, shellcode writing, algorithm reverse' }
+    ]
   }
-]
-
-const stats = [
-  { label: 'Solved', value: '42', suffix: '' },
-  { label: 'First Blood', value: '40', suffix: '' },
-  { label: 'Total Points', value: '8000+', suffix: 'pts' },
-  { label: 'Success Rate', value: '100', suffix: '%' }
-]
+}
 
 // 黑幕遮挡组件 - 萌娘百科风格
 export function Spoiler({ children, className = '' }) {
@@ -124,6 +132,11 @@ export function Spoiler({ children, className = '' }) {
 }
 
 export default function Home() {
+  const [platform, setPlatform] = useState('all')
+  const data = platformData[platform]
+  const categories = data.categories
+  const stats = data.stats
+  
   return (
     <div className="min-h-screen relative">
       {/* Hero Section */}
@@ -159,9 +172,39 @@ export default function Home() {
               className="text-cyber-grid text-lg md:text-xl max-w-2xl mx-auto mb-8 font-mono"
             >
               <span className="text-cyber-cyan/80">&lt;</span>
-              <span className="text-cyber-cyan/80"> 42 challenges solved, all first blood </span>
+              <span className="text-cyber-cyan/80"> {data.solved} challenges solved </span>
               <span className="text-cyber-cyan/80">/&gt;</span>
             </motion.p>
+            
+            {/* Platform Tabs */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+              className="flex items-center justify-center gap-3 mb-8"
+            >
+              {Object.entries(platformData).map(([key, p]) => {
+                const Icon = p.icon
+                const active = platform === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setPlatform(key)}
+                    className={`
+                      px-5 py-2.5 rounded-lg font-mono text-sm flex items-center gap-2
+                      transition-all duration-200 border
+                      ${active 
+                        ? `bg-cyber-${p.color}/20 border-cyber-${p.color}/60 text-cyber-${p.color} shadow-lg shadow-cyber-${p.color}/10`
+                        : 'bg-transparent border-cyber-grid/20 text-cyber-grid/60 hover:border-cyber-grid/40 hover:text-cyber-grid'
+                      }
+                    `}
+                  >
+                    <Icon className={`w-4 h-4 ${active ? '' : 'opacity-50'}`} />
+                    {p.label}
+                  </button>
+                )
+              })}
+            </motion.div>
             
             {/* Stats */}
             <motion.div
@@ -194,7 +237,7 @@ export default function Home() {
               transition={{ delay: 1.2 }}
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
-              <Link to="/challenges">
+              <Link to={`/challenges?platform=${platform}`}>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -245,7 +288,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Link to={`/article/${cat.id}`}>
+                <Link to={`/article/${cat.id}?platform=${platform}`}>
                   <motion.div
                     whileHover={{ scale: 1.02, y: -5 }}
                     className="cyber-card p-6 h-full cursor-pointer group"
