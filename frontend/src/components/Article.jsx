@@ -507,6 +507,29 @@ export default function Article() {
       // Inline code
       processedLine = processedLine.replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">$1</code>')
       
+      // Spoiler - wrap sensitive words with a span that can be hovered
+      // flag{...}, 一血, RCE, JWT, etc.
+      processedLine = processedLine.replace(
+        /(flag\{[^}]+\})/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(一血)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(\bRCE\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(\bJWT\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+      processedLine = processedLine.replace(
+        /(\bIDOR\b)/gi,
+        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
+      )
+
       // Paragraph
       if (line.trim()) {
         elements.push(
