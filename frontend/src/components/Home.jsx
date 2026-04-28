@@ -340,10 +340,10 @@ export default function Home() {
                 CTF is not as far as you think. When you first started in web security, you might have felt confused and overwhelmed. But the real journey begins when you actually start solving challenges — it is a skill that requires systematic training.
               </p>
               <p className="text-cyber-grid leading-relaxed mb-4">
-                Why CTF? In short, it is the closest training method to real combat. Challenges are often simplifications and abstractions of real vulnerabilities. Through solving them, you experience the loop of "try -> fail -> think -> break through", which is the best way to learn.
+                Why CTF? In short, it is the closest training method to real combat. Challenges are often simplifications and abstractions of real vulnerabilities. Through solving them, you experience the loop of "try &rarr; fail &rarr; think &rarr; break through", which is the best way to learn.
               </p>
               <p className="text-cyber-grid leading-relaxed mb-4">
-                Why CTF? In short, it is the closest training method to real combat. Challenges are often simplifications and abstractions of real vulnerabilities. Through solving them, you experience the loop of "try -> fail -> think -> break through", which is the best way to learn.
+                Why CTF? In short, it is the closest training method to real combat. Challenges are often simplifications and abstractions of real vulnerabilities. Through solving them, you experience the loop of "try &rarr; fail &rarr; think &rarr; break through", which is the best way to learn.
               </p>
               <p className="text-cyber-grid leading-relaxed mb-4">
                 More importantly, WriteUp documents this journey as a tutorial: it helps you rethink your approach, clarify every step of why you do what you do, rather than relying on intuition to come up with answers. Only when you can clearly articulate the solving process can you truly understand it.
