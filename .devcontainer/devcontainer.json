@@ -1,0 +1,26 @@
+{
+  "name": "CTF Blog Dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [3000, 4000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Frontend (Vite)",
+      "onAutoForward": "notify"
+    },
+    "4000": {
+      "label": "Backend (Express)",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "cd frontend && npm install && cd ../backend && npm install",
+  "postStartCommand": "cd backend && node server.js & cd frontend && npx vite --host 0.0.0.0 --port 3000",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "bradlc.vscode-tailwindcss",
+        "dsznajder.es7-react-js-snippets"
+      ]
+    }
+  }
+}

@@ -1,70 +1,7 @@
-﻿import { motion, AnimatePresence } from 'framer-motion'
-import { useParams, Link, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Terminal, Copy, Check, X } from 'lucide-react'
-import { useState, useEffect } from 'react'
-
-// 黑幕遮挡组件 - 萌娘百科风格
-export function Spoiler({ children, className = '' }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
-
-  const handleMouseEnter = () => {
-    setIsHovered(true)
-    setShowTooltip(true)
-  }
-
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-    setShowTooltip(false)
-  }
-
-  return (
-    <span className="relative inline-block">
-      <span
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`
-          relative cursor-pointer select-none
-          ${isHovered ? 'text-yellow-400' : 'text-transparent'}
-          ${className}
-        `}
-        style={{
-          backgroundColor: isHovered ? 'transparent' : '#000',
-          borderRadius: '4px',
-          padding: '2px 8px',
-          minWidth: '40px',
-          display: 'inline-block',
-          transition: 'all 0.15s ease',
-          boxShadow: isHovered ? 'none' : 'inset 0 0 0 1px rgba(255,255,255,0.3)'
-        }}
-      >
-        {!isHovered && (
-          <span 
-            className="absolute inset-0 bg-[#0a0a0a]"
-            style={{ borderRadius: '4px' }}
-          />
-        )}
-        <span className="relative z-10">{children}</span>
-      </span>
-      
-      <AnimatePresence>
-        {showTooltip && (
-          <motion.span
-            initial={{ opacity: 0, scale: 0.8, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 5 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none"
-          >
-            <span className="inline-block bg-black border border-red-500 rounded px-3 py-1.5 text-red-500 text-xs font-bold whitespace-nowrap">
-              你知道的太多了
-            </span>
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500" />
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
-  )
-}
+﻿import { motion } from 'framer-motion'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft, Terminal, Copy, Check } from 'lucide-react'
+import { useState } from 'react'
 
 const articles = {
   infoleak: {
@@ -73,7 +10,7 @@ const articles = {
     content: `
 做信息收集这类题，我最大的感受就是**别放过后台的每一条线索**。很多 flag 其实就藏在眼皮底下，只是我们没注意到。
 
-## [CTFShow] HTML 注释与前端泄露
+## HTML 注释与前端泄露
 
 最早的题目就有隐藏在 HTML 注释里的 base64 字符串。我习惯 Ctrl+U 看源码，结果在注释中发现一串可疑字符串，解码直接出 flag。
 
@@ -90,7 +27,7 @@ JSFuck 是另一个前端混淆的重灾区。页面上看起来是一堆乱码 
 curl -X POST URL -d 'is_admin=1&nickname=test'
 \`\`\`
 
-## [CTFShow] 响应头、302 响应体与协议层
+## 响应头、302 响应体与协议层
 
 用 \`curl -I\` 查响应头是基本功，但我在这道题上吃过亏——当时只看了 body，忽略了 \`X-Flag\` 字段，其实 flag 就藏在响应头里。
 
@@ -125,7 +62,7 @@ curl URL/?a=QCyYdS      # 提交密码
 
 常见的备份文件后缀我一般会批量扫：\`/index.phps\`、\`.bak\`、\`.swp\`、\`.git/config\`、\`/www.zip\`。
 
-## [CTFShow] Cookie 注入与认证绕过
+## Cookie 注入与认证绕过
 
 Cookie 注入（IDOR）有时候比 SQL 注入还隐蔽。题目用 \`$_COOKIE['user']\` 判断权限，直接改 Cookie 比改 URL 参数更直接：
 
@@ -143,7 +80,7 @@ import jwt
 token = jwt.encode({"iss":"admin"}, "ctfshow_jwt_admin", algorithm="HS256")
 \`\`\`
 
-## [CTFShow] /proc/self/ 文件系统利用
+## /proc/self/ 文件系统利用
 
 这道题很巧妙：代码限制了 \`$_GET['filename']\` 长度必须小于 17，但同时用 \`fopen\` 在 \`readfile\` 之前预先打开了一个文件描述符。
 
@@ -165,7 +102,7 @@ curl "URL/?filename=/proc/self/fd/5"
     content: `
 PHP 的弱类型比较是 CTF 中最经典的知识点之一，也是这次刷题里踩坑最多的地方。核心原理很简单：PHP 在用 \`==\` 比较时会自动做类型转换，而 \`===\` 严格比较则不会。
 
-## [QC] 弱比较绕过数字判断
+## 弱比较绕过数字判断
 
 最典型的场景是同时要求一个变量"为真"且"等于 0"。看起来矛盾，但 \`"0abc"\` 就能同时满足：
 
@@ -177,7 +114,7 @@ if($b > 2026)       // "2027a" > 2026
 
 Payload: \`?a=0abc&b=2027a\`
 
-## [QC] array_search 弱类型
+## array_search 弱类型
 
 \`array_search\` 默认用 \`==\` 比较，而 \`"QCCTF" == 0\` 为 true，所以它会错误地匹配到 index 0：
 
@@ -188,7 +125,7 @@ $key = array_search("QCCTF", $qc); // "QCCTF"==0 → key=0（错）
 
 Payload: \`?qc=["a","QCCTF"]\`
 
-## [QC] 嵌套弱类型
+## 嵌套弱类型
 
 更绕的还有嵌套弱类型：要求 \`0 == "QCyyds"\` 但 \`0 !== "QCyyds"\`：
 
@@ -198,7 +135,7 @@ Payload: \`?qc=["a","QCCTF"]\`
 
 Payload: \`?qc={"0":"QCCTF","n":[0]}\`
 
-## [QC] MD5 和 SHA1 绕过
+## MD5 和 SHA1 绕过
 
 0e 开头的哈希值在弱比较下会被当成科学计数法，等于 0：
 
@@ -238,7 +175,7 @@ GET ?a[]=1&b[]=2
     content: `
 命令注入的考点从简单到变态，层层加码，每一道题都在考验对 Linux 命令行和 PHP 函数的理解深度。
 
-## [QC] 基础注入与绕过
+## 基础注入与绕过
 
 最基础的题目输入直接拼进 \`system()\`，没有任何过滤：
 
@@ -258,7 +195,7 @@ POST cmd=ip;cat /flag
 POST cmd=cat\${IFS}/flag
 \`\`\`
 
-## [QC] 无字母 RCE ★（一血）
+## 无字母 RCE ★（一血）
 
 过滤了所有 a-zA-Z 字母，看起来完全没法构造命令。但 Linux 的 \`.\` 命令（等价于 \`source\`）可以读取并执行文件内容，而它本身不是字母：
 
@@ -270,7 +207,7 @@ POST /?cmd=. /????.??? 2>&1
 
 **关键细节**：\`system()\` 只捕获 stdout，而 source 执行不存在文件时错误信息走的是 stderr，必须加 \`2>&1\` 把 stderr 重定向到 stdout 才能看到 flag！
 
-## [QC] PHP 函数调用链
+## PHP 函数调用链
 
 如果题目把命令执行封装在 PHP 的 \`eval\` 或 \`system\` 里：
 
@@ -288,7 +225,7 @@ POST qc=passthru("cat /fl"."ag")
 POST qc=passthru("cat\\t/fl"."ag")
 \`\`\`
 
-## [QC] PHP 源码泄露
+## PHP 源码泄露
 
 用 \`?>\` 提前结束 PHP 标签，后面的内容会被当成纯文本直接输出：
 
@@ -324,7 +261,7 @@ URL 里记得编码为 \`%3F%3E\`。
     content: `
 这次来聊聊 CTF 中两个最"硬核"的方向——PWN 和逆向。我挑了三道有意思的题目，难度从简单到困难都有覆盖。
 
-## [QC] X0r — 逆向中的数据提取
+## X0r — 逆向中的数据提取
 
 给了一个 ELF binary，用 IDA 打开一看，核心逻辑就是两层 XOR。先把数据提取出来：
 
@@ -340,7 +277,7 @@ flag = ''.join(chr((c ^ key1[i%3]) ^ key2[i%3]) for i, c in enumerate(cipher))
 
 **踩坑**：从反汇编提取密文时，第 4 字节我抄成了 0x60，而实际应该是 0x79。结果解密出来第一位不是 \`g\` 而是 \`~\`。做逆向的时候，**数据提取一定要仔细**！
 
-## [QC] Pwn's Door — 逆向密码算法
+## Pwn's Door — 逆向密码算法
 
 这道题更简单，binary 里 scanf 读取了一个整数，然后和 0x6b6579 做比较：
 
@@ -354,7 +291,7 @@ flag = ''.join(chr((c ^ key1[i%3]) ^ key2[i%3]) for i, c in enumerate(cipher))
 flag{6551ffb1-f3f2-42d2-bdc7-86ec5d2f2cca}
 \`\`\`
 
-## [QC] input_function — Shellcode 编写 ★（一血）
+## input_function — Shellcode 编写 ★（一血）
 
 重头戏来了。这道题考的是真正的 PWN 核心：shellcode 编写。
 
@@ -399,11 +336,8 @@ flag{18744bff-3292-47b3-9f74-54a8e4b7f738}
 
 export default function Article() {
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
-  const initialPlatform = searchParams.get('platform') || 'all'
   const article = articles[id]
-  const [copied, setCopied] = useState(false)
-  const [platform, setPlatform] = useState(initialPlatform)
+  const [copiedSet, setCopiedSet] = useState(new Set())
   
   if (!article) {
     return (
@@ -419,14 +353,18 @@ export default function Article() {
     )
   }
   
-  const copyCode = async (code) => {
+  const copyCode = async (code, blockIdx) => {
     await navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopiedSet(prev => new Set(prev).add(blockIdx))
+    setTimeout(() => setCopiedSet(prev => {
+      const next = new Set(prev)
+      next.delete(blockIdx)
+      return next
+    }), 2000)
   }
   
   // Simple markdown-like rendering
-  const renderContent = (content, activePlatform) => {
+  const renderContent = (content) => {
     const lines = content.trim().split('\n')
     const elements = []
     let inCodeBlock = false
@@ -443,14 +381,14 @@ export default function Article() {
         } else {
           inCodeBlock = false
           elements.push(
-            <div key={`code-${i}`} className="relative my-4 spoiler-block">
+            <div key={`code-${i}`} className="relative my-4">
               <div className="absolute top-2 right-2 flex items-center gap-2">
                 <span className="text-xs text-cyber-grid font-mono">{codeLang}</span>
                 <button
-                  onClick={() => copyCode(codeContent.join('\n'))}
+                  onClick={() => copyCode(codeContent.join('\n'), i)}
                   className="p-1 hover:bg-cyber-cyan/10 rounded transition-colors"
                 >
-                  {copied ? (
+                  {copiedSet.has(i) ? (
                     <Check className="w-4 h-4 text-cyber-cyan" />
                   ) : (
                     <Copy className="w-4 h-4 text-cyber-grid" />
@@ -459,9 +397,21 @@ export default function Article() {
               </div>
               <pre className="code-block">
                 <code className="text-cyber-cyan/90">
-                  {codeContent.map((c, j) => (
-                    <div key={j}>{c || ' '}</div>
-                  ))}
+                  {codeContent.map((c, j) => {
+                    const parts = c.split(/(flag\{[^}]+\})/g)
+                    if (parts.length === 1) {
+                      return <div key={j}>{c || '\u00a0'}</div>
+                    }
+                    return (
+                      <div key={j}>
+                        {parts.map((part, k) =>
+                          /^flag\{[^}]+\}$/.test(part)
+                            ? <span key={k} className="spoiler-flag">{part}</span>
+                            : part
+                        )}
+                      </div>
+                    )
+                  })}
                 </code>
               </pre>
             </div>
@@ -477,30 +427,9 @@ export default function Article() {
       
       // Headers
       if (line.startsWith('## ')) {
-        const headingText = line.slice(3)
-        // Check for platform marker: ## [CTFShow] or ## [QC]
-        const ctfshowMatch = headingText.match(/^\[CTFShow\]\s*(.+)/)
-        const qcMatch = headingText.match(/^\[QC\]\s*(.+)/)
-        const sectionPlatform = ctfshowMatch ? 'ctfshow' : qcMatch ? 'qc' : null
-        const displayText = ctfshowMatch?.[1] || qcMatch?.[1] || headingText
-        
-        // Hide section if it belongs to a different platform
-        if (sectionPlatform && activePlatform !== 'all' && activePlatform !== sectionPlatform) {
-          return
-        }
-        
         elements.push(
-          <h2 key={i} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title flex items-center gap-3">
-            {sectionPlatform && (
-              <span className={`px-2 py-0.5 text-xs rounded font-mono ${
-                sectionPlatform === 'ctfshow'
-                  ? 'bg-cyan-900/40 text-cyber-cyan/80'
-                  : 'bg-purple-900/40 text-cyber-purple/80'
-              }`}>
-                {sectionPlatform === 'ctfshow' ? 'CTFShow' : 'QC'}
-              </span>
-            )}
-            {displayText}
+          <h2 key={i} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title">
+            {line.slice(3)}
           </h2>
         )
         return
@@ -528,71 +457,18 @@ export default function Article() {
       // Bold text
       let processedLine = line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-cyber-cyan font-bold">$1</strong>')
       
-      // Inline code with spoiler
-      processedLine = processedLine.replace(/`(.+?)`/g, '<span class="spoiler-code-inline"><code class="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">$1</code></span>')
+      // Inline code
+      processedLine = processedLine.replace(/`(.+?)`/g, '<code class="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">$1</code>')
       
-      // Spoiler - wrap sensitive words with a span that can be hovered
-      // flag{...}, 一血, RCE, JWT, etc.
-      processedLine = processedLine.replace(
-        /(flag\{[^}]+\})/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(一血)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(\bRCE\b)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(\bJWT\b)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(\bIDOR\b)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(\bshellcode\b)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(\bbypass\b)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(绕过)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(伪造)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(越权)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(SQL注入)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(XSS)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-      processedLine = processedLine.replace(
-        /(命令注入)/gi,
-        '<span class="spoiler" data-text="$1">[黑幕已遮蔽]</span>'
-      )
-
       // Paragraph
       if (line.trim()) {
+        // Auto-wrap flag{...} in spoiler
+        const spoilerLine = processedLine.replace(/(flag\{[^}]+\})/g, '<span class="spoiler-flag">$1</span>')
         elements.push(
           <p 
             key={i} 
             className="text-cyber-grid leading-relaxed my-3"
-            dangerouslySetInnerHTML={{ __html: processedLine }}
+            dangerouslySetInnerHTML={{ __html: spoilerLine }}
           />
         )
       }
@@ -602,13 +478,11 @@ export default function Article() {
   }
   
   return (
-    <>
-      <Spoiler />
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen py-20"
-      >
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="min-h-screen py-20"
+    >
       <div className="max-w-4xl mx-auto px-6">
         {/* Back button */}
         <Link to="/">
@@ -639,30 +513,7 @@ export default function Article() {
           <p className="text-cyber-grid text-lg font-mono">{article.subtitle}</p>
         </motion.div>
         
-        {/* Platform Tabs */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          {[
-            { key: 'all', label: '全部', desc: 'Combined WriteUps' },
-            { key: 'ctfshow', label: 'CTFShow', desc: 'basic系列' },
-            { key: 'qc', label: 'QC 靶场', desc: 'ez系列' }
-          ].map(p => (
-            <button
-              key={p.key}
-              onClick={() => setPlatform(p.key)}
-              className={`
-                px-4 py-2 rounded-lg font-mono text-xs flex flex-col items-center gap-0.5
-                transition-all duration-200 border
-                ${platform === p.key
-                  ? 'bg-cyber-cyan/15 border-cyber-cyan/50 text-cyber-cyan shadow-lg shadow-cyber-cyan/10'
-                  : 'bg-transparent border-cyber-grid/15 text-cyber-grid/50 hover:border-cyber-grid/30 hover:text-cyber-grid/70'
-                }
-              `}
-            >
-              <span>{p.label}</span>
-              <span className="opacity-60 text-[10px]">{p.desc}</span>
-            </button>
-          ))}
-        </div>
+        {/* Article content */}
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -670,11 +521,10 @@ export default function Article() {
           className="cyber-card p-8"
         >
           <div className="prose prose-invert max-w-none">
-            {renderContent(article.content, platform)}
+            {renderContent(article.content)}
           </div>
         </motion.div>
       </div>
     </motion.div>
-    </>
   )
 }
