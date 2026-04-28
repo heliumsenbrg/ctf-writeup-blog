@@ -9,11 +9,14 @@
     "deploy": "npm run build && npx gh-pages -d dist"
   },
   "dependencies": {
+    "@tsparticles/react": "^3.0.0",
+    "@tsparticles/slim": "^3.9.1",
+    "framer-motion": "^10.16.0",
+    "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0",
-    "framer-motion": "^10.16.0",
-    "lucide-react": "^0.294.0"
+    "tsparticles": "^3.9.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

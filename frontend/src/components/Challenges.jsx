@@ -1,48 +1,55 @@
-import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Flag, CheckCircle, Clock, Zap, Layers, Terminal } from 'lucide-react'
+import { useState } from 'react'
+import { Flag, CheckCircle, Clock, Zap, Filter, Layers, Terminal } from 'lucide-react'
 
-const challengeData = [
-    // 信息泄露
+export const allChallenges = [
+  // 信息泄露 - CTFShow
   { id: 177, name: 'basic', category: 'infoleak', points: 50, solved: true, method: 'HTML注释Base64', platform: 'ctfshow' },
-    { id: 178, name: 'basic_1', category: 'infoleak', points: 60, solved: true, method: 'HTML注释Base64', platform: 'ctfshow' },
-    { id: 179, name: 'basic_2', category: 'infoleak', points: 72, solved: true, method: '参数篡改', platform: 'ctfshow' },
-    { id: 180, name: 'basic_3', category: 'infoleak', points: 78, solved: true, method: 'JSFuck解码', platform: 'ctfshow' },
-    { id: 181, name: 'basic_4', category: 'infoleak', points: 81, solved: true, method: 'ASCII数组', platform: 'ctfshow' },
-    { id: 182, name: 'basic_5', category: 'infoleak', points: 90, solved: true, method: '客户端伪造', platform: 'ctfshow' },
-    { id: 183, name: 'basic_6', category: 'infoleak', points: 90, solved: true, method: '响应头泄露', platform: 'ctfshow' },
-    { id: 186, name: 'basic_8', category: 'infoleak', points: 144, solved: true, method: '.phps源码泄露', platform: 'ctfshow' },
-    { id: 187, name: 'basic_9', category: 'infoleak', points: 111, solved: true, method: 'robots.txt', platform: 'ctfshow' },
-    { id: 188, name: 'basic_10', category: 'infoleak', points: 300, solved: true, method: 'Cookie IDOR', platform: 'ctfshow' },
-    { id: 192, name: 'basic_14', category: 'infoleak', points: 181, solved: true, method: '/proc/self/fd', platform: 'ctfshow' },
-    { id: 643, name: 'basic_7', category: 'infoleak', points: 238, solved: true, method: '302响应体', platform: 'ctfshow' },
-    // PHP弱类型
+  { id: 178, name: 'basic_1', category: 'infoleak', points: 60, solved: true, method: 'HTML注释Base64', platform: 'ctfshow' },
+  { id: 179, name: 'basic_2', category: 'infoleak', points: 72, solved: true, method: '参数篡改', platform: 'ctfshow' },
+  { id: 180, name: 'basic_3', category: 'infoleak', points: 78, solved: true, method: 'JSFuck解码', platform: 'ctfshow' },
+  { id: 181, name: 'basic_4', category: 'infoleak', points: 81, solved: true, method: 'ASCII数组', platform: 'ctfshow' },
+  { id: 182, name: 'basic_5', category: 'infoleak', points: 90, solved: true, method: '客户端伪造', platform: 'ctfshow' },
+  { id: 183, name: 'basic_6', category: 'infoleak', points: 90, solved: true, method: '响应头泄露', platform: 'ctfshow' },
+  { id: 186, name: 'basic_8', category: 'infoleak', points: 144, solved: true, method: '.phps源码泄露', platform: 'ctfshow' },
+  { id: 187, name: 'basic_9', category: 'infoleak', points: 111, solved: true, method: 'robots.txt', platform: 'ctfshow' },
+  { id: 188, name: 'basic_10', category: 'infoleak', points: 300, solved: true, method: 'Cookie IDOR', platform: 'ctfshow' },
+  { id: 192, name: 'basic_14', category: 'infoleak', points: 181, solved: true, method: '/proc/self/fd', platform: 'ctfshow' },
+  { id: 643, name: 'basic_7', category: 'infoleak', points: 238, solved: true, method: '302响应体', platform: 'ctfshow' },
+  { id: 190, name: 'basic_12', category: 'infoleak', points: 120, solved: true, method: '隐藏文件', platform: 'ctfshow' },
+  // PHP弱类型 - QC
   { id: 201, name: 'ezphp', category: 'php', points: 158, solved: true, method: '弱类型绕过', platform: 'qc' },
-    { id: 202, name: 'ezphp_1', category: 'php', points: 162, solved: true, method: 'array_search', platform: 'qc' },
-    { id: 203, name: 'ezphp_2', category: 'php', points: 171, solved: true, method: '嵌套弱类型', platform: 'qc' },
-    { id: 204, name: 'ezmd5', category: 'php', points: 165, solved: true, method: '0e MD5', platform: 'qc' },
-    { id: 205, name: 'ezmd5_1', category: 'php', points: 184, solved: true, method: '双0e MD5', platform: 'qc' },
-    { id: 206, name: 'ezmd5_2', category: 'php', points: 175, solved: true, method: 'md5数组', platform: 'qc' },
-    { id: 207, name: 'ezmd5_3', category: 'php', points: 172, solved: true, method: 'md5数组', platform: 'qc' },
-    { id: 208, name: 'ezmd5_4', category: 'php', points: 186, solved: true, method: 'MD5爆破', platform: 'qc' },
-    // 命令注入
+  { id: 202, name: 'ezphp_1', category: 'php', points: 162, solved: true, method: 'array_search', platform: 'qc' },
+  { id: 203, name: 'ezphp_2', category: 'php', points: 171, solved: true, method: '嵌套弱类型', platform: 'qc' },
+  { id: 204, name: 'ezmd5', category: 'php', points: 165, solved: true, method: '0e MD5', platform: 'qc' },
+  { id: 205, name: 'ezmd5_1', category: 'php', points: 184, solved: true, method: '双0e MD5', platform: 'qc' },
+  { id: 206, name: 'ezmd5_2', category: 'php', points: 175, solved: true, method: 'md5数组', platform: 'qc' },
+  { id: 207, name: 'ezmd5_3', category: 'php', points: 172, solved: true, method: 'md5数组', platform: 'qc' },
+  { id: 208, name: 'ezmd5_4', category: 'php', points: 186, solved: true, method: 'MD5爆破', platform: 'qc' },
+  // 命令注入 - QC
   { id: 225, name: 'ezcmd', category: 'cmd', points: 204, solved: true, method: '直接执行', platform: 'qc' },
-    { id: 226, name: 'ezcmd_1', category: 'cmd', points: 200, solved: true, method: '分号注入', platform: 'qc' },
-    { id: 227, name: 'ezcmd_2', category: 'cmd', points: 208, solved: true, method: '注释截断', platform: 'qc' },
-    { id: 228, name: 'ezcmd_3', category: 'cmd', points: 222, solved: true, method: 'IFS绕过', platform: 'qc' },
-    { id: 230, name: 'ezcmd_5', category: 'cmd', points: 357, solved: true, method: '无字母RCE ★', firstBlood: true, platform: 'qc' },
-    { id: 231, name: 'ezcmd_6', category: 'cmd', points: 263, solved: true, method: 'eval执行', platform: 'qc' },
-    { id: 232, name: 'ezcmd_7', category: 'cmd', points: 256, solved: true, method: '字符串拼接', platform: 'qc' },
-    { id: 233, name: 'ezcmd_8', category: 'cmd', points: 263, solved: true, method: 'passthru', platform: 'qc' },
-    { id: 234, name: 'ezcmd_9', category: 'cmd', points: 270, solved: true, method: 'tab绕过', platform: 'qc' },
-    { id: 235, name: 'ezcmd_10', category: 'cmd', points: 357, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
-    { id: 236, name: 'ezcmd_11', category: 'cmd', points: 333, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
-    // PWN
+  { id: 226, name: 'ezcmd_1', category: 'cmd', points: 200, solved: true, method: '分号注入', platform: 'qc' },
+  { id: 227, name: 'ezcmd_2', category: 'cmd', points: 208, solved: true, method: '注释截断', platform: 'qc' },
+  { id: 228, name: 'ezcmd_3', category: 'cmd', points: 222, solved: true, method: 'IFS绕过', platform: 'qc' },
+  { id: 230, name: 'ezcmd_5', category: 'cmd', points: 357, solved: true, method: '无字母RCE ★', firstBlood: true, platform: 'qc' },
+  { id: 231, name: 'ezcmd_6', category: 'cmd', points: 263, solved: true, method: 'eval执行', platform: 'qc' },
+  { id: 232, name: 'ezcmd_7', category: 'cmd', points: 256, solved: true, method: '字符串拼接', platform: 'qc' },
+  { id: 233, name: 'ezcmd_8', category: 'cmd', points: 263, solved: true, method: 'passthru', platform: 'qc' },
+  { id: 234, name: 'ezcmd_9', category: 'cmd', points: 270, solved: true, method: 'tab绕过', platform: 'qc' },
+  { id: 235, name: 'ezcmd_10', category: 'cmd', points: 357, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
+  { id: 236, name: 'ezcmd_11', category: 'cmd', points: 333, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
+  // PWN - QC
   { id: 5, name: 'X0r', category: 'pwn', points: 200, solved: true, method: 'XOR解密', platform: 'qc' },
-    { id: 151, name: "Pwn's Door", category: 'pwn', points: 150, solved: true, method: '逆向密码', platform: 'qc' },
-    { id: 999, name: 'input_function', category: 'pwn', points: 500, solved: true, method: 'Shellcode ★', firstBlood: true, platform: 'qc' },
-  ]
+  { id: 151, name: "Pwn's Door", category: 'pwn', points: 150, solved: true, method: '逆向密码', platform: 'qc' },
+  { id: 999, name: 'input_function', category: 'pwn', points: 500, solved: true, method: 'Shellcode ★', firstBlood: true, platform: 'qc' },
+]
+
+const platformNames = {
+  all: { name: '全部靶场', color: 'cyan' },
+  ctfshow: { name: 'CTFShow', color: 'blue' },
+  qc: { name: 'QC 青岑', color: 'purple' }
+}
 
 const categoryNames = {
   infoleak: { name: '信息收集与泄露', color: 'cyan' },
@@ -52,29 +59,16 @@ const categoryNames = {
 }
 
 export default function Challenges() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const [platform, setPlatform] = useState(searchParams.get('platform') || 'all')
+  const [platform, setPlatform] = useState('all')
+  const challenges = platform === 'all'
+    ? allChallenges
+    : allChallenges.filter(c => c.platform === platform)
   
-  const filtered = platform === 'all' 
-    ? challengeData 
-    : challengeData.filter(c => c.platform === platform)
-  
-  const grouped = filtered.reduce((acc, c) => {
+  const grouped = challenges.reduce((acc, c) => {
     if (!acc[c.category]) acc[c.category] = []
     acc[c.category].push(c)
     return acc
   }, {})
-  
-  const handlePlatformChange = (p) => {
-    setPlatform(p)
-    setSearchParams(p === 'all' ? {} : { platform: p })
-  }
-  
-  const platformConfig = {
-    all: { label: '全部', icon: Layers, color: 'cyan' },
-    ctfshow: { label: 'CTFShow', icon: Flag, color: 'cyan' },
-    qc: { label: 'QC 靶场', icon: Terminal, color: 'purple' }
-  }
   
   return (
     <div className="min-h-screen py-20">
@@ -92,34 +86,31 @@ export default function Challenges() {
             题目列表
           </h1>
           <p className="text-cyber-grid mt-4 font-mono">
-            共 <span className="text-cyber-cyan">{filtered.length}</span> 题 | 
-            已解 <span className="text-cyber-cyan">{filtered.filter(c => c.solved).length}</span> 题 |
-            总分 <span className="text-cyber-cyan">{filtered.reduce((sum, c) => sum + c.points, 0)}</span> pts
+            共 <span className="text-cyber-cyan">{challenges.length}</span> 题 | 
+            已解 <span className="text-cyber-cyan">{challenges.filter(c => c.solved).length}</span> 题 |
+            总分 <span className="text-cyber-cyan">{challenges.reduce((sum, c) => sum + c.points, 0)}</span> pts
           </p>
         </motion.div>
-        
-        {/* Platform Tabs */}
+
+        {/* Platform Filter */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex items-center justify-center gap-3 mb-10"
+          className="flex items-center justify-center gap-2 mb-8"
         >
-          {Object.entries(platformConfig).map(([key, p]) => (
+          <Filter className="w-4 h-4 text-cyber-grid" />
+          {Object.entries(platformNames).map(([key, val]) => (
             <button
               key={key}
-              onClick={() => handlePlatformChange(key)}
-              className={`
-                px-5 py-2.5 rounded-lg font-mono text-sm flex items-center gap-2
-                transition-all duration-200 border
-                ${platform === key 
-                  ? `bg-cyber-${p.color}/20 border-cyber-${p.color}/60 text-cyber-${p.color} shadow-lg shadow-cyber-${p.color}/10`
-                  : 'bg-transparent border-cyber-grid/20 text-cyber-grid/60 hover:border-cyber-grid/40 hover:text-cyber-grid'
-                }
-              `}
+              onClick={() => setPlatform(key)}
+              className={`px-4 py-1.5 rounded-lg text-sm font-mono transition-all ${
+                platform === key
+                  ? `bg-cyber-${val.color}/20 text-cyber-${val.color} border border-cyber-${val.color}/50`
+                  : 'text-cyber-grid/60 hover:text-cyber-grid border border-transparent'
+              }`}
             >
-              <p.icon className={`w-4 h-4 ${platform === key ? '' : 'opacity-50'}`} />
-              {p.label}
+              {val.name}
             </button>
           ))}
         </motion.div>
@@ -153,7 +144,7 @@ export default function Challenges() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: catIndex * 0.1 + i * 0.05 }}
                 >
-                  <Link to={`/article/${cat}?platform=${platform}`}>
+                  <Link to={`/article/${cat}`}>
                     <motion.div
                       whileHover={{ x: 5 }}
                       className="cyber-card p-4 flex items-center justify-between group cursor-pointer"
@@ -180,10 +171,10 @@ export default function Challenges() {
                                 一血
                               </span>
                             )}
-                            <span className={`px-2 py-0.5 text-xs rounded font-mono ${
+                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
                               challenge.platform === 'ctfshow'
-                                ? 'bg-cyan-900/30 text-cyber-cyan/70'
-                                : 'bg-purple-900/30 text-cyber-purple/70'
+                                ? 'bg-blue-900/40 text-blue-400'
+                                : 'bg-purple-900/40 text-purple-400'
                             }`}>
                               {challenge.platform === 'ctfshow' ? 'CTFShow' : 'QC'}
                             </span>
@@ -224,19 +215,23 @@ export default function Challenges() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-3xl font-bold text-gradient">{filtered.length > 0 ? '100%' : '-'}</div>
-              <div className="text-xs text-cyber-grid">一血率注</div>
+              <div className="text-3xl font-bold text-gradient">
+                {challenges.filter(c => c.firstBlood).length > 0
+                  ? Math.round(challenges.filter(c => c.firstBlood).length / challenges.length * 100)
+                  : 0}%
+              </div>
+              <div className="text-xs text-cyber-grid">一血率</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{filtered.filter(c => c.solved).length}</div>
+              <div className="text-3xl font-bold text-gradient">{challenges.filter(c => c.solved).length}</div>
               <div className="text-xs text-cyber-grid">已解题数</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{Object.keys(grouped).length}</div>
+              <div className="text-3xl font-bold text-gradient">{new Set(challenges.map(c => c.category)).size}</div>
               <div className="text-xs text-cyber-grid">分类数量</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{filtered.filter(c => !c.solved).length}</div>
+              <div className="text-3xl font-bold text-gradient">{challenges.filter(c => !c.solved).length}</div>
               <div className="text-xs text-cyber-grid">未解题数</div>
             </div>
           </div>
