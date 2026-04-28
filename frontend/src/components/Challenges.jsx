@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Flag, CheckCircle, Clock, Zap, Layers, Terminal } from 'lucide-react'
-import { useState } from 'react'
 
 const challengeData = [
     // 信息泄露
