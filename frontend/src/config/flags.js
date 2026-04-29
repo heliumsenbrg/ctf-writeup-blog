@@ -189,11 +189,15 @@ export function getFlagConfig(id) {
 
 /**
  * 计算 XOR 密文（hex）
+ * 将 flag 和密钥编码为 UTF-8 字节再进行 XOR 运算
  */
 export function computeCipherHex(flag, key) {
+  const encoder = new TextEncoder()
+  const flagBytes = encoder.encode(flag)
+  const keyBytes = encoder.encode(key)
   let h = ''
-  for (let i = 0; i < flag.length; i++) {
-    h += (flag.charCodeAt(i) ^ key.charCodeAt(i % key.length))
+  for (let i = 0; i < flagBytes.length; i++) {
+    h += (flagBytes[i] ^ keyBytes[i % keyBytes.length])
       .toString(16).padStart(2, '0')
   }
   return h

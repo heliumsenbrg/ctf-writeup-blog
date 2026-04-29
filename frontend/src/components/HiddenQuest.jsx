@@ -338,7 +338,7 @@ export default function HiddenQuest() {
             {cipherHex}
           </div>
           <p className="text-xs text-cyber-grid mt-3 font-mono">
-            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {currentFlag.length} chars
+            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {new TextEncoder().encode(currentFlag).length} UTF-8 bytes
           </p>
         </motion.div>
 
