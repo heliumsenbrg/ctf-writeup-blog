@@ -1,15 +1,158 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef } from 'react'
-import { Lock, KeyRound, ScanEye, Download, ChevronDown } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
 import FLAGS, { getFlagConfig, computeCipherHex } from '../config/flags'
 
+/* ---------- Particle / Confetti Engine ---------- */
+const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
+
+function createParticles(count, baseColor) {
+  const p = []
+  for (let i = 0; i < count; i++) {
+    p.push({
+      x: 50, y: 100,
+      vx: (Math.random() - 0.5) * 16,
+      vy: -(Math.random() * 16 + 4),
+      r: Math.random() * 5 + 2,
+      color: Math.random() > 0.5 ? baseColor : COLORS[Math.floor(Math.random() * COLORS.length)],
+      life: 0,
+      maxLife: 60 + Math.random() * 40,
+      rot: Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 10,
+    })
+  }
+  return p
+}
+
+function ConfettiCanvas({ color, count = 80 }) {
+  const canvasRef = useRef(null)
+  const particlesRef = useRef(null)
+
+  useEffect(() => {
+    if (!particlesRef.current) {
+      particlesRef.current = createParticles(count, color)
+    }
+    const particles = particlesRef.current
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    let animId
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+
+    function anim() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      let alive = false
+      for (const p of particles) {
+        p.life++
+        if (p.life >= p.maxLife) continue
+        alive = true
+        p.x += p.vx * 0.6
+        p.vy += 0.25
+        p.y += p.vy * 0.6
+        p.rot += p.rotV
+        const alpha = Math.max(0, 1 - p.life / p.maxLife)
+        ctx.save()
+        ctx.translate(p.x, p.y)
+        ctx.rotate((p.rot * Math.PI) / 180)
+        ctx.globalAlpha = alpha
+        ctx.fillStyle = p.color
+        ctx.fillRect(-p.r / 2, -p.r / 2, p.r, p.r * 2)
+        ctx.restore()
+      }
+      if (alive) animId = requestAnimationFrame(anim)
+    }
+    anim()
+    return () => cancelAnimationFrame(animId)
+  }, [color, count])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed inset-0 pointer-events-none z-[100]"
+    />
+  )
+}
+
+/* ---------- Victory Modal ---------- */
+function VictoryModal({ config, onClose }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.5, y: 50 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.5, y: 50, opacity: 0 }}
+        transition={{ type: 'spring', damping: 15, stiffness: 300 }}
+        className={`relative mx-4 max-w-md w-full rounded-2xl border border-white/10 bg-gradient-to-br ${config.victory.bgColor} p-8 text-center overflow-hidden`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Decorative corner glows */}
+        <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
+        <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
+
+        {/* Emoji rain */}
+        <div className="text-5xl mb-4 animate-bounce">
+          {config.victory.emoji.split('').map((e, i) => (
+            <span key={i} className="inline-block" style={{ animationDelay: `${i * 0.15}s` }}>
+              {e}
+            </span>
+          ))}
+        </div>
+
+        {/* Title */}
+        <h2 className="text-2xl font-bold text-white mb-2 anime-title">
+          {config.victory.title}
+        </h2>
+
+        {/* Message */}
+        <p className="text-cyber-grid font-mono text-sm mb-6">
+          {config.victory.message}
+        </p>
+
+        {/* Reward link (optional) */}
+        {config.reward && (
+          <a
+            href={config.reward}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-mono hover:bg-white/20 transition-all mb-4"
+          >
+            <Sparkles className="w-4 h-4" />
+            领取奖励
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
+
+        {/* Close */}
+        <div className="flex justify-center">
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-white/5 text-cyber-grid text-xs font-mono hover:bg-white/10 transition-all"
+          >
+            <X className="w-3 h-3" />
+            关闭
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+}
+
+/* ---------- Main Component ---------- */
 export default function HiddenQuest() {
   const [activeId, setActiveId] = useState(FLAGS[0].id)
   const [input, setInput] = useState('')
-  const [status, setStatus] = useState(null) // null | 'wrong' | 'correct'
+  const [status, setStatus] = useState(null) // null | 'wrong'
   const [clueLevel, setClueLevel] = useState(0)
-  const [showDownload, setShowDownload] = useState(false)
+  const [showVictory, setShowVictory] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
+  const [particleKey, setParticleKey] = useState(0)
   const timersRef = useRef([])
   const pickerRef = useRef(null)
 
@@ -21,13 +164,12 @@ export default function HiddenQuest() {
     setInput('')
     setStatus(null)
     setClueLevel(0)
-    setShowDownload(false)
+    setShowVictory(false)
     setShowPicker(false)
   }, [activeId])
 
   // Console & clue timers
   useEffect(() => {
-    // Clear old timers
     timersRef.current.forEach(t => clearTimeout(t))
     timersRef.current = []
 
@@ -44,21 +186,20 @@ export default function HiddenQuest() {
     timersRef.current.push(setTimeout(() => setClueLevel(3), 24000))
 
     return () => timersRef.current.forEach(t => clearTimeout(t))
-  }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = useCallback((e) => {
     e.preventDefault()
     if (input.trim() === config.flag) {
-      setStatus('correct')
-      setShowDownload(true)
-      setTimeout(() => {
-        window.open(config.redirectUrl, '_blank')
-      }, 1500)
+      setStatus(null)
+      setShowVictory(true)
+      setParticleKey((k) => k + 1) // re-mount confetti
     } else {
       setStatus('wrong')
       setTimeout(() => setStatus(null), 2000)
     }
-  }
+  }, [input, config])
 
   // Close picker on outside click
   useEffect(() => {
@@ -96,9 +237,7 @@ export default function HiddenQuest() {
           className="cyber-card p-4 mb-6"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs text-cyber-grid font-mono">
-              ACTIVE CHALLENGE
-            </span>
+            <span className="text-xs text-cyber-grid font-mono">ACTIVE CHALLENGE</span>
             <div className="relative" ref={pickerRef}>
               <button
                 onClick={() => setShowPicker(!showPicker)}
@@ -166,9 +305,7 @@ export default function HiddenQuest() {
         >
           <Lock className="w-6 h-6 text-amber-400 mx-auto mb-4" />
           <p className="text-xs text-cyber-grid font-mono mb-2">ENCRYPTED MESSAGE</p>
-          <div
-            className="bg-black/50 rounded-lg p-4 font-mono text-sm text-amber-400/80 break-all select-all transition-all"
-          >
+          <div className="bg-black/50 rounded-lg p-4 font-mono text-sm text-amber-400/80 break-all select-all transition-all">
             {cipherHex}
           </div>
           <p className="text-xs text-cyber-grid mt-3 font-mono">
@@ -192,20 +329,29 @@ export default function HiddenQuest() {
             ▎{config.clues[0]}
           </p>
           {clueLevel >= 1 && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-cyber-grid/80 text-sm font-mono mb-2">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-cyber-grid/80 text-sm font-mono mb-2"
+            >
               ▎{config.clues[1]}
             </motion.p>
           )}
           {clueLevel >= 2 && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-cyber-grid/80 text-sm font-mono mb-2">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-cyber-grid/80 text-sm font-mono mb-2"
+            >
               ▎{config.clues[2]}
             </motion.p>
           )}
           {clueLevel >= 3 && (
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-              className="text-amber-400/80 text-sm font-mono mb-2">
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-amber-400/80 text-sm font-mono mb-2"
+            >
               ▎{config.clues[3]}
             </motion.p>
           )}
@@ -254,38 +400,25 @@ export default function HiddenQuest() {
               </motion.p>
             )}
           </AnimatePresence>
-
-          <AnimatePresence>
-            {showDownload && (
-              <motion.div
-                key={activeId + '-success'}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg text-center"
-              >
-                <Download className="w-8 h-8 text-green-400 mx-auto mb-2 animate-bounce" />
-                <p className="text-green-400 font-mono text-sm">
-                  ✓ 解密成功！{config.redirectText}
-                </p>
-                <p className="text-cyber-grid text-xs font-mono mt-1">
-                  （如果未跳转，
-                  <a href={config.redirectUrl} target="_blank" className="text-cyber-cyan underline">
-                    点此手动前往
-                  </a>）
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
 
-        {/* Invisible key element for inspection */}
+        {/* Hidden key element */}
         <div
           data-key={config.key}
           style={{ display: 'none' }}
           aria-hidden="true"
         />
       </div>
+
+      {/* Victory celebration */}
+      <AnimatePresence>
+        {showVictory && (
+          <>
+            <ConfettiCanvas key={'p' + particleKey + activeId} color={config.victory.particleColor} count={config.victory.particleCount} />
+            <VictoryModal config={config} onClose={() => setShowVictory(false)} />
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

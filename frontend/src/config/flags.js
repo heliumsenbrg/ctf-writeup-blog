@@ -1,6 +1,6 @@
 /**
  * 动态 Flag 配置
- * 每个条目是一个隐藏挑战，支持独立 flag、密钥、提示和跳转目标
+ * 每个条目是一个隐藏挑战，支持独立 flag、密钥、提示和胜利特效
  */
 const FLAGS = [
   {
@@ -14,8 +14,15 @@ const FLAGS = [
       'CSS 中藏着一个看不见的"钥匙"',
       '密钥 = 一款热门游戏的英文名（7个字母）',
     ],
-    redirectUrl: 'https://genshin.hoyoverse.com/en/download',
-    redirectText: '正在下载原神...',
+    victory: {
+      emoji: '✨🌟⚡',
+      title: '「原神，启动！」',
+      message: '你感受到了七种元素的力量在体内涌动！',
+      bgColor: 'from-amber-900/30 to-yellow-900/20',
+      particleColor: '#fbbf24',
+      particleCount: 80,
+    },
+    reward: 'https://genshin.hoyoverse.com/en/download',
     consoleMsg: [
       '[SECRET QUEST]',
       'Encryption: XOR with hidden key',
@@ -34,8 +41,15 @@ const FLAGS = [
       '提示：星历 2156 年',
       '密钥 = 一款科幻 RPG（8个字母）',
     ],
-    redirectUrl: 'https://hsr.hoyoverse.com/',
-    redirectText: '正在登录星穹列车...',
+    victory: {
+      emoji: '🚀🌠🌌',
+      title: '「星穹列车，启程！」',
+      message: '列车驶出空间站，群星在你脚下流淌...',
+      bgColor: 'from-blue-900/30 to-purple-900/20',
+      particleColor: '#60a5fa',
+      particleCount: 100,
+    },
+    reward: 'https://hsr.hoyoverse.com/',
     consoleMsg: [
       '[SECRET QUEST: STARRAIL]',
       'Encryption: XOR - cipher of the stars',
@@ -54,8 +68,15 @@ const FLAGS = [
       '金币之上，勇者之名',
       '密钥 = 任天堂公主之名（5个字母）',
     ],
-    redirectUrl: 'https://www.zelda.com/',
-    redirectText: '正在前往海拉鲁...',
+    victory: {
+      emoji: '🗡️🛡️👑',
+      title: '「勇气、智慧、力量」',
+      message: '大师之剑发出耀眼光芒，海拉鲁的危机解除了！',
+      bgColor: 'from-green-900/30 to-emerald-900/20',
+      particleColor: '#34d399',
+      particleCount: 60,
+    },
+    reward: 'https://www.zelda.com/',
     consoleMsg: [
       '[SECRET QUEST: ZELDA]',
       'Encryption: XOR - ancient Hylian cipher',
@@ -74,8 +95,15 @@ const FLAGS = [
       '提醒：这不是科幻，这是现实',
       '密钥 = 电影宇宙名（6个字母）',
     ],
-    redirectUrl: 'https://www.warnerbros.com/movies/matrix',
-    redirectText: '正在脱离矩阵...',
+    victory: {
+      emoji: '💊🔮🕶️',
+      title: '「你选择了红色药丸」',
+      message: '代码之雨倾泻而下，你看到了真实的矩阵世界！',
+      bgColor: 'from-emerald-900/30 to-green-950/20',
+      particleColor: '#00ff41',
+      particleCount: 120,
+    },
+    reward: 'https://www.warnerbros.com/movies/matrix',
     consoleMsg: [
       '[SECRET QUEST: MATRIX]',
       'Wake up, Neo...',
@@ -95,11 +123,18 @@ const FLAGS = [
       '1969 年 7 月 20 日',
       '密钥 = 地球的卫星（4个字母）',
     ],
-    redirectUrl: 'https://www.nasa.gov/moon/',
-    redirectText: '正在登录月球...',
+    victory: {
+      emoji: '🌙👨‍🚀🚩',
+      title: '「这是我的一小步」',
+      message: '月球表面留下你的足迹，人类探索永不止步！',
+      bgColor: 'from-slate-900/30 to-gray-900/20',
+      particleColor: '#cbd5e1',
+      particleCount: 40,
+    },
+    reward: 'https://www.nasa.gov/moon/',
     consoleMsg: [
       '[SECRET QUEST: MOON]',
-      'That\'s one small step...',
+      "That's one small step...",
       'Encryption: XOR - lunar cipher',
       'Key length: 4 characters',
       'Look to the stars...',
@@ -116,8 +151,15 @@ const FLAGS = [
       '密钥就在你自己手中',
       '用你的智慧解密吧！',
     ],
-    redirectUrl: 'https://ctf-writeup-blog-omega.vercel.app/',
-    redirectText: '挑战成功！',
+    victory: {
+      emoji: '🎉🏆🎊',
+      title: '「挑战完成！」',
+      message: '自定义挑战已通关，你已经掌握了隐藏关卡的秘密！',
+      bgColor: 'from-rose-900/30 to-pink-900/20',
+      particleColor: '#f472b6',
+      particleCount: 70,
+    },
+    reward: '',
     consoleMsg: [
       '[SECRET QUEST: CUSTOM]',
       'Custom challenge unlocked',
