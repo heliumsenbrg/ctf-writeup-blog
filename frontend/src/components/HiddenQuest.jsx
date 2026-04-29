@@ -76,13 +76,23 @@ function ConfettiCanvas({ color, count = 80 }) {
 
 /* ---------- Victory Modal ---------- */
 function VictoryModal({ config, onClose }) {
+  const [countdown, setCountdown] = useState(3)
+
+  useEffect(() => {
+    if (countdown <= 0) {
+      if (config.reward) window.location.href = config.reward
+      return
+    }
+    const t = setTimeout(() => setCountdown(c => c - 1), 1000)
+    return () => clearTimeout(t)
+  }, [countdown, config.reward])
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[90] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.5, y: 50 }}
@@ -92,11 +102,10 @@ function VictoryModal({ config, onClose }) {
         className={`relative mx-4 max-w-md w-full rounded-2xl border border-white/10 bg-gradient-to-br ${config.victory.bgColor} p-8 text-center overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Decorative corner glows */}
         <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
         <div className="absolute -bottom-20 -right-20 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
 
-        {/* Emoji rain */}
+        {/* Emoji */}
         <div className="text-5xl mb-4 animate-bounce">
           {config.victory.emoji.split('').map((e, i) => (
             <span key={i} className="inline-block" style={{ animationDelay: `${i * 0.15}s` }}>
@@ -105,38 +114,52 @@ function VictoryModal({ config, onClose }) {
           ))}
         </div>
 
-        {/* Title */}
         <h2 className="text-2xl font-bold text-white mb-2 anime-title">
           {config.victory.title}
         </h2>
 
-        {/* Message */}
         <p className="text-cyber-grid font-mono text-sm mb-6">
           {config.victory.message}
         </p>
 
-        {/* Reward link (optional) */}
+        {/* 倒计时自动跳转 */}
+        <div className="mb-4">
+          <div className="flex justify-center gap-2 mb-2">
+            {[3,2,1].map(n => (
+              <span key={n} className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-sm transition-all ${
+                countdown >= n
+                  ? 'bg-cyber-cyan/20 text-cyber-cyan border border-cyber-cyan/40'
+                  : 'bg-white/5 text-cyber-grid/30 border border-white/5'
+              }`}>
+                {n}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-cyber-grid/60 font-mono">
+            正在跳转下载页...
+          </p>
+        </div>
+
+        {/* 立即跳转按钮 */}
         {config.reward && (
           <a
             href={config.reward}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm font-mono hover:bg-white/20 transition-all mb-4"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 border border-cyber-cyan/40 text-cyber-cyan text-sm font-mono hover:bg-cyber-cyan/20 transition-all mb-3"
           >
-            <Sparkles className="w-4 h-4" />
-            领取奖励
-            <ExternalLink className="w-3 h-3" />
+            <ExternalLink className="w-4 h-4" />
+            立即下载
           </a>
         )}
 
-        {/* Close */}
         <div className="flex justify-center">
           <button
             onClick={onClose}
             className="flex items-center gap-1 px-4 py-1.5 rounded-lg bg-white/5 text-cyber-grid text-xs font-mono hover:bg-white/10 transition-all"
           >
             <X className="w-3 h-3" />
-            关闭
+            取消（留在本页）
           </button>
         </div>
       </motion.div>
@@ -194,7 +217,7 @@ export default function HiddenQuest() {
     if (input.trim() === config.flag) {
       setStatus(null)
       setShowVictory(true)
-      setParticleKey((k) => k + 1) // re-mount confetti
+      setParticleKey((k) => k + 1)
     } else {
       setStatus('wrong')
       setTimeout(() => setStatus(null), 2000)
