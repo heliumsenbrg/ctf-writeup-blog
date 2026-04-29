@@ -167,10 +167,12 @@ export default function Challenges() {
       return () => clearTimeout(t)
     }
   }, [canPlay, play, played])
+
+  const filtered = platform === 'all'
     ? allChallenges
     : allChallenges.filter(c => c.platform === platform)
-  
-  const grouped = challenges.reduce((acc, c) => {
+
+  const grouped = filtered.reduce((acc, c) => {
     if (!acc[c.category]) acc[c.category] = []
     acc[c.category].push(c)
     return acc
@@ -192,9 +194,9 @@ export default function Challenges() {
             题目列表
           </h1>
           <p className="text-cyber-grid mt-4 font-mono">
-            共 <span className="text-cyber-cyan">{challenges.length}</span> 题 | 
-            已解 <span className="text-cyber-cyan">{challenges.filter(c => c.solved).length}</span> 题 |
-            总分 <span className="text-cyber-cyan">{challenges.reduce((sum, c) => sum + c.points, 0)}</span> pts
+            共 <span className="text-cyber-cyan">{filtered.length}</span> 题 | 
+            已解 <span className="text-cyber-cyan">{filtered.filter(c => c.solved).length}</span> 题 |
+            总分 <span className="text-cyber-cyan">{filtered.reduce((sum, c) => sum + c.points, 0)}</span> pts
           </p>
         </motion.div>
 
@@ -322,22 +324,22 @@ export default function Challenges() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-3xl font-bold text-gradient">
-                {challenges.filter(c => c.firstBlood).length > 0
-                  ? Math.round(challenges.filter(c => c.firstBlood).length / challenges.length * 100)
+                {filtered.filter(c => c.firstBlood).length > 0
+                  ? Math.round(filtered.filter(c => c.firstBlood).length / filtered.length * 100)
                   : 0}%
               </div>
               <div className="text-xs text-cyber-grid">一血率</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{challenges.filter(c => c.solved).length}</div>
+              <div className="text-3xl font-bold text-gradient">{filtered.filter(c => c.solved).length}</div>
               <div className="text-xs text-cyber-grid">已解题数</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{new Set(challenges.map(c => c.category)).size}</div>
+              <div className="text-3xl font-bold text-gradient">{new Set(filtered.map(c => c.category)).size}</div>
               <div className="text-xs text-cyber-grid">分类数量</div>
             </div>
             <div>
-              <div className="text-3xl font-bold text-gradient">{challenges.filter(c => !c.solved).length}</div>
+              <div className="text-3xl font-bold text-gradient">{filtered.filter(c => !c.solved).length}</div>
               <div className="text-xs text-cyber-grid">未解题数</div>
             </div>
           </div>
