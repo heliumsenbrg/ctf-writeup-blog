@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useState } from 'react'
-import { Flag, CheckCircle, Clock, Zap, Filter, Layers, Terminal } from 'lucide-react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { Flag, CheckCircle, Clock, Zap, Filter, Layers, Terminal, Volume2 } from 'lucide-react'
 
 export const allChallenges = [
   // 信息泄露 - CTFShow
@@ -58,9 +58,115 @@ const categoryNames = {
   pwn: { name: 'PWN 与逆向', color: 'blue' }
 }
 
+// ===== Victory Jingle =====
+// Web Audio API 合成旋律, 无需外部音频文件
+function useVictoryJingle() {
+  const ctxRef = useRef(null)
+  const playedRef = useRef(false)
+  const [canPlay, setCanPlay] = useState(false)
+
+  // 等待用户交互以初始化 AudioContext (浏览器自动播放策略)
+  useEffect(() => {
+    const handler = () => {
+      if (!ctxRef.current) {
+        ctxRef.current = new (window.AudioContext || window.webkitAudioContext)()
+        setCanPlay(true)
+      }
+      if (ctxRef.current.state === 'suspended') {
+        ctxRef.current.resume()
+      }
+    }
+    window.addEventListener('click', handler, { once: true })
+    window.addEventListener('keydown', handler, { once: true })
+    window.addEventListener('touchstart', handler, { once: true })
+    return () => {
+      window.removeEventListener('click', handler)
+      window.removeEventListener('keydown', handler)
+      window.removeEventListener('touchstart', handler)
+    }
+  }, [])
+
+  const play = useCallback(() => {
+    if (playedRef.current) return
+    const ctx = ctxRef.current
+    if (!ctx) return
+    playedRef.current = true
+
+    // ✨ "Never Give Up" 胜利旋律
+    // 三段式结构: 希望 → 坚持 → 凯旋
+    const notes = [
+      { f: 523.25, t: 0.0, d: 0.35 },   // C5
+      { f: 587.33, t: 0.35, d: 0.25 },  // D5
+      { f: 659.25, t: 0.6, d: 0.35 },   // E5
+      { f: 783.99, t: 0.95, d: 0.35 },  // G5
+      { f: 1046.5, t: 1.3, d: 0.5 },    // C6
+      { f: 880.0, t: 1.8, d: 0.2 },     // A5
+      { f: 783.99, t: 2.0, d: 0.2 },    // G5
+      { f: 659.25, t: 2.2, d: 0.25 },   // E5
+      { f: 783.99, t: 2.45, d: 0.55 },  // G5
+      { f: 587.33, t: 3.0, d: 0.2 },    // D5
+      { f: 659.25, t: 3.2, d: 0.2 },    // E5
+      { f: 783.99, t: 3.4, d: 0.2 },    // G5
+      { f: 880.0, t: 3.6, d: 0.2 },     // A5
+      { f: 1046.5, t: 3.8, d: 1.2 },    // C6 - 胜利长音
+    ]
+
+    const now = ctx.currentTime
+    notes.forEach(({ f, t, d }) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(f, now + t)
+      gain.gain.setValueAtTime(0, now + t)
+      gain.gain.linearRampToValueAtTime(0.18, now + t + 0.05)
+      gain.gain.setValueAtTime(0.15, now + t + d - 0.12)
+      gain.gain.linearRampToValueAtTime(0, now + t + d)
+      // 微颤音
+      const vib = ctx.createOscillator()
+      vib.frequency.value = 5
+      const vg = ctx.createGain()
+      vg.gain.value = 2
+      vib.connect(vg)
+      vg.connect(osc.frequency)
+      vib.start(now + t)
+      vib.stop(now + t + d)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + t)
+      osc.stop(now + t + d)
+    })
+
+    // 背景和弦
+    const padNotes = [261.63, 329.63, 392.0, 523.25]
+    padNotes.forEach(f => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'sine'
+      osc.frequency.value = f
+      gain.gain.setValueAtTime(0.04, now + 0.1)
+      gain.gain.setValueAtTime(0.04, now + 3.8)
+      gain.gain.linearRampToValueAtTime(0, now + 5.0)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(now + 0.1)
+      osc.stop(now + 5.0)
+    })
+  }, [])
+
+  return { play, canPlay, played: playedRef }
+}
+
 export default function Challenges() {
   const [platform, setPlatform] = useState('all')
-  const challenges = platform === 'all'
+  const { play, canPlay, played } = useVictoryJingle()
+
+  // 用户首次交互时自动播放
+  useEffect(() => {
+    if (canPlay && !played.current) {
+      const t = setTimeout(() => play(), 600)
+      return () => clearTimeout(t)
+    }
+  }, [canPlay, play, played])
     ? allChallenges
     : allChallenges.filter(c => c.platform === platform)
   
@@ -235,6 +341,36 @@ export default function Challenges() {
               <div className="text-xs text-cyber-grid">未解题数</div>
             </div>
           </div>
+        </motion.div>
+
+        {/* 🎵 Victory Jingle Button */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 1.5 }}
+          className="fixed bottom-8 right-8 z-50"
+        >
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => play()}
+            disabled={played.current}
+            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg
+              ${canPlay && !played.current
+                ? 'bg-gradient-to-r from-cyber-cyan to-cyber-purple animate-pulse cursor-pointer'
+                : played.current
+                  ? 'bg-cyber-grid/30 cursor-default'
+                  : 'bg-cyber-grid/20 border border-cyber-grid/30 cursor-pointer'
+              }
+              transition-all duration-300`}
+            title={played.current ? '已播放 ✓' : canPlay ? '播放胜利旋律!' : '点击页面以激活音乐'}
+          >
+            <Volume2 className={`w-6 h-6 ${played.current ? 'text-cyber-grid' : 'text-white'}`} />
+          </motion.button>
+          <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-mono whitespace-nowrap
+            ${canPlay && !played.current ? 'text-cyber-cyan' : 'text-cyber-grid'}">
+            {played.current ? '♪ DONE' : canPlay ? '♪ NEVER GIVE UP' : '点击激活'}
+          </span>
         </motion.div>
       </div>
     </div>
