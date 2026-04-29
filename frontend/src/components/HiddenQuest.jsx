@@ -1,52 +1,75 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef } from 'react'
-import { Lock, KeyRound, ScanEye, Download } from 'lucide-react'
-
-// ===== Challenge Config =====
-const REAL_FLAG = 'flag{53cr3t_und3r_7h3_m00n!}'
-const XOR_KEY = 'genshin'
-
-// Pre-compute ciphertext (XOR encrypt flag with key)
-const cipherHex = (function() {
-  let h = ''
-  for (let i = 0; i < REAL_FLAG.length; i++) {
-    h += (REAL_FLAG.charCodeAt(i) ^ XOR_KEY.charCodeAt(i % XOR_KEY.length))
-      .toString(16).padStart(2, '0')
-  }
-  return h
-})()
+import { Lock, KeyRound, ScanEye, Download, ChevronDown } from 'lucide-react'
+import FLAGS, { getFlagConfig, computeCipherHex } from '../config/flags'
 
 export default function HiddenQuest() {
+  const [activeId, setActiveId] = useState(FLAGS[0].id)
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null) // null | 'wrong' | 'correct'
   const [clueLevel, setClueLevel] = useState(0)
   const [showDownload, setShowDownload] = useState(false)
+  const [showPicker, setShowPicker] = useState(false)
+  const timersRef = useRef([])
+  const pickerRef = useRef(null)
 
+  const config = getFlagConfig(activeId)
+  const cipherHex = computeCipherHex(config.flag, config.key)
+
+  // Reset state when switching flag
   useEffect(() => {
-    console.log('%c[SECRET QUEST]', 'color: #f59e0b; font-size: 16px; font-weight: bold')
-    console.log('%cEncryption: XOR with hidden key', 'color: #8b5cf6')
-    console.log('%cKey length: ' + XOR_KEY.length + ' characters', 'color: #8b5cf6')
-    console.log('%cLook closely at the page elements...', 'color: #10b981')
+    setInput('')
+    setStatus(null)
+    setClueLevel(0)
+    setShowDownload(false)
+    setShowPicker(false)
+  }, [activeId])
 
-    const t1 = setTimeout(() => setClueLevel(1), 8000)
-    const t2 = setTimeout(() => setClueLevel(2), 16000)
-    const t3 = setTimeout(() => setClueLevel(3), 24000)
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3) }
-  }, [])
+  // Console & clue timers
+  useEffect(() => {
+    // Clear old timers
+    timersRef.current.forEach(t => clearTimeout(t))
+    timersRef.current = []
+
+    console.log(
+      '%c' + config.consoleMsg[0],
+      'color: #f59e0b; font-size: 16px; font-weight: bold'
+    )
+    config.consoleMsg.slice(1).forEach(msg => {
+      console.log('%c' + msg, 'color: #8b5cf6')
+    })
+
+    timersRef.current.push(setTimeout(() => setClueLevel(1), 8000))
+    timersRef.current.push(setTimeout(() => setClueLevel(2), 16000))
+    timersRef.current.push(setTimeout(() => setClueLevel(3), 24000))
+
+    return () => timersRef.current.forEach(t => clearTimeout(t))
+  }, [config]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (input.trim() === REAL_FLAG) {
+    if (input.trim() === config.flag) {
       setStatus('correct')
       setShowDownload(true)
       setTimeout(() => {
-        window.open('https://genshin.hoyoverse.com/en/download', '_blank')
+        window.open(config.redirectUrl, '_blank')
       }, 1500)
     } else {
       setStatus('wrong')
       setTimeout(() => setStatus(null), 2000)
     }
   }
+
+  // Close picker on outside click
+  useEffect(() => {
+    function handleClick(e) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target)) {
+        setShowPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   return (
     <div className="min-h-screen py-20">
@@ -65,8 +88,77 @@ export default function HiddenQuest() {
           </h1>
         </motion.div>
 
+        {/* Challenge Selector */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="cyber-card p-4 mb-6"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-cyber-grid font-mono">
+              ACTIVE CHALLENGE
+            </span>
+            <div className="relative" ref={pickerRef}>
+              <button
+                onClick={() => setShowPicker(!showPicker)}
+                className="flex items-center gap-2 px-4 py-2 bg-cyber-darker border border-cyber-grid/30 rounded-lg text-cyber-cyan font-mono text-sm hover:border-cyber-cyan/50 transition-all"
+              >
+                <span className={`w-2 h-2 rounded-full ${
+                  activeId === 'genshin' ? 'bg-amber-400' :
+                  activeId === 'starrail' ? 'bg-blue-400' :
+                  activeId === 'zelda' ? 'bg-green-400' :
+                  activeId === 'hacker' ? 'bg-emerald-400' :
+                  activeId === 'moon' ? 'bg-purple-400' :
+                  'bg-rose-400'
+                }`} />
+                {config.name}
+                <ChevronDown className={`w-3 h-3 transition-transform ${showPicker ? 'rotate-180' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {showPicker && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 mt-2 w-52 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
+                  >
+                    {FLAGS.map(f => (
+                      <button
+                        key={f.id}
+                        onClick={() => { setActiveId(f.id); setShowPicker(false) }}
+                        className={`w-full text-left px-4 py-3 font-mono text-sm transition-colors flex items-center gap-3 ${
+                          f.id === activeId
+                            ? 'bg-cyber-cyan/10 text-cyber-cyan border-l-2 border-cyber-cyan'
+                            : 'text-cyber-grid hover:bg-cyber-grid/10 hover:text-cyber-cyan'
+                        }`}
+                      >
+                        <span className={`w-2 h-2 rounded-full ${
+                          f.id === 'genshin' ? 'bg-amber-400' :
+                          f.id === 'starrail' ? 'bg-blue-400' :
+                          f.id === 'zelda' ? 'bg-green-400' :
+                          f.id === 'hacker' ? 'bg-emerald-400' :
+                          f.id === 'moon' ? 'bg-purple-400' :
+                          'bg-rose-400'
+                        }`} />
+                        {f.name}
+                        {f.id === activeId && (
+                          <span className="ml-auto text-xs text-cyber-cyan/50">✓</span>
+                        )}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Ciphertext card */}
         <motion.div
+          key={activeId + '-cipher'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
@@ -74,16 +166,19 @@ export default function HiddenQuest() {
         >
           <Lock className="w-6 h-6 text-amber-400 mx-auto mb-4" />
           <p className="text-xs text-cyber-grid font-mono mb-2">ENCRYPTED MESSAGE</p>
-          <div className="bg-black/50 rounded-lg p-4 font-mono text-sm text-amber-400/80 break-all select-all">
+          <div
+            className="bg-black/50 rounded-lg p-4 font-mono text-sm text-amber-400/80 break-all select-all transition-all"
+          >
             {cipherHex}
           </div>
           <p className="text-xs text-cyber-grid mt-3 font-mono">
-            Length: {cipherHex.length} hex chars | Cipher: XOR
+            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {config.flag.length} chars
           </p>
         </motion.div>
 
         {/* Clues */}
         <motion.div
+          key={activeId + '-clues'}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -94,30 +189,31 @@ export default function HiddenQuest() {
             <span className="text-cyber-cyan text-sm font-mono">CLUES</span>
           </div>
           <p className="text-cyber-grid text-sm font-mono mb-2">
-            ▎密文由 XOR 加密，密钥隐藏在页面中...
+            ▎{config.clues[0]}
           </p>
           {clueLevel >= 1 && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-cyber-grid/80 text-sm font-mono mb-2">
-              ▎检查页面源代码，有一个隐藏的提示...
+              ▎{config.clues[1]}
             </motion.p>
           )}
           {clueLevel >= 2 && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-cyber-grid/80 text-sm font-mono mb-2">
-              ▎CSS 中藏着一个看不见的“钥匙”
+              ▎{config.clues[2]}
             </motion.p>
           )}
           {clueLevel >= 3 && (
             <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               className="text-amber-400/80 text-sm font-mono mb-2">
-              ▎密钥 = 一款热门游戏的英文名（7个字母）
+              ▎{config.clues[3]}
             </motion.p>
           )}
         </motion.div>
 
         {/* Submit */}
         <motion.div
+          key={activeId + '-submit'}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
@@ -148,6 +244,7 @@ export default function HiddenQuest() {
           <AnimatePresence>
             {status === 'wrong' && (
               <motion.p
+                key={activeId + '-wrong'}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -158,29 +255,33 @@ export default function HiddenQuest() {
             )}
           </AnimatePresence>
 
-          {showDownload && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg text-center"
-            >
-              <Download className="w-8 h-8 text-green-400 mx-auto mb-2 animate-bounce" />
-              <p className="text-green-400 font-mono text-sm">
-                ✓ 解密成功！正在下载原神...
-              </p>
-              <p className="text-cyber-grid text-xs font-mono mt-1">
-                （如果未自动下载，
-                <a href="https://genshin.hoyoverse.com/en/download" target="_blank" className="text-cyber-cyan underline">
-                  点此手动下载
-                </a>）
-              </p>
-            </motion.div>
-          )}
+          <AnimatePresence>
+            {showDownload && (
+              <motion.div
+                key={activeId + '-success'}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="mt-6 p-4 bg-green-900/20 border border-green-500/30 rounded-lg text-center"
+              >
+                <Download className="w-8 h-8 text-green-400 mx-auto mb-2 animate-bounce" />
+                <p className="text-green-400 font-mono text-sm">
+                  ✓ 解密成功！{config.redirectText}
+                </p>
+                <p className="text-cyber-grid text-xs font-mono mt-1">
+                  （如果未跳转，
+                  <a href={config.redirectUrl} target="_blank" className="text-cyber-cyan underline">
+                    点此手动前往
+                  </a>）
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
 
         {/* Invisible key element for inspection */}
         <div
-          data-key="genshin"
+          data-key={config.key}
           style={{ display: 'none' }}
           aria-hidden="true"
         />
