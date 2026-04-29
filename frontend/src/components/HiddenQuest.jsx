@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
-import FLAGS, { getFlagConfig, computeCipherHex } from '../config/flags'
+import FLAGS, { getFlagConfig, computeCipherHex, generateFlag } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
@@ -176,11 +176,17 @@ export default function HiddenQuest() {
   const [showVictory, setShowVictory] = useState(false)
   const [showPicker, setShowPicker] = useState(false)
   const [particleKey, setParticleKey] = useState(0)
+  const [dynamicFlag, setDynamicFlag] = useState('')
   const timersRef = useRef([])
   const pickerRef = useRef(null)
 
   const config = getFlagConfig(activeId)
-  const cipherHex = computeCipherHex(config.flag, config.key)
+  // 每次切换挑战生成新的动态 flag
+  useEffect(() => {
+    setDynamicFlag(generateFlag(config.flag))
+  }, [activeId, config.flag])
+  const currentFlag = dynamicFlag || config.flag
+  const cipherHex = computeCipherHex(currentFlag, config.key)
 
   // Reset state when switching flag
   useEffect(() => {
@@ -214,7 +220,7 @@ export default function HiddenQuest() {
 
   const handleSubmit = useCallback((e) => {
     e.preventDefault()
-    if (input.trim() === config.flag) {
+    if (input.trim() === currentFlag) {
       setStatus(null)
       setShowVictory(true)
       setParticleKey((k) => k + 1)
@@ -222,7 +228,7 @@ export default function HiddenQuest() {
       setStatus('wrong')
       setTimeout(() => setStatus(null), 2000)
     }
-  }, [input, config])
+  }, [input, config, currentFlag])
 
   // Close picker on outside click
   useEffect(() => {
@@ -332,7 +338,7 @@ export default function HiddenQuest() {
             {cipherHex}
           </div>
           <p className="text-xs text-cyber-grid mt-3 font-mono">
-            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {config.flag.length} chars
+            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {currentFlag.length} chars
           </p>
         </motion.div>
 
