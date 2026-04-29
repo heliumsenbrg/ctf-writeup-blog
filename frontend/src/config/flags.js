@@ -2,6 +2,17 @@
  * 动态 Flag 配置
  * 每个条目是一个隐藏挑战，支持独立 flag、密钥、提示和胜利特效
  */
+function randHex(n) {
+  let s = ''
+  for (let i = 0; i < n; i++) s += '0123456789abcdef'[Math.floor(Math.random() * 16)]
+  return s
+}
+
+/** 生成动态 flag：基础部分 + 随机后缀 */
+export function generateFlag(baseFlag) {
+  return baseFlag.replace('}', '_' + randHex(4) + '}')
+}
+
 const FLAGS = [
   {
     id: 'genshin',
