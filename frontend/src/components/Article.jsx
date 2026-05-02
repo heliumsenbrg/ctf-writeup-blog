@@ -4,6 +4,225 @@ import { ArrowLeft, Terminal, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 
 const articles = {
+  tools: {
+    title: 'CTF 工具使用指南',
+    subtitle: 'CTF Tools Guide',
+    content: `
+CTF 比赛中工具的使用至关重要。这里总结了我常用的工具及其使用技巧。
+
+## IDA Pro — 逆向分析神器
+
+IDA Pro 是最强大的静态反汇编工具，CTF 逆向必备。
+
+### 基础操作
+
+**打开文件**
+- 拖入 PE/ELF 文件即可自动识别架构
+- 首次打开选择 "New"，后续选 "Load existing" 保留注释
+
+**常用快捷键**
+
+\`\`\`
+Tab          # 切换 Graph View / Text View
+F5           # 反编译为 C 伪代码（Hex-Rays 插件）
+Shift+F12    # 打开字符串表（找敏感字符串）
+X            # 查看交叉引用（找函数调用位置）
+R            # 将数据转为字符显示
+H            # 切换数据格式（hex/dec/bin）
+N            # 重命名变量/函数
+Space        # 切换反汇编/十六进制视图
+\`\`\`
+
+**实战技巧**
+
+找 main 函数的三种方法：
+1. **字符串查找法**: Shift+F12 搜 "flag"、"password"、"input" 等
+2. **长驱直入法**: 从程序入口一步步跟，适合简单程序
+3. **API 引用法**: 找 MessageBox、scanf、strcmp 等关键 API
+
+\`\`\`
+# 示例：Hello CTF 题目
+Shift+F12 → 搜 "please input" → 双击跳转 → F5 看伪代码
+看到 strcpy 和 strcmp，分析逻辑即可
+\`\`\`
+
+---
+
+## Burp Suite — Web 抓包改包
+
+Web 题目必备，拦截和修改 HTTP/HTTPS 请求。
+
+### 核心功能
+
+**Proxy 模块**
+- Intercept: 拦截请求，修改后再发送
+- HTTP history: 查看所有请求历史
+
+**Repeater 模块**
+- 重放单个请求，方便测试 payload
+- 支持手动修改任意字段
+
+**Intruder 模块**
+- 批量爆破：用户名、密码、目录等
+- 支持多种攻击模式（Sniper/Battering ram/Pitchfork/Cluster bomb）
+
+### 常用操作
+
+\`\`\`
+# 拦截并修改 Cookie
+Intercept On → 浏览器访问目标 → 在 Burp 中修改 Cookie: user=admin → Forward
+
+# 爆破目录
+Target → 右键 "Engagement tools" → Discover content
+或 Intruder 加载字典爆破 /api/FUZZ
+\`\`\`
+
+---
+
+## GDB / Pwndbg — PWN 调试
+
+Linux 下二进制调试的标准工具。
+
+### 基础命令
+
+\`\`\`
+file ./pwn       # 加载目标文件
+run / r          # 运行程序
+break *main      # 在 main 函数下断点
+break *0x401000  # 在指定地址下断点
+continue / c     # 继续运行
+next / n         # 单步步过
+step / s         # 单步步入
+info registers   # 查看寄存器
+x/10gx $rsp      # 查看栈内容（10个64位值）
+vmmap            # 查看内存映射（pwndbg）
+checksec         # 查看保护机制（pwndbg）
+\`\`\`
+
+### Pwndbg 增强
+
+\`\`\`
+# 安装
+pip install pwntools
+git clone https://github.com/pwndbg/pwndbg
+cd pwndbg && ./setup.sh
+
+# 常用功能
+context          # 自动显示寄存器、栈、代码
+heap             # 查看堆结构
+cyclic 100       # 生成 De Bruijn 序列找偏移
+\`\`\`
+
+---
+
+## Python + Pwntools — PWN 自动化
+
+Pwntools 是 CTF PWN 方向的 Python 库，极大简化 exploit 编写。
+
+### 基础用法
+
+\`\`\`python
+from pwn import *
+
+# 连接远程服务
+p = remote('target.com', 1337)
+
+# 本地调试
+p = process('./pwn')
+
+# 附加调试器
+gdb.attach(p)
+
+# 接收/发送数据
+p.recvuntil(b'input:')
+p.sendline(b'payload')
+
+# 格式化字符串利用
+p.sendline(fmtstr_payload(6, {elf.got['printf']: elf.sym['system']}))
+
+# 获取 shell 后交互
+p.interactive()
+\`\`\`
+
+### 常用功能
+
+\`\`\`python
+context.arch = 'amd64'      # 设置架构
+context.log_level = 'debug' # 开启调试输出
+
+# ELF 文件操作
+elf = ELF('./pwn')
+print(hex(elf.sym['main']))      # 获取函数地址
+print(hex(elf.got['puts']))      # 获取 GOT 表地址
+
+# ROP 工具
+rop = ROP(elf)
+rop.call(elf.sym['system'], [next(elf.search(b'/bin/sh'))])
+payload = rop.chain()
+
+# Shellcode
+context.arch = 'amd64'
+sc = asm(shellcraft.sh())
+\`\`\`
+
+---
+
+## 其他常用工具
+
+| 工具 | 用途 | 典型场景 |
+|------|------|----------|
+| **checksec** | 检查二进制保护 | 查看 NX/PIE/Canary/RELRO |
+| **ROPgadget** | 查找 ROP 链 | 构造 ROP payload |
+| **one_gadget** | 找 execve 地址 | libc 利用 |
+| **strings** | 查看字符串 | 快速找 flag 格式 |
+| **binwalk** | 文件分析 | 提取隐藏文件 |
+| **zsteg** | LSB 隐写 | PNG 图片隐写 |
+| **steghide** | 隐写提取 | 带密码的图片隐写 |
+| **CyberChef** | 在线编码转换 | Base64/Hex/URL 编码 |
+| **Hashcat** | 密码破解 | 破解哈希 |
+| **John** | 密码破解 | zip/pdf 文件破解 |
+
+---
+
+## 速查表
+
+### 快速启动命令
+
+\`\`\`bash
+# IDA
+ida64 ./binary
+
+# GDB
+pwndbg ./binary
+
+# Burp
+java -jar burpsuite_community.jar
+
+# Python exploit
+python3 exp.py
+\`\`\`
+
+### 常用 Payload 模板
+
+\`\`\`python
+# 基础连接模板
+from pwn import *
+context.log_level = 'debug'
+p = remote('host', port)
+# p = process('./pwn')
+# gdb.attach(p)
+
+p.recvuntil(b':')
+p.sendline(b'payload')
+print(p.recvline())
+p.interactive()
+\`\`\`
+
+---
+
+**建议**：工具只是手段，理解原理才是核心。多刷题，多动手，工具会越来越顺手。
+`
+  },
   infoleak: {
     title: '信息收集与泄露',
     subtitle: 'Information Gathering & Leakage',
