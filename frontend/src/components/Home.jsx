@@ -55,6 +55,7 @@ function Sakura() {
 }
 
 const categories = [
+  { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程' },
   { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', icon: Shield, desc: 'HTML注释/响应头/备份文件/Cookie/JWT' },
   { id: 'php', title: 'PHP Weak Typing', subtitle: '弱类型绕过', icon: Code, desc: 'Array bypass, 0e MD5, array_search' },
   { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接' },
