@@ -55,11 +55,14 @@ function Sakura() {
 }
 
 const categories = [
+  { id: 'may-2026', title: 'CTF Writeup - May 2026', subtitle: 'ISCC/青岑/CTFShow', icon: Flag, desc: 'ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础' },
   { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程' },
   { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', icon: Shield, desc: 'HTML注释/响应头/备份文件/Cookie/JWT' },
   { id: 'php', title: 'PHP Weak Typing', subtitle: '弱类型绕过', icon: Code, desc: 'Array bypass, 0e MD5, array_search' },
   { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接' },
-  { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写' }
+  { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写' },
+  { id: 'stego', title: 'Steganography', subtitle: '隐写术', icon: Code, desc: '零宽字符, EXIF隐写, ZIP密码破解' },
+  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋' }
 ]
 
 const particlesInit = async (engine) => {
