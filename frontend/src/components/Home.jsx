@@ -5,6 +5,7 @@ import Particles from '@tsparticles/react'
 import { loadFull } from 'tsparticles'
 import { useEffect, useState, useRef } from 'react'
 import { allChallenges } from './Challenges.jsx'
+import { getReadingTime, articles } from './Article.jsx'
 
 // Sakura petal colors (soft pink tones)
 const SAKURA_COLORS = [
@@ -461,7 +462,14 @@ export default function Home({ GlitchText, TypewriterText }) {
                           </span>
                         </div>
                         <p className="text-sm text-cyber-grid mb-2">{cat.subtitle}</p>
-                        <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
+                        <div className="flex items-center gap-3">
+                          <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
+                          {articles[cat.id] && (
+                            <span className="text-xs text-cyber-grid/60 font-mono whitespace-nowrap">
+                              📖 {getReadingTime(articles[cat.id].content)} min
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <ArrowRight className="w-5 h-5 text-cyber-cyan/70 group-hover:text-cyber-cyan transition-colors" />
                     </div>
