@@ -2,113 +2,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter } from 'lucide-react'
 import Particles from '@tsparticles/react'
-import { loadFull } from 'tsparticles'
 import { useEffect, useState, useRef } from 'react'
 import { allChallenges } from './Challenges.jsx'
 import { getReadingTime, articles } from './Article.jsx'
+import Sakura from './Sakura.jsx'
+import categories from '../data/categories.js'
+import { particlesInit, particlesConfig } from '../data/particlesConfig.js'
 
-// Sakura petal colors (soft pink tones)
-const SAKURA_COLORS = [
-  'rgba(255, 183, 197, 0.75)',
-  'rgba(255, 212, 221, 0.7)',
-  'rgba(248, 180, 195, 0.8)',
-  'rgba(255, 220, 228, 0.65)',
-]
-
-function Sakura() {
-  const [petals, setPetals] = useState([])
-
-  useEffect(() => {
-    const count = 22
-    const generated = Array.from({ length: count }, (_, i) => ({
-      id: i,
-      left: Math.random() * 100,
-      size: Math.random() * 12 + 8,
-      duration: Math.random() * 8 + 6,
-      delay: Math.random() * -15,
-      color: SAKURA_COLORS[Math.floor(Math.random() * SAKURA_COLORS.length)],
-      opacity: Math.random() * 0.4 + 0.3,
-      sway: Math.random() > 0.5,
-    }))
-    setPetals(generated)
-  }, [])
-
-  return (
-    <div className="sakura-container">
-      {petals.map((p) => (
-        <div
-          key={p.id}
-          className="sakura-petal"
-          style={{
-            left: `${p.left}%`,
-            width: p.size,
-            height: p.size,
-            background: p.color,
-            opacity: p.opacity,
-            animationDuration: `${p.duration}s`,
-            animationDelay: `${p.delay}s`,
-            [p.sway ? 'animation' : 'animation']: `sakura-fall ${p.duration}s linear infinite`,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
-
-const categories = [
-  { id: 'may-2026', title: 'CTF Writeup - May 2026', subtitle: 'ISCC/青岑/CTFShow', icon: Flag, desc: 'ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础' },
-  { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程' },
-  { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', icon: Shield, desc: 'HTML注释/响应头/备份文件/Cookie/JWT' },
-  { id: 'php', title: 'PHP Weak Typing', subtitle: '弱类型绕过', icon: Code, desc: 'Array bypass, 0e MD5, array_search' },
-  { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接' },
-  { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写' },
-  { id: 'stego', title: 'Steganography', subtitle: '隐写术', icon: Code, desc: '零宽字符, EXIF隐写, ZIP密码破解' },
-  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋' }
-]
-
-const particlesInit = async (engine) => {
-  await loadFull(engine)
-}
-
-const particlesConfig = {
-  fullScreen: false,
-  background: { color: { value: 'transparent' } },
-  fpsLimit: 60,
-  interactivity: {
-    events: {
-      onHover: { enable: true, mode: 'grab' },
-      onClick: { enable: true, mode: 'push' },
-      resize: true
-    },
-    modes: {
-      grab: { distance: 140, links: { opacity: 0.5 } },
-      push: { quantity: 4 }
-    }
-  },
-  particles: {
-    color: { value: ['#00f5ff', '#8000ff', '#ff00ff'] },
-    links: {
-      color: '#00f5ff',
-      distance: 150,
-      enable: true,
-      opacity: 0.2,
-      width: 1
-    },
-    move: {
-      enable: true,
-      speed: 1,
-      direction: 'none',
-      random: true,
-      straight: false,
-      outModes: { default: 'bounce' }
-    },
-    number: { density: { enable: true, area: 800 }, value: 60 },
-    opacity: { value: { min: 0.1, max: 0.5 }, animation: { enable: true, speed: 1, minimumValue: 0.1 } },
-    shape: { type: 'circle' },
-    size: { value: { min: 1, max: 3 } }
-  },
-  detectRetina: true
-}
+// Map Lucide icon name strings to components
+const iconMap = { Flag, Terminal, Shield, Code, Zap }
+const getCategoryIcon = (name) => iconMap[name] || Flag
 
 function MouseTrail() {
   const canvasRef = useRef(null)
@@ -435,48 +338,51 @@ export default function Home({ GlitchText, TypewriterText }) {
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6">
-            {categories.map((cat, i) => (
-              <motion.div
-                key={cat.id}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <Link to={`/article/${cat.id}`}>
-                  <motion.div
-                    whileHover={{ scale: 1.02, y: -5 }}
-                    className="glass-card p-6 h-full cursor-pointer group neon-border-hover"
-                  >
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-lg bg-cyber-${cat.color}/10 flex items-center justify-center shrink-0 group-hover:bg-cyber-${cat.color}/20 transition-colors`}>
-                        <cat.icon className={`w-6 h-6 text-cyber-${cat.color}`} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="text-xl font-bold text-cyber-cyan group-hover:text-white transition-colors anime-title">
-                            {cat.title}
-                          </h3>
-                          <span className="text-xs text-cyber-grid font-mono">
-                            {cat.count} challenges
-                          </span>
+            {categories.map((cat, i) => {
+              const Icon = getCategoryIcon(cat.icon)
+              return (
+                <motion.div
+                  key={cat.id}
+                  initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                >
+                  <Link to={`/article/${cat.id}`}>
+                    <motion.div
+                      whileHover={{ scale: 1.02, y: -5 }}
+                      className="glass-card p-6 h-full cursor-pointer group neon-border-hover"
+                    >
+                      <div className="flex items-start gap-4">
+                        <div className={`w-12 h-12 rounded-lg bg-cyber-${cat.color}/10 flex items-center justify-center shrink-0 group-hover:bg-cyber-${cat.color}/20 transition-colors`}>
+                          <Icon className={`w-6 h-6 text-cyber-${cat.color}`} />
                         </div>
-                        <p className="text-sm text-cyber-grid mb-2">{cat.subtitle}</p>
-                        <div className="flex items-center gap-3">
-                          <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
-                          {articles[cat.id] && (
-                            <span className="text-xs text-cyber-grid/60 font-mono whitespace-nowrap">
-                              📖 {getReadingTime(articles[cat.id].content)} min
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-xl font-bold text-cyber-cyan group-hover:text-white transition-colors anime-title">
+                              {cat.title}
+                            </h3>
+                            <span className="text-xs text-cyber-grid font-mono">
+                              {cat.count} challenges
                             </span>
-                          )}
+                          </div>
+                          <p className="text-sm text-cyber-grid mb-2">{cat.subtitle}</p>
+                          <div className="flex items-center gap-3">
+                            <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
+                            {articles[cat.id] && (
+                              <span className="text-xs text-cyber-grid/60 font-mono whitespace-nowrap">
+                                📖 {getReadingTime(articles[cat.id].content)} min
+                              </span>
+                            )}
+                          </div>
                         </div>
+                        <ArrowRight className="w-5 h-5 text-cyber-cyan/70 group-hover:text-cyber-cyan transition-colors" />
                       </div>
-                      <ArrowRight className="w-5 h-5 text-cyber-cyan/70 group-hover:text-cyber-cyan transition-colors" />
-                    </div>
-                  </motion.div>
-                </Link>
-              </motion.div>
-            ))}
+                    </motion.div>
+                  </Link>
+                </motion.div>
+              )
+            })}
           </div>
         </div>
       </section>
