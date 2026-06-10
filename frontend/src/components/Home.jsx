@@ -1,22 +1,131 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter } from 'lucide-react'
-import Particles from '@tsparticles/react'
-import { useEffect, useState, useRef } from 'react'
-import { allChallenges } from './Challenges.jsx'
-import { getReadingTime, articles } from './Article.jsx'
-import Sakura from './Sakura.jsx'
-import categories from '../data/categories.js'
-import { particlesInit, particlesConfig } from '../data/particlesConfig.js'
+import { lazy, Suspense, useEffect, useState, useRef } from 'react'
+import { allChallenges } from '../data/challenges.js'
 
-// Map Lucide icon name strings to components
-const iconMap = { Flag, Terminal, Shield, Code, Zap }
-const getCategoryIcon = (name) => iconMap[name] || Flag
+// 懒加载粒子库 - 减少首屏加载时间
+const Particles = lazy(() => import('@tsparticles/react'))
+const tsparticles = import('tsparticles').then(m => m.loadFull)
+
+// Sakura petal colors (soft pink tones)
+const SAKURA_COLORS = [
+  'rgba(255, 183, 197, 0.75)',
+  'rgba(255, 212, 221, 0.7)',
+  'rgba(248, 180, 195, 0.8)',
+  'rgba(255, 220, 228, 0.65)',
+]
+
+function Sakura() {
+  const [petals, setPetals] = useState([])
+
+  useEffect(() => {
+    const count = window.innerWidth < 640 ? 10 : 22
+    const generated = Array.from({ length: count }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      size: Math.random() * 12 + 8,
+      duration: Math.random() * 8 + 6,
+      delay: Math.random() * -15,
+      color: SAKURA_COLORS[Math.floor(Math.random() * SAKURA_COLORS.length)],
+      opacity: Math.random() * 0.4 + 0.3,
+      sway: Math.random() > 0.5,
+    }))
+    setPetals(generated)
+  }, [])
+
+  return (
+    <div className="sakura-container">
+      {petals.map((p) => (
+        <div
+          key={p.id}
+          className="sakura-petal"
+          style={{
+            left: `${p.left}%`,
+            width: p.size,
+            height: p.size,
+            background: p.color,
+            opacity: p.opacity,
+            animationDuration: `${p.duration}s`,
+            animationDelay: `${p.delay}s`,
+            animationName: p.sway ? 'sakura-sway, sakura-fall' : 'sakura-fall',
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Static color map for inline styles (Tailwind JIT can't resolve dynamic class names)
+const CYBER_COLORS = {
+  cyan: '#00f5ff',
+  blue: '#60a5fa',
+  purple: '#a78bfa',
+  pink: '#f472b6',
+}
+
+const categories = [
+  { id: 'may-2026', title: 'CTF Writeup - May 2026', subtitle: 'ISCC/青岑/CTFShow', icon: Flag, desc: 'ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础', color: 'cyan' },
+  { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程', color: 'purple' },
+  { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', icon: Shield, desc: 'HTML注释/响应头/备份文件/Cookie/JWT', color: 'cyan' },
+  { id: 'php', title: 'PHP Weak Typing', subtitle: '弱类型绕过', icon: Code, desc: 'Array bypass, 0e MD5, array_search', color: 'purple' },
+  { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接', color: 'pink' },
+  { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写', color: 'blue' },
+  { id: 'stego', title: 'Steganography', subtitle: '隐写术', icon: Code, desc: '零宽字符, EXIF隐写, ZIP密码破解', color: 'purple' },
+  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋', color: 'cyan' }
+]
+
+const particlesInit = async (engine) => {
+  const loadFull = await tsparticles
+  await loadFull(engine)
+}
+
+const particlesConfig = {
+  fullScreen: false,
+  background: { color: { value: 'transparent' } },
+  fpsLimit: 60,
+  interactivity: {
+    events: {
+      onHover: { enable: true, mode: 'grab' },
+      onClick: { enable: true, mode: 'push' },
+      resize: true
+    },
+    modes: {
+      grab: { distance: 140, links: { opacity: 0.5 } },
+      push: { quantity: 4 }
+    }
+  },
+  particles: {
+    color: { value: ['#00f5ff', '#8000ff', '#ff00ff'] },
+    links: {
+      color: '#00f5ff',
+      distance: 150,
+      enable: true,
+      opacity: 0.2,
+      width: 1
+    },
+    move: {
+      enable: true,
+      speed: 1,
+      direction: 'none',
+      random: true,
+      straight: false,
+      outModes: { default: 'bounce' }
+    },
+    number: { density: { enable: true, area: 800 }, value: 60 },
+    opacity: { value: { min: 0.1, max: 0.5 }, animation: { enable: true, speed: 1, minimumValue: 0.1 } },
+    shape: { type: 'circle' },
+    size: { value: { min: 1, max: 3 } }
+  },
+  detectRetina: true
+}
 
 function MouseTrail() {
   const canvasRef = useRef(null)
+  const isMobile = useRef(window.innerWidth < 640)
 
   useEffect(() => {
+    if (isMobile.current) return
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
@@ -41,7 +150,12 @@ function MouseTrail() {
     window.addEventListener('mousemove', onMove)
 
     let animId
+    let paused = false
+    const onVisibility = () => { paused = document.hidden }
+    document.addEventListener('visibilitychange', onVisibility)
+
     const animate = () => {
+      if (paused) { animId = requestAnimationFrame(animate); return }
       ctx.clearRect(0, 0, w, h)
       for (let i = trails.length - 1; i >= 0; i--) {
         const t = trails[i]
@@ -49,8 +163,7 @@ function MouseTrail() {
         if (t.life <= 0) { trails.splice(i, 1); continue }
         ctx.beginPath()
         ctx.arc(t.x, t.y, t.size * t.life, 0, Math.PI * 2)
-        ctx.fillStyle = t.color.replace(')', `, ${t.life})`).replace('rgb', 'rgba')
-        if (!ctx.fillStyle.includes('rgba')) ctx.fillStyle = t.color + Math.round(t.life * 255).toString(16).padStart(2, '0')
+        ctx.fillStyle = t.color + Math.round(t.life * 255).toString(16).padStart(2, '0')
         ctx.fill()
       }
       animId = requestAnimationFrame(animate)
@@ -60,10 +173,13 @@ function MouseTrail() {
     return () => {
       window.removeEventListener('resize', onResize)
       window.removeEventListener('mousemove', onMove)
+      document.removeEventListener('visibilitychange', onVisibility)
       cancelAnimationFrame(animId)
     }
   }, [])
 
+  // 移动端不渲染canvas
+  if (isMobile.current) return null
   return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" />
 }
 
@@ -165,13 +281,15 @@ export default function Home({ GlitchText, TypewriterText }) {
       {/* Mouse Trail */}
       <MouseTrail />
 
-      {/* Particle Background */}
-      <Particles
-        id="tsparticles"
-        init={particlesInit}
-        options={particlesConfig}
-        className="absolute inset-0 z-0"
-      />
+      {/* Particle Background - 懒加载 */}
+      <Suspense fallback={null}>
+        <Particles
+          id="tsparticles"
+          init={particlesInit}
+          options={particlesConfig}
+          className="absolute inset-0 z-0"
+        />
+      </Suspense>
 
       {/* Sakura Petals */}
       <Sakura />
@@ -193,8 +311,8 @@ export default function Home({ GlitchText, TypewriterText }) {
       </div>
 
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 z-10">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="relative py-12 sm:py-20 md:py-32 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -212,17 +330,17 @@ export default function Home({ GlitchText, TypewriterText }) {
               </motion.span>
             </div>
 
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 anime-title">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold mb-4 sm:mb-6 anime-title">
               <GlitchText text="CTF WriteUp" className="text-gradient cyber-glow" as="div" />
               <br />
-              <span className="text-cyber-cyan/80 text-2xl md:text-3xl">Web Security Writeups</span>
+              <span className="text-cyber-cyan/80 text-xl sm:text-2xl md:text-3xl">Web Security Writeups</span>
             </h1>
 
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-cyber-grid text-lg md:text-xl max-w-2xl mx-auto mb-8 font-mono"
+              className="text-cyber-grid text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-6 sm:mb-8 font-mono"
             >
               {typedDone ? <span>{subtitle}</span> : <TypewriterText key={loopKey} text={subtitle} speed={35} onDone={() => setTypedDone(true)} />}
             </motion.p>
@@ -232,18 +350,18 @@ export default function Home({ GlitchText, TypewriterText }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.6 }}
-              className="flex items-center justify-center gap-2 mb-6"
+              className="flex flex-wrap items-center justify-center gap-2 mb-6"
             >
               <Filter className="w-4 h-4 text-cyber-grid/50" />
               {Object.entries(platformNames).map(([key, val]) => (
                 <button
                   key={key}
                   onClick={() => setPlatform(key)}
-                  className={`px-3 py-1 text-xs font-mono rounded transition-all ${
-                    platform === key
-                      ? `bg-cyber-${val.color}/20 text-cyber-${val.color} border border-cyber-${val.color}/50`
-                      : 'text-cyber-grid/40 hover:text-cyber-grid border border-transparent'
-                  }`}
+                  className="px-3 py-1 text-xs font-mono rounded transition-all border"
+                  style={platform === key
+                    ? { backgroundColor: CYBER_COLORS[val.color] + '33', color: CYBER_COLORS[val.color], borderColor: CYBER_COLORS[val.color] + '80' }
+                    : { color: 'rgba(138,154,190,0.4)', borderColor: 'transparent' }
+                  }
                 >
                   {val.label}
                 </button>
@@ -255,7 +373,7 @@ export default function Home({ GlitchText, TypewriterText }) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7 }}
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-12"
+              className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto mb-8 sm:mb-12"
             >
               {[
                 { label: '已解', value: solved, suffix: '题' },
@@ -268,9 +386,9 @@ export default function Home({ GlitchText, TypewriterText }) {
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 + i * 0.1 }}
-                  className="glass-card p-4 neon-border"
+                  className="glass-card p-3 sm:p-4 neon-border"
                 >
-                  <div className="text-2xl md:text-3xl font-bold text-gradient">
+                  <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gradient">
                     {stat.value}
                     <span className="text-sm text-cyber-cyan/80">{stat.suffix}</span>
                   </div>
@@ -321,8 +439,8 @@ export default function Home({ GlitchText, TypewriterText }) {
       </section>
 
       {/* Categories Section */}
-      <section className="py-20 relative z-10">
-        <div className="max-w-7xl mx-auto px-6">
+      <section className="py-12 sm:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
@@ -332,69 +450,176 @@ export default function Home({ GlitchText, TypewriterText }) {
             <span className="text-cyber-purple/70 text-sm font-mono tracking-widest">
               CATEGORIES
             </span>
-            <h2 className="text-3xl md:text-4xl font-bold mt-2 anime-title text-gradient">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-2 anime-title text-gradient">
               Challenge Categories
             </h2>
           </motion.div>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {categories.map((cat, i) => {
-              const Icon = getCategoryIcon(cat.icon)
-              return (
-                <motion.div
-                  key={cat.id}
-                  initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                >
-                  <Link to={`/article/${cat.id}`}>
-                    <motion.div
-                      whileHover={{ scale: 1.02, y: -5 }}
-                      className="glass-card p-6 h-full cursor-pointer group neon-border-hover"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className={`w-12 h-12 rounded-lg bg-cyber-${cat.color}/10 flex items-center justify-center shrink-0 group-hover:bg-cyber-${cat.color}/20 transition-colors`}>
-                          <Icon className={`w-6 h-6 text-cyber-${cat.color}`} />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-xl font-bold text-cyber-cyan group-hover:text-white transition-colors anime-title">
-                              {cat.title}
-                            </h3>
-                            <span className="text-xs text-cyber-grid font-mono">
-                              {cat.count} challenges
-                            </span>
-                          </div>
-                          <p className="text-sm text-cyber-grid mb-2">{cat.subtitle}</p>
-                          <div className="flex items-center gap-3">
-                            <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
-                            {articles[cat.id] && (
-                              <span className="text-xs text-cyber-grid/60 font-mono whitespace-nowrap">
-                                📖 {getReadingTime(articles[cat.id].content)} min
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <ArrowRight className="w-5 h-5 text-cyber-cyan/70 group-hover:text-cyber-cyan transition-colors" />
+          <div className="grid sm:grid-cols-2 gap-4 sm:gap-6">
+            {categories.map((cat, i) => (
+              <motion.div
+                key={cat.id}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Link to={`/article/${cat.id}`}>
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card p-4 sm:p-6 h-full cursor-pointer group neon-border-hover"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                        style={{ backgroundColor: CYBER_COLORS[cat.color] + '1a' }}>
+                        <cat.icon className="w-6 h-6" style={{ color: CYBER_COLORS[cat.color] }} />
                       </div>
-                    </motion.div>
-                  </Link>
-                </motion.div>
-              )
-            })}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-xl font-bold text-cyber-cyan group-hover:text-white transition-colors anime-title">
+                            {cat.title}
+                          </h3>
+                          <span className="text-xs text-cyber-grid font-mono">
+                            {allChallenges.filter(c => c.category === cat.id).length || ''}
+                          </span>
+                        </div>
+                        <p className="text-sm text-cyber-grid mb-2">{cat.subtitle}</p>
+                        <p className="text-xs text-cyber-cyan/80 line-clamp-2">{cat.desc}</p>
+                      </div>
+                      <ArrowRight className="w-5 h-5 text-cyber-cyan/70 group-hover:text-cyber-cyan transition-colors" />
+                    </div>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Writeups - 一血题目 */}
+      <section className="py-12 sm:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <span className="text-cyber-pink/70 text-sm font-mono tracking-widest">
+              FIRST BLOOD
+            </span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-2 anime-title text-gradient">
+              🩸 精选一血 Writeups
+            </h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {allChallenges.filter(c => c.firstBlood).map((challenge, i) => (
+              <motion.div
+                key={challenge.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Link to={`/article/${challenge.category}`}>
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card p-4 sm:p-5 h-full cursor-pointer group neon-border-hover"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="px-2 py-0.5 text-xs font-mono rounded bg-red-500/20 text-red-400 border border-red-500/30">
+                        🩸 FIRST BLOOD
+                      </span>
+                      <span className="text-xs text-cyber-grid font-mono">
+                        {challenge.points}pts
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-cyber-cyan group-hover:text-white transition-colors mb-2">
+                      {challenge.name}
+                    </h3>
+                    <p className="text-sm text-cyber-grid mb-3">
+                      {challenge.method}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-cyber-purple/70 font-mono">
+                        {challenge.platform === 'qc' ? 'QC 青岑' : 'CTFShow'}
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-cyber-cyan/50 group-hover:text-cyber-cyan transition-colors" />
+                    </div>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Latest Posts - 最新文章 */}
+      <section className="py-12 sm:py-20 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <span className="text-cyber-cyan/70 text-sm font-mono tracking-widest">
+              LATEST
+            </span>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mt-2 anime-title text-gradient">
+              📝 最新 Writeups
+            </h2>
+          </motion.div>
+
+          <div className="space-y-4">
+            {categories.slice(0, 5).map((cat, i) => (
+              <motion.div
+                key={cat.id}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.05 }}
+              >
+                <Link to={`/article/${cat.id}`}>
+                  <motion.div
+                    whileHover={{ x: 5 }}
+                    className="glass-card p-4 sm:p-5 cursor-pointer group neon-border-hover"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: CYBER_COLORS[cat.color] + '1a' }}>
+                        <cat.icon className="w-5 h-5" style={{ color: CYBER_COLORS[cat.color] }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-base sm:text-lg font-bold text-cyber-cyan group-hover:text-white transition-colors truncate">
+                          {cat.title}
+                        </h3>
+                        <p className="text-sm text-cyber-grid truncate">{cat.desc}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-cyber-grid font-mono">
+                          {allChallenges.filter(c => c.category === cat.id).length} 题
+                        </span>
+                        <ArrowRight className="w-4 h-4 text-cyber-cyan/50 group-hover:text-cyber-cyan transition-colors" />
+                      </div>
+                    </div>
+                  </motion.div>
+                </Link>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Intro Section */}
-      <section className="py-20 relative z-10">
-        <div className="max-w-4xl mx-auto px-6">
+      <section className="py-12 sm:py-20 relative z-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="glass-card p-8 neon-border"
+            className="glass-card p-5 sm:p-8 neon-border"
           >
             <div className="flex items-center gap-2 mb-6">
               <Zap className="w-5 h-5 text-cyber-cyan" />
