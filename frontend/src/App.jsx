@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Layout from './components/Layout'
 import Home from './components/Home'
 import Article from './components/Article'
 import Challenges from './components/Challenges'
 import HiddenQuest from './components/HiddenQuest'
+import NotFound from './components/NotFound'
+import About from './components/About'
 
 // ===== Cursor Trail =====
 function CursorTrail() {
@@ -15,22 +17,30 @@ function CursorTrail() {
   useEffect(() => {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    let w = canvas.width = window.innerWidth
+    let h = canvas.height = window.innerHeight
+    let paused = false
 
     const onMove = (e) => {
       points.current.push({ x: e.clientX, y: e.clientY, age: 0 })
       if (points.current.length > 40) points.current.shift()
     }
     const onResize = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      w = canvas.width = window.innerWidth
+      h = canvas.height = window.innerHeight
     }
+    const onVisibility = () => { paused = document.hidden }
+
     window.addEventListener('mousemove', onMove)
     window.addEventListener('resize', onResize)
+    document.addEventListener('visibilitychange', onVisibility)
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      if (paused) {
+        rafRef.current = requestAnimationFrame(draw)
+        return
+      }
+      ctx.clearRect(0, 0, w, h)
       points.current.forEach((p, i) => {
         p.age++
         const alpha = Math.max(0, 1 - p.age / 35)
@@ -49,6 +59,7 @@ function CursorTrail() {
     return () => {
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('resize', onResize)
+      document.removeEventListener('visibilitychange', onVisibility)
       cancelAnimationFrame(rafRef.current)
     }
   }, [])
@@ -72,10 +83,30 @@ const BOOT_LINES = [
   '> Scanning vulnerabilities............',
 ]
 
+// 检查是否应该显示 boot 动画
+function shouldShowBoot() {
+  // 如果用户偏好减少动画，跳过
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return false
+  }
+  // 如果今天已经播放过，跳过
+  const lastBoot = localStorage.getItem('ctf-blog-boot-date')
+  const today = new Date().toDateString()
+  if (lastBoot === today) {
+    return false
+  }
+  return true
+}
+
 function BootScreen({ onDone }) {
   const [visibleLines, setVisibleLines] = useState(0)
   const [progress, setProgress] = useState(0)
   const [done, setDone] = useState(false)
+
+  // 记录播放日期
+  useEffect(() => {
+    localStorage.setItem('ctf-blog-boot-date', new Date().toDateString())
+  }, [])
 
   useEffect(() => {
     if (visibleLines < BOOT_LINES.length) {
@@ -93,9 +124,15 @@ function BootScreen({ onDone }) {
     setProgress(pct)
   }, [visibleLines])
 
+  // 跳过按钮
+  const handleSkip = useCallback(() => {
+    setDone(true)
+    setTimeout(onDone, 100)
+  }, [onDone])
+
   return (
     <div className={`boot-screen ${done ? 'fade-out' : ''}`}>
-      <div style={{ maxWidth: 520, width: '100%' }}>
+      <div style={{ maxWidth: 520, width: '100%', padding: '0 1rem' }}>
         {BOOT_LINES.slice(0, visibleLines).map((line, i) => (
           <div
             key={i}
@@ -107,18 +144,37 @@ function BootScreen({ onDone }) {
                 : line.includes('WARNING') ? '#fbbf24'
                 : line.includes('FAIL') ? '#f87171'
                 : '#e0e8f0',
-              fontSize: '13px',
+              fontSize: '12px',
               lineHeight: '1.7',
             }}
           >
-            {line || '\u00a0'}
+            {line || ' '}
           </div>
         ))}
         <div className="boot-progress-bar">
           <div className="boot-progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <div style={{ color: '#5a7090', fontSize: '12px', marginTop: '0.5rem', textAlign: 'right' }}>
-          {Math.round(progress)}%
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+          <button
+            onClick={handleSkip}
+            style={{
+              background: 'none',
+              border: '1px solid #5a7090',
+              color: '#5a7090',
+              padding: '4px 12px',
+              fontSize: '11px',
+              cursor: 'pointer',
+              fontFamily: 'monospace',
+              transition: 'all 0.2s',
+            }}
+            onMouseEnter={(e) => { e.target.style.color = '#00f5ff'; e.target.style.borderColor = '#00f5ff' }}
+            onMouseLeave={(e) => { e.target.style.color = '#5a7090'; e.target.style.borderColor = '#5a7090' }}
+          >
+            SKIP ▸
+          </button>
+          <span style={{ color: '#5a7090', fontSize: '12px' }}>
+            {Math.round(progress)}%
+          </span>
         </div>
       </div>
     </div>
@@ -163,17 +219,32 @@ function TypewriterText({ text, speed = 40, className = '', onDone }) {
   )
 }
 
+// ===== useIsMobile hook =====
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches
+  )
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`)
+    const handler = (e) => setIsMobile(e.matches)
+    mql.addEventListener('change', handler)
+    return () => mql.removeEventListener('change', handler)
+  }, [breakpoint])
+  return isMobile
+}
+
 // ===== App =====
 function AppInner() {
-  const [booted, setBooted] = useState(false)
+  const [booted, setBooted] = useState(!shouldShowBoot())
+  const isMobile = useIsMobile()
 
-  const handleBootDone = () => {
+  const handleBootDone = useCallback(() => {
     setBooted(true)
-  }
+  }, [])
 
   return (
     <>
-      <CursorTrail />
+      {!isMobile && <CursorTrail />}
       {!booted && <BootScreen onDone={handleBootDone} />}
       <BrowserRouter>
         <Routes>
@@ -181,7 +252,9 @@ function AppInner() {
             <Route index element={<Home GlitchText={GlitchText} TypewriterText={TypewriterText} />} />
             <Route path="article/:id" element={<Article />} />
             <Route path="challenges" element={<Challenges />} />
+            <Route path="about" element={<About />} />
             <Route path="secret-quest" element={<HiddenQuest />} />
+            <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
       </BrowserRouter>

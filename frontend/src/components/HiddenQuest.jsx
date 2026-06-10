@@ -40,7 +40,12 @@ function ConfettiCanvas({ color, count = 80 }) {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
 
+    let paused = false
+    const onVisibility = () => { paused = document.hidden }
+    document.addEventListener('visibilitychange', onVisibility)
+
     function anim() {
+      if (paused) { animId = requestAnimationFrame(anim); return }
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       let alive = false
       for (const p of particles) {
@@ -63,7 +68,10 @@ function ConfettiCanvas({ color, count = 80 }) {
       if (alive) animId = requestAnimationFrame(anim)
     }
     anim()
-    return () => cancelAnimationFrame(animId)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      cancelAnimationFrame(animId)
+    }
   }, [color, count])
 
   return (
@@ -99,7 +107,8 @@ function VictoryModal({ config, onClose }) {
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.5, y: 50, opacity: 0 }}
         transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-        className={`relative mx-4 max-w-md w-full rounded-2xl border border-white/10 bg-gradient-to-br ${config.victory.bgColor} p-8 text-center overflow-hidden`}
+        className="relative mx-4 max-w-md w-full rounded-2xl border border-white/10 p-8 text-center overflow-hidden"
+        style={{ background: config.victory.bgColor }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="absolute -top-20 -left-20 w-40 h-40 rounded-full bg-white/5 blur-3xl" />
@@ -242,8 +251,8 @@ export default function HiddenQuest() {
   }, [])
 
   return (
-    <div className="min-h-screen py-20">
-      <div className="max-w-3xl mx-auto px-6">
+    <div className="min-h-screen py-12 sm:py-20">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -253,7 +262,7 @@ export default function HiddenQuest() {
           <span className="text-amber-400/70 text-sm font-mono tracking-widest">
             ▸ HIDDEN_QUEST
           </span>
-          <h1 className="text-4xl font-bold mt-2 anime-title text-gradient">
+          <h1 className="text-3xl sm:text-4xl font-bold mt-2 anime-title text-gradient">
             秘密任务
           </h1>
         </motion.div>
@@ -330,7 +339,7 @@ export default function HiddenQuest() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="cyber-card p-6 mb-6 text-center"
+          className="cyber-card p-4 sm:p-6 mb-6 text-center"
         >
           <Lock className="w-6 h-6 text-amber-400 mx-auto mb-4" />
           <p className="text-xs text-cyber-grid font-mono mb-2">ENCRYPTED MESSAGE</p>
@@ -348,7 +357,7 @@ export default function HiddenQuest() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
-          className="cyber-card p-6 mb-6"
+          className="cyber-card p-4 sm:p-6 mb-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <ScanEye className="w-4 h-4 text-cyber-cyan" />
@@ -392,13 +401,13 @@ export default function HiddenQuest() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="cyber-card p-6"
+          className="cyber-card p-4 sm:p-6"
         >
           <div className="flex items-center gap-2 mb-4">
             <KeyRound className="w-4 h-4 text-cyber-purple" />
             <span className="text-cyber-purple text-sm font-mono">SUBMIT FLAG</span>
           </div>
-          <form onSubmit={handleSubmit} className="flex gap-3">
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={input}

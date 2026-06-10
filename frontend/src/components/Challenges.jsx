@@ -1,49 +1,15 @@
 import { motion } from 'framer-motion'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Flag, CheckCircle, Clock, Zap, Filter, Layers, Terminal, Volume2 } from 'lucide-react'
+import { Flag, CheckCircle, Clock, Zap, Filter, Volume2 } from 'lucide-react'
+import { allChallenges } from '../data/challenges.js'
 
-export const allChallenges = [
-  // 信息泄露 - CTFShow
-  { id: 177, name: 'basic', category: 'infoleak', points: 50, solved: true, method: 'HTML注释Base64', platform: 'ctfshow' },
-  { id: 178, name: 'basic_1', category: 'infoleak', points: 60, solved: true, method: 'HTML注释Base64', platform: 'ctfshow' },
-  { id: 179, name: 'basic_2', category: 'infoleak', points: 72, solved: true, method: '参数篡改', platform: 'ctfshow' },
-  { id: 180, name: 'basic_3', category: 'infoleak', points: 78, solved: true, method: 'JSFuck解码', platform: 'ctfshow' },
-  { id: 181, name: 'basic_4', category: 'infoleak', points: 81, solved: true, method: 'ASCII数组', platform: 'ctfshow' },
-  { id: 182, name: 'basic_5', category: 'infoleak', points: 90, solved: true, method: '客户端伪造', platform: 'ctfshow' },
-  { id: 183, name: 'basic_6', category: 'infoleak', points: 90, solved: true, method: '响应头泄露', platform: 'ctfshow' },
-  { id: 186, name: 'basic_8', category: 'infoleak', points: 144, solved: true, method: '.phps源码泄露', platform: 'ctfshow' },
-  { id: 187, name: 'basic_9', category: 'infoleak', points: 111, solved: true, method: 'robots.txt', platform: 'ctfshow' },
-  { id: 188, name: 'basic_10', category: 'infoleak', points: 300, solved: true, method: 'Cookie IDOR', platform: 'ctfshow' },
-  { id: 192, name: 'basic_14', category: 'infoleak', points: 181, solved: true, method: '/proc/self/fd', platform: 'ctfshow' },
-  { id: 643, name: 'basic_7', category: 'infoleak', points: 238, solved: true, method: '302响应体', platform: 'ctfshow' },
-  { id: 190, name: 'basic_12', category: 'infoleak', points: 120, solved: true, method: '隐藏文件', platform: 'ctfshow' },
-  // PHP弱类型 - QC
-  { id: 201, name: 'ezphp', category: 'php', points: 158, solved: true, method: '弱类型绕过', platform: 'qc' },
-  { id: 202, name: 'ezphp_1', category: 'php', points: 162, solved: true, method: 'array_search', platform: 'qc' },
-  { id: 203, name: 'ezphp_2', category: 'php', points: 171, solved: true, method: '嵌套弱类型', platform: 'qc' },
-  { id: 204, name: 'ezmd5', category: 'php', points: 165, solved: true, method: '0e MD5', platform: 'qc' },
-  { id: 205, name: 'ezmd5_1', category: 'php', points: 184, solved: true, method: '双0e MD5', platform: 'qc' },
-  { id: 206, name: 'ezmd5_2', category: 'php', points: 175, solved: true, method: 'md5数组', platform: 'qc' },
-  { id: 207, name: 'ezmd5_3', category: 'php', points: 172, solved: true, method: 'md5数组', platform: 'qc' },
-  { id: 208, name: 'ezmd5_4', category: 'php', points: 186, solved: true, method: 'MD5爆破', platform: 'qc' },
-  // 命令注入 - QC
-  { id: 225, name: 'ezcmd', category: 'cmd', points: 204, solved: true, method: '直接执行', platform: 'qc' },
-  { id: 226, name: 'ezcmd_1', category: 'cmd', points: 200, solved: true, method: '分号注入', platform: 'qc' },
-  { id: 227, name: 'ezcmd_2', category: 'cmd', points: 208, solved: true, method: '注释截断', platform: 'qc' },
-  { id: 228, name: 'ezcmd_3', category: 'cmd', points: 222, solved: true, method: 'IFS绕过', platform: 'qc' },
-  { id: 230, name: 'ezcmd_5', category: 'cmd', points: 357, solved: true, method: '无字母RCE ★', firstBlood: true, platform: 'qc' },
-  { id: 231, name: 'ezcmd_6', category: 'cmd', points: 263, solved: true, method: 'eval执行', platform: 'qc' },
-  { id: 232, name: 'ezcmd_7', category: 'cmd', points: 256, solved: true, method: '字符串拼接', platform: 'qc' },
-  { id: 233, name: 'ezcmd_8', category: 'cmd', points: 263, solved: true, method: 'passthru', platform: 'qc' },
-  { id: 234, name: 'ezcmd_9', category: 'cmd', points: 270, solved: true, method: 'tab绕过', platform: 'qc' },
-  { id: 235, name: 'ezcmd_10', category: 'cmd', points: 357, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
-  { id: 236, name: 'ezcmd_11', category: 'cmd', points: 333, solved: true, method: '源码泄露 ★', firstBlood: true, platform: 'qc' },
-  // PWN - QC
-  { id: 5, name: 'X0r', category: 'pwn', points: 200, solved: true, method: 'XOR解密', platform: 'qc' },
-  { id: 151, name: "Pwn's Door", category: 'pwn', points: 150, solved: true, method: '逆向密码', platform: 'qc' },
-  { id: 999, name: 'input_function', category: 'pwn', points: 500, solved: true, method: 'Shellcode ★', firstBlood: true, platform: 'qc' },
-]
+const CYBER_COLORS = {
+  cyan: '#00f5ff',
+  blue: '#60a5fa',
+  purple: '#a78bfa',
+  pink: '#f472b6',
+}
 
 const platformNames = {
   all: { name: '全部靶场', color: 'cyan' },
@@ -58,12 +24,20 @@ const categoryNames = {
   pwn: { name: 'PWN 与逆向', color: 'blue' }
 }
 
+// 难度等级 - 基于分数
+function getDifficulty(points) {
+  if (points < 100) return { label: 'Easy', color: 'green', bg: 'bg-green-900/40', text: 'text-green-400' }
+  if (points <= 200) return { label: 'Medium', color: 'yellow', bg: 'bg-yellow-900/40', text: 'text-yellow-400' }
+  return { label: 'Hard', color: 'red', bg: 'bg-red-900/40', text: 'text-red-400' }
+}
+
 // ===== Victory Jingle =====
 // Web Audio API 合成旋律, 无需外部音频文件
 function useVictoryJingle() {
   const ctxRef = useRef(null)
   const playedRef = useRef(false)
   const [canPlay, setCanPlay] = useState(false)
+  const [hasPlayed, setHasPlayed] = useState(false)
 
   // 等待用户交互以初始化 AudioContext (浏览器自动播放策略)
   useEffect(() => {
@@ -91,6 +65,7 @@ function useVictoryJingle() {
     const ctx = ctxRef.current
     if (!ctx) return
     playedRef.current = true
+    setHasPlayed(true)
 
     // ✨ "Never Give Up" 胜利旋律
     // 三段式结构: 希望 → 坚持 → 凯旋
@@ -153,16 +128,16 @@ function useVictoryJingle() {
     })
   }, [])
 
-  return { play, canPlay, played: playedRef }
+  return { play, canPlay, played: playedRef, hasPlayed }
 }
 
 export default function Challenges() {
   const [platform, setPlatform] = useState('all')
-  const { play, canPlay, played } = useVictoryJingle()
+  const { play, canPlay, played, hasPlayed } = useVictoryJingle()
 
   // 用户首次交互时自动播放
   useEffect(() => {
-    if (canPlay && !played.current) {
+    if (canPlay && !hasPlayed) {
       const t = setTimeout(() => play(), 600)
       return () => clearTimeout(t)
     }
@@ -179,8 +154,8 @@ export default function Challenges() {
   }, {})
   
   return (
-    <div className="min-h-screen py-20">
-      <div className="max-w-7xl mx-auto px-6">
+    <div className="min-h-screen py-12 sm:py-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -190,7 +165,7 @@ export default function Challenges() {
           <span className="text-cyber-purple/70 text-sm font-mono tracking-widest">
             ▶ CHALLENGE_LIST
           </span>
-          <h1 className="text-4xl md:text-5xl font-bold mt-2 anime-title text-gradient">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mt-2 anime-title text-gradient">
             题目列表
           </h1>
           <p className="text-cyber-grid mt-4 font-mono">
@@ -205,18 +180,18 @@ export default function Challenges() {
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="flex items-center justify-center gap-2 mb-8"
+          className="flex flex-wrap items-center justify-center gap-2 mb-8"
         >
           <Filter className="w-4 h-4 text-cyber-grid" />
           {Object.entries(platformNames).map(([key, val]) => (
             <button
               key={key}
               onClick={() => setPlatform(key)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-mono transition-all ${
-                platform === key
-                  ? `bg-cyber-${val.color}/20 text-cyber-${val.color} border border-cyber-${val.color}/50`
-                  : 'text-cyber-grid/60 hover:text-cyber-grid border border-transparent'
-              }`}
+              className="px-3 py-1 sm:px-4 sm:py-1.5 rounded-lg text-xs sm:text-sm font-mono transition-all border"
+              style={platform === key
+                ? { backgroundColor: CYBER_COLORS[val.color] + '33', color: CYBER_COLORS[val.color], borderColor: CYBER_COLORS[val.color] + '80' }
+                : { color: 'rgba(138,154,190,0.6)', borderColor: 'transparent' }
+              }
             >
               {val.name}
             </button>
@@ -233,8 +208,9 @@ export default function Challenges() {
             className="mb-12"
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className={`w-8 h-8 rounded-lg bg-cyber-${categoryNames[cat].color}/20 flex items-center justify-center`}>
-                <Flag className={`w-4 h-4 text-cyber-${categoryNames[cat].color}`} />
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: CYBER_COLORS[categoryNames[cat].color] + '33' }}>
+                <Flag className="w-4 h-4" style={{ color: CYBER_COLORS[categoryNames[cat].color] }} />
               </div>
               <h2 className="text-2xl font-bold text-cyber-cyan anime-title">
                 {categoryNames[cat].name}
@@ -255,7 +231,7 @@ export default function Challenges() {
                   <Link to={`/article/${cat}`}>
                     <motion.div
                       whileHover={{ x: 5 }}
-                      className="cyber-card p-4 flex items-center justify-between group cursor-pointer"
+                      className="cyber-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 group cursor-pointer"
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
@@ -270,7 +246,7 @@ export default function Challenges() {
                           )}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-cyber-cyan group-hover:text-white transition-colors">
                               {challenge.name}
                             </span>
@@ -286,6 +262,9 @@ export default function Challenges() {
                             }`}>
                               {challenge.platform === 'ctfshow' ? 'CTFShow' : 'QC'}
                             </span>
+                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${getDifficulty(challenge.points).bg} ${getDifficulty(challenge.points).text}`}>
+                              {getDifficulty(challenge.points).label}
+                            </span>
                           </div>
                           <span className="text-xs text-cyber-grid font-mono">
                             ID: {challenge.id}
@@ -293,11 +272,11 @@ export default function Challenges() {
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-6">
-                        <span className="text-sm text-cyber-grid">
+                      <div className="flex items-center gap-4 sm:gap-6 pl-14 sm:pl-0">
+                        <span className="text-xs sm:text-sm text-cyber-grid">
                           {challenge.method}
                         </span>
-                        <span className="text-lg font-bold text-cyber-cyan">
+                        <span className="text-base sm:text-lg font-bold text-cyber-cyan">
                           {challenge.points}
                           <span className="text-xs text-cyber-grid ml-1">pts</span>
                         </span>
@@ -315,7 +294,7 @@ export default function Challenges() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="cyber-card p-8 mt-12"
+          className="cyber-card p-5 sm:p-8 mt-12"
         >
           <div className="flex items-center gap-2 mb-4">
             <Zap className="w-5 h-5 text-cyber-cyan" />
@@ -350,28 +329,27 @@ export default function Challenges() {
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 1.5 }}
-          className="fixed bottom-8 right-8 z-50"
+          className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-50"
         >
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => play()}
-            disabled={played.current}
-            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg
-              ${canPlay && !played.current
+            disabled={hasPlayed}
+            className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shadow-lg
+              ${canPlay && !hasPlayed
                 ? 'bg-gradient-to-r from-cyber-cyan to-cyber-purple animate-pulse cursor-pointer'
-                : played.current
+                : hasPlayed
                   ? 'bg-cyber-grid/30 cursor-default'
                   : 'bg-cyber-grid/20 border border-cyber-grid/30 cursor-pointer'
               }
               transition-all duration-300`}
-            title={played.current ? '已播放 ✓' : canPlay ? '播放胜利旋律!' : '点击页面以激活音乐'}
+            title={hasPlayed ? '已播放 ✓' : canPlay ? '播放胜利旋律!' : '点击页面以激活音乐'}
           >
-            <Volume2 className={`w-6 h-6 ${played.current ? 'text-cyber-grid' : 'text-white'}`} />
+            <Volume2 className={`w-6 h-6 ${hasPlayed ? 'text-cyber-grid' : 'text-white'}`} />
           </motion.button>
-          <span className="absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-mono whitespace-nowrap
-            ${canPlay && !played.current ? 'text-cyber-cyan' : 'text-cyber-grid'}">
-            {played.current ? '♪ DONE' : canPlay ? '♪ NEVER GIVE UP' : '点击激活'}
+          <span className={`absolute -top-8 left-1/2 -translate-x-1/2 text-xs font-mono whitespace-nowrap ${canPlay && !hasPlayed ? 'text-cyber-cyan' : 'text-cyber-grid'}`}>
+            {hasPlayed ? '♪ DONE' : canPlay ? '♪ NEVER GIVE UP' : '点击激活'}
           </span>
         </motion.div>
       </div>
