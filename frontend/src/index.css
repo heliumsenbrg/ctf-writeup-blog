@@ -172,6 +172,7 @@ body {
   .bg-cyber-grid { background-color: #8a9abe !important; }
   .bg-cyber-dark { background-color: #080818 !important; }
   .bg-cyber-darker { background-color: #04040c !important; }
+  .text-cyber-darker { color: #04040c !important; }
   .border-cyber-grid { border-color: #8a9abe !important; }
 }
 
@@ -380,4 +381,42 @@ body {
 }
 .ambient-pulse {
   animation: ambient-pulse 4s ease-in-out infinite;
+}
+
+/* ===== Mobile Optimizations ===== */
+@media (max-width: 639px) {
+  .glass-card {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .neon-border::before,
+  .neon-border-hover::after {
+    opacity: 0.15;
+  }
+
+  .glitch-text::before,
+  .glitch-text::after {
+    display: none;
+  }
+
+  .sakura-petal {
+    animation-duration: 12s !important;
+  }
+
+  .sakura-container {
+    opacity: 0.5;
+  }
+
+  #tsparticles {
+    opacity: 0.4;
+  }
+
+  .boot-screen {
+    font-size: 11px;
+  }
+
+  .boot-progress-bar {
+    width: 200px;
+  }
 }
