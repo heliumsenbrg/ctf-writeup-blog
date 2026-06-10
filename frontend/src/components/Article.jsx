@@ -3,6 +3,24 @@ import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Terminal, Copy, Check } from 'lucide-react'
 import { useState } from 'react'
 
+// 阅读时间估算：中文约 400 字/分钟，英文约 200 词/分钟
+function getReadingTime(content) {
+  if (!content) return 1
+  // 统计中文字符数
+  const chineseChars = (content.match(/[\u4e00-\u9fa5]/g) || []).length
+  // 统计英文单词数（连续字母序列）
+  const englishWords = (content.match(/[a-zA-Z]+/g) || []).length
+  // 去除代码块后的纯文本字数（代码不计入阅读时间）
+  const codeBlocks = (content.match(/```[\s\S]*?```/g) || []).join('')
+  const codeChineseChars = (codeBlocks.match(/[\u4e00-\u9fa5]/g) || []).length
+  const codeEnglishWords = (codeBlocks.match(/[a-zA-Z]+/g) || []).length
+  const pureChinese = chineseChars - codeChineseChars
+  const pureEnglish = englishWords - codeEnglishWords
+  // 中文 400 字/分钟，英文 200 词/分钟
+  const minutes = Math.ceil(pureChinese / 400 + pureEnglish / 200)
+  return Math.max(1, minutes)
+}
+
 const articles = {
   tools: {
     title: 'CTF 工具使用指南',
@@ -1110,10 +1128,12 @@ session["user_id"] = final_user.id  # ← 攻击者控制登录谁
   }
 }
 
+export { getReadingTime, articles }
 export default function Article() {
   const { id } = useParams()
   const article = articles[id]
   const [copiedSet, setCopiedSet] = useState(new Set())
+  const readingTime = article ? getReadingTime(article.content) : 0
   
   if (!article) {
     return (
@@ -1281,6 +1301,10 @@ export default function Article() {
             <Terminal className="w-5 h-5 text-cyber-purple" />
             <span className="text-cyber-purple/70 text-sm font-mono tracking-widest">
               ▶ WRITEUP
+            </span>
+            <span className="text-cyber-grid/50 text-xs font-mono">•</span>
+            <span className="text-cyber-grid/70 text-xs font-mono">
+              {readingTime} min read
             </span>
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gradient anime-title mb-2">
