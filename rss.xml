@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>heliumsenbrg's CTF Writeups</title>
+    <link>https://heliumsenbrg.github.io/ctf-writeup-blog/</link>
+    <description>CTF WriteUp 博客 - 记录 Web 安全、密码学、二进制利用的学习历程。涵盖信息泄露、PHP 弱类型、命令注入、PWN 等方向。</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Tue, 10 Jun 2026 00:00:00 +0800</lastBuildDate>
+    <atom:link href="https://heliumsenbrg.github.io/ctf-writeup-blog/rss.xml" rel="self" type="application/rss+xml"/>
+
+    <item>
+      <title>CTF Writeup - 2026年5月</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026</link>
+      <description>ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础 + PassKey WebAuthn TOCTOU漏洞分析</description>
+      <pubDate>Tue, 06 May 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026</guid>
+      <category>ISCC</category>
+      <category>青岑CTF</category>
+      <category>CTFShow</category>
+    </item>
+
+    <item>
+      <title>杂项与综合</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/misc</link>
+      <description>CTFHub彩蛋、无字母数字RCE进阶、隐藏文件IDOR、LFI路径穿越、SSRF多种协议绕过、变量覆盖</description>
+      <pubDate>Sun, 04 May 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/misc</guid>
+      <category>Misc</category>
+      <category>SSRF</category>
+      <category>LFI</category>
+    </item>
+
+    <item>
+      <title>隐写术与加密</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/stego</link>
+      <description>零宽字符隐写、EXIF图片隐写、ZIP多重密码破解</description>
+      <pubDate>Sat, 03 May 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/stego</guid>
+      <category>Steganography</category>
+      <category>Cryptography</category>
+    </item>
+
+    <item>
+      <title>PWN 与逆向</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/pwn</link>
+      <description>X0r逆向数据提取、Pwn's Door逆向密码算法、input_function Shellcode编写（一血）</description>
+      <pubDate>Fri, 02 May 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/pwn</guid>
+      <category>PWN</category>
+      <category>Reverse</category>
+      <category>Shellcode</category>
+    </item>
+
+    <item>
+      <title>命令注入</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/cmd</link>
+      <description>基础注入与绕过、无字母RCE（一血）、PHP函数调用链、PHP源码泄露</description>
+      <pubDate>Thu, 01 May 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/cmd</guid>
+      <category>Command Injection</category>
+      <category>RCE</category>
+    </item>
+
+    <item>
+      <title>PHP 弱类型</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/php</link>
+      <description>弱比较绕过数字判断、array_search弱类型、嵌套弱类型、MD5和SHA1绕过、变量覆盖</description>
+      <pubDate>Wed, 30 Apr 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/php</guid>
+      <category>PHP</category>
+      <category>Weak Typing</category>
+    </item>
+
+    <item>
+      <title>信息收集与泄露</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/infoleak</link>
+      <description>HTML注释与前端泄露、响应头与302响应体、敏感文件与备份文件、Cookie注入与JWT伪造、/proc/self文件系统利用</description>
+      <pubDate>Tue, 29 Apr 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/infoleak</guid>
+      <category>Information Leakage</category>
+      <category>JWT</category>
+    </item>
+
+    <item>
+      <title>CTF 工具使用指南</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/tools</link>
+      <description>IDA Pro逆向分析、Burp Suite抓包改包、GDB/Pwndbg调试、Python+Pwntools自动化</description>
+      <pubDate>Mon, 28 Apr 2026 00:00:00 +0800</pubDate>
+      <guid>https://heliumsenbrg.github.io/ctf-writeup-blog/article/tools</guid>
+      <category>Tools</category>
+      <category>IDA</category>
+      <category>Burp Suite</category>
+    </item>
+
+  </channel>
+</rss>
