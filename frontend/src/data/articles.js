@@ -1239,6 +1239,44 @@ PHP://filter/convert.base64-encode/resource=pages/%66%6c%61%67.html
 3. 先读 index.php 确认路径，再定向攻击
 `
   },
+  "re-plzdebugme": {
+    title: '[re] plzdebugme — 调试优先',
+    subtitle: 'Linux ELF RE · 层层解密 · GDB break on x0r()',
+    icon: 'Shield',
+    color: 'red',
+    content: `
+题目给了一个 Linux x64 ELF，名字就是 "plz debug me"。题目提示直接 break 在 \`x0r()\` 上，整体思路：输入 → RC4 → AES-128-ECB → BTEA → \`x0r()\` → 与 BSS 中的 flag 比较。
+
+## 关键线索
+- 提示里明确写了：**break on x0r()**
+- 二进制里同一套解密流程会对两个缓冲区做对称处理：一个是输出到 \`flag\` 数组，另一个是 BSS 中的 \`flag\` 比较缓冲区。
+
+## GDB 调试
+
+在 Kali 里直接执行：
+\`\`\`bash
+gdb -batch -x plzdb.gdb ./plzdebugme
+\`\`\`
+
+plzdb.gdb 内容：
+\`\`\`
+break x0r
+run
+finish
+x/32gb &flag
+x/s &flag
+continue
+\`\`\`
+
+## Flag
+\`\`\`
+flag{It3_D3bugG_T11me!_le3_play}
+\`\`\`
+
+## 经验总结
+这题想强调的一条非常朴素：题目已经给出极强的操作提示时，不要硬刚纯静态，直接断点是最快的路。尤其是这种多层嵌套逆变结构，硬推一旦某个常量看错，后面的验证就全错。
+`
+  },
   yaml: {
     title: '喵喵宠物医院 -- YAML 反序列化 RCE',
     subtitle: 'PyYAML 标签绕过',
