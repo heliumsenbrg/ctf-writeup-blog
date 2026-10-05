@@ -10,8 +10,6 @@ const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24'
 const DOT_BY_ID = {
   genshin: 'bg-amber-400',
   starrail: 'bg-blue-400',
-  zelda: 'bg-green-400',
-  hacker: 'bg-emerald-400',
   moon: 'bg-purple-400',
   custom: 'bg-rose-400',
   nevergiveup: 'bg-fuchsia-400',
