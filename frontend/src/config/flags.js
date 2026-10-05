@@ -126,6 +126,10 @@ export function decodeKey(token) {
 }
 
 /* ---------- 挑战数据 ---------- */
+
+/** 「永不言败」的出处：B 站官方 MV，想换视频只改这一行 */
+export const NEVER_GIVE_UP_URL = 'https://www.bilibili.com/video/BV1GJ411x7h7'
+
 const FLAGS = [
   {
     id: 'genshin',
@@ -303,6 +307,36 @@ const FLAGS = [
       'Custom challenge unlocked',
       'Cipher v2 · user defined, still three layers',
       'The key is in your hands...',
+    ],
+  },
+  {
+    id: 'nevergiveup',
+    name: '永不言败',
+    link: NEVER_GIVE_UP_URL,
+    linkLabel: 'B站 · Never Gonna Give You Up',
+    flag: 'flag{n3v3r_g0nn4_g1v3_y0u_up}',
+    key: 'rickroll',
+    clues: [
+      '这是一道永远不会放弃你的题。',
+      '先点「出处」——看完你就明白这道题在说什么了。',
+      '口令 = 那个「把人骗去看 MV」的经典梗名（英文，8 个字母，小写）。',
+      '口令 = r______l，自己补全吧 —— 补不出来，你已经被套路了。',
+    ],
+    victory: {
+      emoji: '🎵🕺🔗',
+      title: '「Never Gonna Give You Up」',
+      message: '你被套路了 —— 而且你心甘情愿。',
+      bgColor: 'linear-gradient(135deg, rgba(190,24,93,0.3), rgba(131,24,67,0.2))',
+      particleColor: '#f472b6',
+      particleCount: 90,
+    },
+    reward: NEVER_GIVE_UP_URL,
+    rewardLabel: '去 B 站看 MV',
+    consoleMsg: [
+      '[SECRET QUEST: NEVER GIVE UP]',
+      'Cipher v2 · three layers, same as the others',
+      'This one will never give you up...',
+      'Check the 出处 before you brute force anything.',
     ],
   },
 ]
