@@ -134,8 +134,8 @@ const FLAGS = [
   {
     id: 'genshin',
     name: '原神，启动！',
-    link: 'https://search.bilibili.com/all?keyword=%E5%8E%9F%E7%A5%9E%E5%90%AF%E5%8A%A8',
-    linkLabel: 'B站 · 原神启动',
+    link: 'https://ys.mihoyo.com/',
+    linkLabel: '官网 · 原神',
     flag: 'flag{53cr3t_und3r_7h3_m00n!}',
     key: 'genshin',
     clues: [
@@ -312,15 +312,16 @@ const FLAGS = [
   {
     id: 'nevergiveup',
     name: '永不言败',
-    link: NEVER_GIVE_UP_URL,
-    linkLabel: 'B站 · Never Gonna Give You Up',
+    // 出处故意留空：那个 MV 是「做出来之后」的奖励，提前挂出来就没意思了
+    link: '',
+    linkLabel: '',
     flag: 'flag{n3v3r_g0nn4_g1v3_y0u_up}',
     key: 'rickroll',
     clues: [
       '这是一道永远不会放弃你的题。',
-      '先点「出处」——看完你就明白这道题在说什么了。',
+      '它的名字来自一首歌 —— 一首「绝不会放弃你」的歌。',
       '口令 = 那个「把人骗去看 MV」的经典梗名（英文，8 个字母，小写）。',
-      '口令 = r______l，自己补全吧 —— 补不出来，你已经被套路了。',
+      '口令 = r______l。补全它，做出来就有彩蛋等着你。',
     ],
     victory: {
       emoji: '🎵🕺🔗',
@@ -336,7 +337,7 @@ const FLAGS = [
       '[SECRET QUEST: NEVER GIVE UP]',
       'Cipher v2 · three layers, same as the others',
       'This one will never give you up...',
-      'Check the 出处 before you brute force anything.',
+      'No 出处 this time — the name is the hint.',
     ],
   },
 ]
