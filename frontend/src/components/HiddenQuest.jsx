@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
-import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey, NEVER_GIVE_UP_URL } from '../config/flags'
+import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
@@ -470,14 +470,6 @@ export default function HiddenQuest() {
                 className="text-red-400 text-sm font-mono mt-3"
               >
                 ✗ 解密失败，再试试！
-                <a
-                  href={NEVER_GIVE_UP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-cyber-cyan/70 hover:text-cyber-cyan mt-1 underline decoration-dotted underline-offset-4 transition-colors"
-                >
-                  ♪ NEVER GIVE UP
-                </a>
               </motion.p>
             )}
           </AnimatePresence>
