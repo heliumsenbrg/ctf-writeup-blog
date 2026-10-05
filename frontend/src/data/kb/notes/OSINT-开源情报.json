@@ -1,0 +1,17 @@
+{
+ "name": "OSINT-开源情报",
+ "title": "OSINT 开源情报",
+ "summary": "只用公开信息把人 / 地点 / 事件查清楚。CTF 里常是 Misc 的一类题（如航空 OSINT 取证、图片定位）。",
+ "content": "# OSINT 开源情报\n\n> 只用公开信息把人 / 地点 / 事件查清楚。CTF 里常是 Misc 的一类题（如航空 OSINT 取证、图片定位）。\n\n## 一、CTF 里的 OSINT 题\n\n- **图片定位**：给一张照片，找出拍摄地点 / 时间 / 航班\n- **人物画像**：给用户名 / 昵称，找出真实身份或关联账号\n- **事件调查**：给一段信息，还原事件真相\n- **航空 / 航班类**：根据航迹、机场、机型推断\n- **元数据类**：EXIF、文档属性里的隐藏信息\n\n## 二、目标信息收集\n\n- **域名**：whois、DNS（A/AAAA/MX/TXT/CNAME）、证书透明度 `crt.sh` 找子域、NS、子域爆破\n- **IP**：Shodan / FOFA / Censys 找暴露服务；反向 whois\n- **GitHub**：搜索泄露的密钥、内部域名、注释里的凭据（**git 历史也要翻**）\n- **网页历史**：Wayback Machine、archive.today 看被删页面\n- **搜索引擎**：Google dork（`site:` / `filetype:` / `inurl:` / `intitle:`）\n\n## 三、图片与地理\n\n- **EXIF**：`exiftool` 看 GPS、时间、设备型号\n- **反向图搜**：Google Lens、Yandex、Bing、TinEye\n- **地理推理**：地标、路牌、语言、车牌、天气、**影子方向**（判断南北半球与时间）、电线杆/植被特征\n- **卫星图**：Google Earth、Sentinel Hub 比对\n- **航班 / 船舶**：FlightRadar24、ADS-B Exchange、MarineTraffic\n\n## 四、人物与社交\n\n- **用户名枚举**：Sherlock、WhatsMyName 跨平台查同名账号\n- **社交**：微博 / 推特 / Instagram 的时间线、关注关系、互动\n- **邮箱 / 手机**：HIBP 查泄露、由邮箱格式推断公司\n- **时间线**：把各平台发帖时间对齐，还原作息与位置\n\n## 五、工具速查\n\n| 工具 | 用途 |\n|---|---|\n| `exiftool` | 图片 / 文档元数据 |\n| Sherlock / WhatsMyName | 用户名跨平台枚举 |\n| theHarvester | 域名、邮箱、子域收集 |\n| Shodan / FOFA / Censys | 网络空间搜索 |\n| crt.sh | 证书透明度查子域 |\n| Wayback Machine | 网页历史快照 |\n| Google Lens / Yandex | 反向图搜 |\n| Google Earth / Sentinel | 卫星地理 |\n\n## 关键点\n\n- OSINT 是\"**拼图**\"：单一线索往往不够，要把元数据 + 图搜 + 地标 + 时间线**交叉验证**\n- 图片题先 `exiftool` 再看图；有 GPS 直接定位，没有就找地标 / 语言 / 车牌\n- 用户名题先用枚举工具全平台扫，再挑最有信息量的账号深挖\n- **只对公开信息操作**，遵守平台规则与法律\n\n## 关联\n\n- [[杂项-隐写与编码]] —— 图片元数据与隐藏信息\n- [[杂项-取证与流量分析]] —— 取证思路相通\n- [[Web-源码泄露与信息收集]] —— 信息收集的 Web 侧\n- [[CTF-竞赛总览与解题流程]] —— 方向总览\n\n## 存疑 / 矛盾\n\n- 涉及真实人物时要注意隐私与合规；CTF 内的 OSINT 目标通常是虚构或已授权，不要越界到真实人肉。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件）\n",
+ "section": "concept",
+ "group": "other",
+ "links": {
+  "internal": [
+   "CTF-竞赛总览与解题流程",
+   "Web-源码泄露与信息收集",
+   "杂项-取证与流量分析",
+   "杂项-隐写与编码"
+  ],
+  "unresolved": []
+ }
+}

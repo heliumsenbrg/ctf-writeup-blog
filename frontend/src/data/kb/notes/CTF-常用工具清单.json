@@ -1,0 +1,17 @@
+{
+ "name": "CTF-常用工具清单",
+ "title": "CTF 常用工具清单",
+ "summary": "按方向分组的工具速查表。原则：**优先用你顺手的那一个**，不要为了\"专业感\"换来换去。糯米知道主人习惯用 **HackBar / 浏览器表单** 而不是 curl，工具表里已按这个习惯排。",
+ "content": "# CTF 常用工具清单\n\n> 按方向分组的工具速查表。原则：**优先用你顺手的那一个**，不要为了\"专业感\"换来换去。糯米知道主人习惯用 **HackBar / 浏览器表单** 而不是 curl，工具表里已按这个习惯排。\n\n## 通用 / 侦察\n\n| 工具 | 用途 | 备注 |\n|---|---|---|\n| `nmap -sV -sC -p-` | 端口、服务、版本 | 拿题第一步 |\n| `dirsearch` / `feroxbuster` / `ffuf` | 目录与文件爆破 | 配字典才有效 |\n| `whatweb` / Wappalyzer 插件 | 指纹识别 | 判断框架才能选打法 |\n| CyberChef | 编码转换、识别、加解密一条龙 | 万能瑞士军刀，Misc 神器 |\n| Burp Suite | 抓包改包、重放、爆破 | Web 主力 |\n| HackBar | 浏览器内快速构造 GET/POST | 主人常用，改参数比 curl 直观 |\n| `curl` / `python -c requests` | 脚本化请求 | **交互式调试主人不用它**，写脚本时才动 |\n| Docker / `docker` CLI | 本地复现靶机环境 | 见 [[Docker-Registry与远程API利用]] |\n\n## Web\n\n| 工具 | 用途 |\n|---|---|\n| sqlmap | SQL 注入自动化（先手工确认注入点再用） |\n| Burp Intruder | 参数爆破、SSTI payload 批量试 |\n| `tplmap` / SSTI 手测 | 模板注入检测 |\n| ysoserial / ysoserial.net / PHPGGC | 反序列化 payload 生成 |\n| jwt_tool / jwt.io | JWT 解码、爆破密钥、改 alg |\n| `php://filter` + filter chain 生成器 | PHP 文件包含读源码 |\n| nmap `--script http-*` | 特定 Web 漏洞探测 |\n| Redis / MySQL / SSH 客户端 | 从 web 漏洞回到内部服务时用 |\n\n## 逆向\n\n| 工具 | 用途 |\n|---|---|\n| IDA Pro / Ghidra | 反编译主力，Ghidra 免费 |\n| x64dbg / GDB + pwndbg | 动态调试 |\n| `strings` / `rabin2` | 快速找明文线索 |\n| `upx -d` / `DIE`(Detect It Easy) | 查壳脱壳 |\n| `uncompyle6` / `decompyle3` / `pycdc` | pyc 反编译 |\n| jadx / JEB | Android APK |\n| dnSpy | .NET |\n| wasm2wat / wasm-decompile | WebAssembly |\n| angr | 符号执行硬爆破 |\n| Z3 | 约束求解（配合 angr 或手写） |\n\n## 密码学\n\n| 工具 | 用途 |\n|---|---|\n| `RsaCtfTool` | RSA 常见攻击一键试（小 e、共模、Wiener……） |\n| SageMath | 数论、格（LLL）、Coppersmith 的必备环境 |\n| `gmpy2` / `sympy` | 大整数运算、模逆、连分数 |\n| `pycryptodome` | AES/RSA 等加解密脚本 |\n| `hashcat` / `john` | 弱口令、哈希碰撞爆破 |\n| CyberChef | 古典密码（凯撒、维吉尼亚、栅栏） |\n| `z3` | 密码学/逆向里的约束求解 |\n| quipqiup 在线 | 单表替换（词频） |\n| dCode / 在线工具集 | 编码与古典密码识别 |\n\n## Pwn\n\n| 工具 | 用途 |\n|---|---|\n| `checksec` | 看保护（NX / Canary / PIE / RELRO） |\n| pwntools | 交互与利用脚本主力 |\n| pwndbg / GEF | GDB 增强，看栈、看堆 |\n| ROPgadget / ropper | 找 gadget |\n| one_gadget | 找 libc 一发入魂 |\n| libc-database | 由泄漏地址反查 libc 版本 |\n| patchelf | 改 ELF 的 interpreter / rpath 对齐环境 |\n| glibc-all-in-one | 本地准备各版本 libc |\n| seccomp-tools | 读沙箱规则（ORW 题必用） |\n\n## 杂项\n\n| 工具 | 用途 |\n|---|---|\n| `binwalk` | 文件嵌套/固件拆包 |\n| `foremost` / `scalpel` | 文件雕刻恢复 |\n| `zsteg` / `stegsolve` / `StegSolve.jar` | 图片隐写 |\n| `steghide` / `outguess` | 图片藏数据（需口令） |\n| Audacity / `sox` | 音频频谱看摩斯、SSTV |\n| Wireshark / `tshark` | 流量分析 |\n| Volatility 2/3 | 内存取证（`vol.py -f xx.raw imageinfo`） |\n| Autopsy / `sleuthkit` | 磁盘镜像取证 |\n| `exiftool` | 元数据（坐标、软件、备注） |\n| `zip2john` + `john` | 压缩包爆破 |\n| `bkcrack` | zip 已知明文攻击 |\n| Photopea / GIMP / PIL | 图片像素级处理、通道分离 |\n\n## 关联\n\n- [[CTF-竞赛总览与解题流程]] —— 什么阶段用哪个工具\n- [[逆向-Reverse方法论]] —— 工具怎么配合思路用\n- [[Pwn-栈溢出与ROP]] —— checksec / pwntools 的实际用法\n\n## 存疑 / 矛盾\n\n- 工具的替代品很多（Ghidra ↔ IDA、ffuf ↔ dirsearch），**选一个用熟**比全都装一遍更有用。\n- 部分工具在 Windows 上体验差（pwntools、Volatility 建议在 Linux/WSL 里用）；主人本机是 Windows，必要时走 WSL 或 Docker。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件）\n",
+ "section": "entity",
+ "group": "entity",
+ "links": {
+  "internal": [
+   "CTF-竞赛总览与解题流程",
+   "Docker-Registry与远程API利用",
+   "Pwn-栈溢出与ROP",
+   "逆向-Reverse方法论"
+  ],
+  "unresolved": []
+ }
+}
