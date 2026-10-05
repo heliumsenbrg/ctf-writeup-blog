@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { Flag, CheckCircle, Clock, Zap, Filter, Volume2 } from 'lucide-react'
 import { allChallenges } from '../data/challenges.js'
+import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
 
 const CYBER_COLORS = {
   cyan: '#00f5ff',
@@ -14,7 +15,9 @@ const CYBER_COLORS = {
 const platformNames = {
   all: { name: '全部靶场', color: 'cyan' },
   ctfshow: { name: 'CTFShow', color: 'blue' },
-  qc: { name: 'QC 青岑', color: 'purple' }
+  qingcen: { name: '青岑 QC', color: 'purple' },
+  moectf: { name: 'MoeCTF', color: 'pink' },
+  other: { name: '其他', color: 'cyan' }
 }
 
 const categoryNames = {
@@ -28,7 +31,12 @@ const categoryNames = {
   stego: { name: '隐写术', color: 'cyan' },
   misc: { name: '杂项', color: 'blue' },
   tools: { name: '工具', color: 'cyan' },
+  'moectf-emoji': { name: '编码与进制', color: 'cyan' },
+  'moectf-zipcrypto': { name: '压缩包密码学', color: 'purple' },
 }
+
+// 兜底：未知分类不应让整页崩掉
+const catMeta = (cat) => categoryNames[cat] || { name: cat, color: 'cyan' }
 
 // 难度等级 - 基于分数
 function getDifficulty(points) {
@@ -151,7 +159,7 @@ export default function Challenges() {
 
   const filtered = platform === 'all'
     ? allChallenges
-    : allChallenges.filter(c => c.platform === platform)
+    : allChallenges.filter(c => platformKey(c.platform) === platform)
 
   const grouped = filtered.reduce((acc, c) => {
     if (!acc[c.category]) acc[c.category] = []
@@ -215,11 +223,11 @@ export default function Challenges() {
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: CYBER_COLORS[categoryNames[cat].color] + '33' }}>
-                <Flag className="w-4 h-4" style={{ color: CYBER_COLORS[categoryNames[cat].color] }} />
+                style={{ backgroundColor: CYBER_COLORS[catMeta(cat).color] + '33' }}>
+                <Flag className="w-4 h-4" style={{ color: CYBER_COLORS[catMeta(cat).color] }} />
               </div>
               <h2 className="text-2xl font-bold text-cyber-cyan anime-title">
-                {categoryNames[cat].name}
+                {catMeta(cat).name}
               </h2>
               <span className="text-sm text-cyber-grid font-mono">
                 {items.length}题 | {items.reduce((sum, c) => sum + c.points, 0)}pts
@@ -254,19 +262,15 @@ export default function Challenges() {
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-bold text-cyber-cyan group-hover:text-white transition-colors">
-                              {challenge.name}
+                              {challenge.name || challenge.title}
                             </span>
                             {challenge.firstBlood && (
                               <span className="px-2 py-0.5 text-xs bg-cyber-pink/20 text-cyber-pink rounded font-mono animate-pulse">
                                 一血
                               </span>
                             )}
-                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${
-                              challenge.platform === 'ctfshow'
-                                ? 'bg-blue-900/40 text-blue-400'
-                                : 'bg-purple-900/40 text-purple-400'
-                            }`}>
-                              {challenge.platform === 'ctfshow' ? 'CTFShow' : 'QC'}
+                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${PLATFORM_BADGE[platformKey(challenge.platform)].className}`}>
+                              {PLATFORM_BADGE[platformKey(challenge.platform)].label || challenge.platform}
                             </span>
                             <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${getDifficulty(challenge.points).bg} ${getDifficulty(challenge.points).text}`}>
                               {getDifficulty(challenge.points).label}
@@ -280,7 +284,7 @@ export default function Challenges() {
                       
                       <div className="flex items-center gap-4 sm:gap-6 pl-14 sm:pl-0">
                         <span className="text-xs sm:text-sm text-cyber-grid">
-                          {challenge.method}
+                          {challenge.method || challenge.description}
                         </span>
                         <span className="text-base sm:text-lg font-bold text-cyber-cyan">
                           {challenge.points}

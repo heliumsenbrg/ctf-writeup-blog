@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState, useRef } from 'react'
 import { allChallenges } from '../data/challenges.js'
+import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
 
 // 懒加载粒子库 - 减少首屏加载时间
 const Particles = lazy(() => import('@tsparticles/react'))
@@ -62,9 +63,14 @@ const CYBER_COLORS = {
   blue: '#60a5fa',
   purple: '#a78bfa',
   pink: '#f472b6',
+  red: '#f87171',
 }
 
 const categories = [
+  { id: 'moectf-emoji', title: 'MoeCTF ez_base_revenge9', subtitle: 'Emoji 编码 (Base100)', icon: Code, desc: 'Base100 → Base64 → Base58 → Base32 四层链式剥离', color: 'cyan' },
+  { id: 'moectf-zipcrypto', title: 'ZIP 已知明文攻击 (bkcrack)', subtitle: 'ZipCrypto 已知明文', icon: Shield, desc: '提示语即明文 + CRC32 验证 + bkcrack 恢复内部密钥', color: 'purple' },
+  { id: 'gift', title: 'Gift — Tcache Double-Free', subtitle: 'UAF + Tcache Poisoning', icon: Flag, desc: 'Hidden gift 函数 UAF、double-free、unsorted bin 泄漏、__free_hook 覆写', color: 'red' },
+  { id: '0xgame2025', title: '0xGame2025 CTF', subtitle: '2026-06-16 | 16/28 题', icon: Flag, desc: '反序列化/竞态条件/LFI/变量覆盖/MD5 SQLi', color: 'pink' },
   { id: 'qingcen-web-2026-06-10', title: '青岑 CTF Web 入门', subtitle: '2026-06-10 | 17/20 题', icon: Flag, desc: 'HTML注释/Base64/隐藏字段/响应头/robots.txt/PHP弱类型', color: 'cyan' },
   { id: 'may-2026', title: 'CTF Writeup - May 2026', subtitle: 'ISCC/青岑/CTFShow', icon: Flag, desc: 'ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础', color: 'cyan' },
   { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程', color: 'purple' },
@@ -252,7 +258,9 @@ function Spoiler({ children, className = '' }) {
 const platformNames = {
   all: { label: '全部', color: 'cyan' },
   ctfshow: { label: 'CTFShow', color: 'blue' },
-  qc: { label: 'QC 青岑', color: 'purple' }
+  qingcen: { label: '青岑 QC', color: 'purple' },
+  moectf: { label: 'MoeCTF', color: 'pink' },
+  other: { label: '其他', color: 'cyan' }
 }
 
 export default function Home({ GlitchText, TypewriterText }) {
@@ -260,7 +268,7 @@ export default function Home({ GlitchText, TypewriterText }) {
   const [loopKey, setLoopKey] = useState(0)
   const [platform, setPlatform] = useState('all')
   
-  const filtered = platform === 'all' ? allChallenges : allChallenges.filter(c => c.platform === platform)
+  const filtered = platform === 'all' ? allChallenges : allChallenges.filter(c => platformKey(c.platform) === platform)
   const solved = filtered.filter(c => c.solved).length
   const firstBloods = filtered.filter(c => c.firstBlood).length
   const totalPts = filtered.reduce((s, c) => s + c.points, 0)
@@ -544,7 +552,7 @@ export default function Home({ GlitchText, TypewriterText }) {
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-cyber-purple/70 font-mono">
-                        {challenge.platform === 'qc' ? 'QC 青岑' : 'CTFShow'}
+                        {PLATFORM_BADGE[platformKey(challenge.platform)].label || challenge.platform}
                       </span>
                       <ArrowRight className="w-4 h-4 text-cyber-cyan/50 group-hover:text-cyber-cyan transition-colors" />
                     </div>
