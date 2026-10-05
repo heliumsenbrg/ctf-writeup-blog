@@ -152,7 +152,7 @@ const FLAGS = [
       particleColor: '#fbbf24',
       particleCount: 80,
     },
-    reward: 'https://genshin.hoyoverse.com/en/download',
+    reward: 'https://ys.mihoyo.com/main/download/',   // 国服，不用 hoyoverse（外服）
     consoleMsg: [
       '[SECRET QUEST]',
       'Cipher v2 · three layers, no manual',
@@ -182,7 +182,7 @@ const FLAGS = [
       particleColor: '#60a5fa',
       particleCount: 100,
     },
-    reward: 'https://hsr.hoyoverse.com/',
+    reward: 'https://sr.mihoyo.com/download/',       // 国服，不用 hoyoverse（外服）
     consoleMsg: [
       '[SECRET QUEST: STARRAIL]',
       'Cipher v2 · the stars are salted',
