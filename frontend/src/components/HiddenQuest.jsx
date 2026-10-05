@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
 import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
+import VictoryJingle from './VictoryJingle'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
@@ -469,6 +470,7 @@ export default function HiddenQuest() {
                 className="text-red-400 text-sm font-mono mt-3"
               >
                 ✗ 解密失败，再试试！
+                <span className="block text-cyber-cyan/70 mt-1">♪ NEVER GIVE UP</span>
               </motion.p>
             )}
           </AnimatePresence>
@@ -481,6 +483,9 @@ export default function HiddenQuest() {
           aria-hidden="true"
         />
       </div>
+
+      {/* ♪ NEVER GIVE UP —— 卡住的时候点一下，可反复播放 */}
+      <VictoryJingle replayable />
 
       {/* Victory celebration */}
       <AnimatePresence>
