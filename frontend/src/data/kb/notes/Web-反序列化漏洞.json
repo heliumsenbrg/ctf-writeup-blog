@@ -1,0 +1,18 @@
+{
+ "name": "Web-反序列化漏洞",
+ "title": "Web-反序列化漏洞",
+ "summary": "程序把\"字节流还原成对象\"的过程给了攻击者控制权——关键在于**能不能控制被还原的类、以及还原时自动调用了什么方法**。",
+ "content": "# Web-反序列化漏洞\n\n> 程序把\"字节流还原成对象\"的过程给了攻击者控制权——关键在于**能不能控制被还原的类、以及还原时自动调用了什么方法**。\n\n## 一、判断标志\n\n- 参数值长这样：`Tzo0OiJVc2VyIj...`（Base64 后的 PHP 序列化串）、`O:4:\"User\":1:{...}`（明文 PHP）\n- 请求体是 `rO0AB...`（Java 序列化魔数 `0xACED`）或带 `Content-Type: application/x-java-serialized-object`\n- 框架自带：Shiro 的 `rememberMe` cookie、Fastjson/Jackson、Weblogic/Tuxedo 等\n- Python：`pickle` 的 base64 串（`gASV...`）\n- Node.js：`node-serialize` 的 `_$$ND_FUNC$$_` 特征\n\n## 二、PHP 反序列化\n\n### 1. 基础机制\n`serialize()` / `unserialize()`。魔术方法在特定时机自动触发：\n\n| 魔术方法 | 触发时机 |\n|---|---|\n| `__construct` | new 对象时 |\n| `__destruct` | 对象被销毁时 |\n| `__wakeup` | `unserialize()` 时（**最先**，注意 CVE-2016-7124 可跳过的老版本绕过） |\n| `__toString` | 对象被当字符串用时 |\n| `__get` / `__set` | 读/写**不存在或不可访问**的属性时 |\n| `__call` | 调用不存在的方法时 |\n| `__invoke` | 对象被当函数调用时 |\n\n### 2. 利用思路：找链（POP chain）\n1. 读源码，找**哪些类**的魔术方法里有危险操作（`file_put_contents`、`eval`、`call_user_func`、`system`）\n2. 从入口魔术方法往回爬，看哪个属性可控且会被当作参数传进去\n3. 拼成一串：入口对象 → 属性指向下一个对象 → …… → 危险函数\n4. 手写序列化串比背 payload 更稳：**注意属性数量、类名长度、`protected` 属性名前有 `\\0*\\0`、`private` 有 `\\0类名\\0`**——这几个数是手写时最容易错的地方\n\n### 3. 绕过\n- `__wakeup` 限制 → 属性个数写错触发跳过（老版本）、改为走 `__destruct`\n- 字符串过滤 → `<O:4` 这类用 `+` / 十六进制绕；或改用 `C:`（自定义序列化）形式\n- 无类可控但能上传文件 → **`phar://` 触发**：只要对 phar 文件做 `file_exists`/`file_get_contents` 等操作就会反序列化其中的 meta-data → [[Web-文件包含与上传]]\n- `Session` 反序列化：可以控制 session 文件内容时用引擎差异（`php` / `php_serialize`）打\n\n## 三、Java 反序列化\n\n1. 找**入口**（readObject 的调用点：Shiro rememberMe、`ObjectInputStream`、RMI、T3/IIOP）\n2. 用 **ysoserial** 生成 gadget 链：`CommonsCollections1-7`、`CommonsBeanutils`、`JDK7u21`、`Groovy`……\n3. 选择依据是**目标 classpath 上有哪些依赖**——所以先想办法泄漏依赖版本（pom.xml、lib 目录、报错信息）\n4. Shiro 场景：AES 密钥可爆破（默认/弱 key），`rememberMe` 先解出明文看结构，再改 gadget 重发；注意版本决定 payload 形态\n5. Fastjson/Jackson：属于\"反序列化型\"的另一类（把 JSON 字段当类型信息用），考点是 `@type` 白名单绕过、嵌套类、`JdbcRowSetImpl` 打 JNDI\n\n**JNDI 注入**：如果能控制外部地址，可让目标去加载远程类（LDAP/RMI）——高版本 JDK 有限制（`trustURLCodebase=false`、JDK 8u191+），需要走本地 factory 绕过。\n\n## 四、Python pickle\n\n`pickle.loads()` 时 `__reduce__` 返回的 `(callable, args)` 会被直接调用 → 构造 `(os.system, ('cmd',))` 即可。\n和 PHP 一样：**找 load 的入口 + 找可控数据**。\n\n## 五、通用心法\n\n- **反序列化最像\"拼乐高\"**：单看每个类都没问题，串起来才致命。所以必须**读源码/看依赖**，凭感觉猜链会很慢。\n- **先确认数据真的被反序列化了**：改一个字节看回显/报错变化。这一步能省掉大量无效尝试。\n- 没有源码时：找框架指纹 → 搜该框架已知链 → 但**要验证版本**，不同版本链不通。\n\n## 关联\n\n- [[Web-文件包含与上传]] —— `phar://` 那条落地路径\n- [[Web-命令执行与SSTI]] —— 反序列化成功后的目标一致\n- [[Web-源码泄露与信息收集]] —— 找链的前提\n- [[Web-认证与会话漏洞]] —— Shiro/JWT 场景常一起考\n- [[CTF-常用工具清单]] —— ysoserial / PHPGGC\n\n## 存疑 / 矛盾\n\n- 网上流传的 gadget 链**大量依赖具体版本与依赖组合**，直接抄经常失败；\"为什么这条链在你这儿不通\"通常靠看 classpath 回答。\n- `__wakeup` 的\"属性个数绕过\"在 PHP 新版本已修复，遇到高版本 PHP 别再套旧套路。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件）\n",
+ "section": "concept",
+ "group": "web",
+ "links": {
+  "internal": [
+   "CTF-常用工具清单",
+   "Web-命令执行与SSTI",
+   "Web-文件包含与上传",
+   "Web-源码泄露与信息收集",
+   "Web-认证与会话漏洞"
+  ],
+  "unresolved": []
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "name": "云安全-常见攻击面",
+ "title": "云安全-常见攻击面",
+ "summary": "CTF 里的\"云\"题：目标通常是一台跑在云上的 Web / 容器，核心套路是 **SSRF 摸元数据 → 偷 IAM 凭据 → 横向到存储 / 函数 / 集群**，最后读到 flag。",
+ "content": "# 云安全-常见攻击面\n\n> CTF 里的\"云\"题：目标通常是一台跑在云上的 Web / 容器，核心套路是 **SSRF 摸元数据 → 偷 IAM 凭据 → 横向到存储 / 函数 / 集群**，最后读到 flag。\n\n## 一、CTF 里云题的典型题面\n\n- 给一个 Web 应用，存在 SSRF / 任意 URL 抓取 → 内网或元数据地址被限制，要想办法绕\n- 给一段云函数 / Serverless 代码，考权限边界（能不能读别的函数、读别的桶）\n- 给一个 Docker / K8s 场景，考容器逃逸、Secret 泄露、未授权 API\n- 题面直接给\"AccessKey / SecretKey / token\"，考你会不会用云 CLI 或签名调 API\n\n## 二、云元数据服务（最高频考点）\n\n```\nhttp://169.254.169.254/latest/meta-data/          # AWS EC2\nhttp://169.254.169.254/latest/meta-data/iam/security-credentials/  # 拿临时 AK/SK\nhttp://metadata.google.internal/computeMetadata/v1/  # GCP（必须带 Metadata-Flavor: Google 头）\nhttp://169.254.169.254/metadata/instance?api-version=2021-02-01    # Azure（必须带 Metadata: true 头）\n```\n\n- 拿到临时凭据 → `aws sts get-caller-identity` 确认身份 → `aws s3 ls` / `aws s3 cp` 扫桶拿 flag\n- **新版 AWS 默认关了 IMDSv1**：要用 `PUT /latest/api/token` 先取 token，再带 `X-aws-ec2-metadata-token` 头访问\n- SSRF 绕过常见手段：302 跳转、短链、DNS rebinding、`@` 与进制混写的 IP（`2852039166`）、内网地址别名、URL 解析差异（见 [[Web-SSRF与XXE]]）\n\n## 三、对象存储（S3 / OSS / COS）\n\n- **匿名列举桶**：`aws s3 ls s3://bucket --no-sign-request`；`https://bucket.s3.amazonaws.com/?list-type=2`\n- 常见错配：桶策略允许 `s3:ListBucket` / `GetObject` 给 `*`、静态网站托管开着、预签名 URL 泄露\n- 桶名爆破：域名变体（`xxx-backup`、`xxx-dev`、`xxx-static`），配合 Google dork `site:s3.amazonaws.com`\n- 云函数读写权限不等于桶权限——**逐个 API 试，别想当然**\n\n## 四、IAM 与凭据\n\n- **最小权限原则是考点**：题目常给一个\"看起来能用\"的角色，实际能 `s3:GetObject*` 全桶 / 能 `iam:PassRole` 提权\n- 提权套路：`iam:CreatePolicyVersion` 给自己加权限 → `sts:AssumeRole` 跨角色 → `lambda:UpdateFunctionCode` 改函数逻辑\n- 泄露凭据的常见位置：`.env`、`/proc/self/environ`、Git 历史、CI 变量、云函数环境变量、元数据服务\n- 签名类题（腾讯云/阿里云 API 签名）：按官方文档构造 `Authorization` 头，重点看**参与签名的参数排序与 HMAC 算法**\n\n## 五、容器与 K8s\n\n- **K8s API 未授权**：`https://<apiserver>:6443/api/v1/namespaces`；匿名可读时直接 `kubectl get secrets`\n- ServiceAccount token 在容器里：`/var/run/secrets/kubernetes.io/serviceaccount/token`\n- 常见 Secret / ConfigMap 里放数据库口令或 flag\n- **容器逃逸**：特权容器（`--privileged`）+ 挂载宿主根目录；`/proc/sys/kernel/core_pattern` 写宿主；Docker socket `/var/run/docker.sock` 挂进来 → 直接起一个挂宿主盘的容器\n- 镜像仓库：未授权 Registry API 拉私有镜像找配置（见 [[Docker-Registry与远程API利用]]）\n\n## 六、Serverless / 云函数\n\n- 环境变量里常放配置与 flag；`context` 对象里能看到身份与超时\n- 考点：函数间的调用权限、事件注入（传进来的 JSON 字段直接拼进命令/SQL）、层（Layer）里藏的私有代码\n- 本地模拟：`serverless offline` / `sam local`，先读懂触发器（HTTP / 定时 / 消息队列）\n\n## 七、解题流程（拿到云题按这个走）\n\n1. **确认云厂商**：响应头（`x-amz-*`、`x-oss-*`、`x-cos-*`）、错误页、URL 形态\n2. **摸入口**：SSRF / 文件读 / RCE，看能不能碰到 `169.254.169.254` 或内网元数据\n3. **拿凭据**：临时 AK/SK 或泄露的长期密钥，先 `sts get-caller-identity` 问清\"我是谁\"\n4. **列资源**：能读哪些桶、哪些函数、哪些集群；**只列不删**，别把环境打坏\n5. **横向 + 提权**：按权限边界找能读 flag 的那一跳（桶 / 函数环境变量 / Secret）\n6. **收尾**：把关键命令与凭据来源写进 writeup（凭据打码）\n\n## 关键点\n\n- 云题本质是 **\"身份 + 权限\"的 Web 题**，不是比谁会用 CLI\n- 元数据服务永远是第一目标；SSRF 被拦时先想绕过，别急着换方向\n- 拿到凭据先问\"我是谁、我能干什么\"，再决定下一步，避免盲试\n- 题目环境多为一次性容器，可放手试；但**不要把凭据提交进 git 或发到公网**\n\n## 关联\n\n- [[Web-SSRF与XXE]] —— 云题最常见的入口漏洞\n- [[Docker-Registry与远程API利用]] —— 容器横向的三条路径\n- [[Web-源码泄露与信息收集]] —— 找泄露凭据的信息收集\n- [[CTF-竞赛总览与解题流程]] —— 方向总览与通用六步\n\n## 存疑 / 矛盾\n\n- ⚠️ 与 [[Docker-Registry与远程API利用]] 有交叉：那页专注\"拿到容器后怎么横向到别的服务\"，本页专注\"云身份与云资源\"，容器逃逸部分两页都点到，以本页为准。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-03（无外部文件；实战背景来自青岑 docker 靶机与 SSRF 系列题）\n",
+ "section": "concept",
+ "group": "other",
+ "links": {
+  "internal": [
+   "CTF-竞赛总览与解题流程",
+   "Docker-Registry与远程API利用",
+   "Web-SSRF与XXE",
+   "Web-源码泄露与信息收集"
+  ],
+  "unresolved": []
+ }
+}

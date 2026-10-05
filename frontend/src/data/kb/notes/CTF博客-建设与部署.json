@@ -1,0 +1,18 @@
+{
+ "name": "CTF博客-建设与部署",
+ "title": "CTF博客-建设与部署",
+ "summary": "主人的个人 writeup 博客（`heliumsenbrg.github.io/ctf-writeup-blog`）：React 18 + Vite + Tailwind，文章数据驱动、GitHub Actions 自动上线。**被\"改了看不到\"坑过多次**——这页记结构、部署链和坑。",
+ "content": "# CTF博客-建设与部署\n\n> 主人的个人 writeup 博客（`heliumsenbrg.github.io/ctf-writeup-blog`）：React 18 + Vite + Tailwind，文章数据驱动、GitHub Actions 自动上线。**被\"改了看不到\"坑过多次**——这页记结构、部署链和坑。\n\n## 一、项目结构\n\n- 仓库：`~/ctf-writeup-blog`（**独立 git 仓库**，嵌套在工作区里）\n- 线上：GitHub Pages；Router `basename = /ctf-writeup-blog`\n- 技术栈：React 18 + Vite + Tailwind CSS + Framer Motion（赛博暗色主题：粒子背景、樱花、终端风首屏）\n\n```text\nfrontend/src/\n├── components/     # 纯 UI（Article.jsx / Home.jsx / Sakura.jsx …）\n├── data/           # articles.js（全部文章正文）、categories.js（分类元数据）\n└── utils/          # 工具函数（readingTime 等）\n```\n\n- 一篇文章 = `articles.js` 里的一个 key（正文是模板字面量）；首页卡片 = `categories.js` 的一条（**id 必须等于文章 key**）\n- 数据与视图已分离（重构过：Article.jsx 从 1330 行减到 208 行）\n\n## 二、部署链路\n\n```bash\ncd ~/ctf-writeup-blog/frontend\nnpm run build       # 本地构建验证（每次改完必跑）\nnpm run deploy      # 手动部署（构建 + 推 gh-pages）\n```\n\n- 自动线：GitHub Actions `.github/workflows/deploy.yml` —— push 到 `main` 自动构建并部署 `gh-pages` 分支\n- 本地静态服务器：`node serve.js`（:3000，`/api/*` 代理到 :4000）\n- 历史事件：gh-pages 曾误带 12,663 个 node_modules 文件 → 重建为空 orphan 分支，只放 dist 产物\n\n## 三、踩过的坑（按重要性）\n\n1. **\"改了没生效\"的两大根因**：\n   - ① 改动只进了 `gh-pages`，没进 `main` 的构建链；\n   - ② 有内部镜像站消费的是 **`data.json`**（集成数据文件），与前端 `articles.js` **不同源**——两边都更新才\"处处可见\"。\n2. **模板字面量转义**：正文里的代码围栏在 `articles.js` 中要写成 `\\`` 转义形式（写插入脚本时用统一的 FENCE 常量，别手拼）。\n3. **key/id 对齐**：`categories.js` 的 id 与 `articles.js` 的 key 不一致时，首页卡片点不进文章。\n4. **发布后必须线上复核**：curl 看 200、打开文章看内容——\"构建通过\"不等于\"线上更新\"（主人最烦这个）。\n5. 新增/修改后先 `npm run build` 再提交；推送带 `git pull --rebase` 防冲突。\n\n## 四、文章盘点（约 30 篇）\n\n| 类别 | 代表文章 |\n|---|---|\n| 月度综合 | 2026 年 5 月综合（ISCC JWT、青岑 120 题全通关一血、CTFShow web11、PassKey TOCTOU） |\n| Web | Northbridge SSRF、#734 Race Condition、#747 PHP Filter、HTTP 请求走私、#733 Diary App、命令注入与 RCE、信息泄露、PHP 弱类型 |\n| Crypto | ctf.show Lock（HMAC）、Timing Attack、HMAC 签名伪造 |\n| Pwn / Reverse | Pickle 反序列化 RCE、QC input_function ★一血（23 字节 shellcode）、X0r、Pwn's Door |\n| Misc / Stego | 隐写术与加密（零宽字符、EXIF 三层 Base64、ZIP 密码）、杂项与综合、YAML 反序列化 |\n\n（以仓库 `data/articles.js` 实际内容为准。）\n\n## 五、加一篇文章的标准流程\n\n1. 素材：`~/CTF/writeups/` 或 solver 脚本 → 提炼\"题面 → 卡点 → 关键回显 → payload → 结论\"\n2. 写入：编辑 `articles.js` + `categories.js`（或用插入脚本，参考历史 `insert_articles.py`）\n3. 验证：`npm run build` 无错\n4. 发布：commit → push（main）→ 等 Actions\n5. **线上复核** → 回报\"改了什么、验证了什么\"\n\n## 关联\n\n- [[对话纪要-糯米与主人]] —— 博客约定与协作史\n- [[青岑与CTFShow-题解履历]] / [[其他赛事题解履历]] —— 文章素材来源\n- [[本机环境与CTF工具链]] —— node/npm 与目录约定\n\n## 存疑 / 矛盾\n\n- 文章数口径：不同时期快照约 18 ~ 30 篇，以仓库实际为准。\n- ⚠️ 仓库归属记录不一：[[对话纪要-糯米与主人]] 记 `qiuyida/ctf-writeup-blog`；本机 `git remote -v` 实测为 `https://github.com/heliumsenbrg/ctf-writeup-blog.git`——**以实测为准**（如账号改过名，以 GitHub 实际为准）。\n- \"data.json 是事实来源\"（内部镜像站消费链）与\"articles.js 是数据源\"（GitHub Pages 前端）两种说法并存：**说的是两条链**，别合并理解。\n\n## 来源\n\n- 博客建设与部署会话（2026-06 ～ 2026-08）· 2026-10-03\n- 仓库：`~/ctf-writeup-blog`\n",
+ "section": "project",
+ "group": "project",
+ "links": {
+  "internal": [
+   "其他赛事题解履历",
+   "本机环境与CTF工具链",
+   "青岑与CTFShow-题解履历"
+  ],
+  "unresolved": [
+   "对话纪要-糯米与主人"
+  ]
+ }
+}
