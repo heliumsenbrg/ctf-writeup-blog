@@ -309,41 +309,24 @@ export default function HiddenQuest() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-64 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
+                    className="absolute right-0 mt-2 w-52 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
                   >
                     {FLAGS.map(f => (
-                      <div
+                      <button
                         key={f.id}
-                        className={`flex items-center transition-colors ${
+                        onClick={() => { setActiveId(f.id); setShowPicker(false) }}
+                        className={`w-full text-left px-4 py-3 font-mono text-sm transition-colors flex items-center gap-3 ${
                           f.id === activeId
-                            ? 'bg-cyber-cyan/10 border-l-2 border-cyber-cyan'
-                            : 'hover:bg-cyber-grid/10'
+                            ? 'bg-cyber-cyan/10 text-cyber-cyan border-l-2 border-cyber-cyan'
+                            : 'text-cyber-grid hover:bg-cyber-grid/10 hover:text-cyber-cyan'
                         }`}
                       >
-                        <button
-                          onClick={() => { setActiveId(f.id); setShowPicker(false) }}
-                          className={`flex-1 text-left px-4 py-3 font-mono text-sm flex items-center gap-3 transition-colors ${
-                            f.id === activeId ? 'text-cyber-cyan' : 'text-cyber-grid hover:text-cyber-cyan'
-                          }`}
-                        >
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(f.id)}`} />
-                          <span className="truncate">{f.name}</span>
-                          {f.id === activeId && (
-                            <span className="ml-auto text-xs text-cyber-cyan/50 shrink-0">✓</span>
-                          )}
-                        </button>
-                        {f.link && (
-                          <a
-                            href={f.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title={`出处：${f.linkLabel || f.name}`}
-                            className="px-3 py-3 text-cyber-grid/50 hover:text-cyber-cyan transition-colors"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
+                        <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(f.id)}`} />
+                        <span className="truncate">{f.name}</span>
+                        {f.id === activeId && (
+                          <span className="ml-auto text-xs text-cyber-cyan/50 shrink-0">✓</span>
                         )}
-                      </div>
+                      </button>
                     ))}
                   </motion.div>
                 )}
