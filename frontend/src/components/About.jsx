@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { Mail, Github, ExternalLink } from 'lucide-react'
+import { friendLinks } from '../data/friendLinks.js'
 
 export default function About() {
   return (
@@ -38,6 +39,30 @@ export default function About() {
           <p className="mt-4 text-xs text-cyber-grid/70">
             Blog by heliumsenbrg / qiuyida
           </p>
+        </motion.div>
+
+        {/* 友链区 */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card p-6 sm:p-8 mt-6"
+        >
+          <h2 className="text-xl font-bold text-gradient mb-4">友情链接</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {friendLinks.map(f => (
+              <a
+                key={f.url}
+                href={f.url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 p-3 rounded-lg border border-cyber-grid/20 hover:border-cyber-cyan/50 hover:bg-cyber-cyan/5 transition-colors group"
+              >
+                <ExternalLink className="w-4 h-4 text-cyber-purple shrink-0" />
+                <span className="text-sm text-cyber-cyan group-hover:text-white transition-colors">{f.name}</span>
+              </a>
+            ))}
+          </div>
         </motion.div>
       </div>
     </div>
