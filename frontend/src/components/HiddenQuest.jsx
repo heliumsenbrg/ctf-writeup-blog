@@ -309,46 +309,47 @@ export default function HiddenQuest() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-52 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
+                    className="absolute right-0 mt-2 w-64 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
                   >
                     {FLAGS.map(f => (
-                      <button
+                      <div
                         key={f.id}
-                        onClick={() => { setActiveId(f.id); setShowPicker(false) }}
-                        className={`w-full text-left px-4 py-3 font-mono text-sm transition-colors flex items-center gap-3 ${
+                        className={`flex items-center transition-colors ${
                           f.id === activeId
-                            ? 'bg-cyber-cyan/10 text-cyber-cyan border-l-2 border-cyber-cyan'
-                            : 'text-cyber-grid hover:bg-cyber-grid/10 hover:text-cyber-cyan'
+                            ? 'bg-cyber-cyan/10 border-l-2 border-cyber-cyan'
+                            : 'hover:bg-cyber-grid/10'
                         }`}
                       >
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(f.id)}`} />
-                        <span className="truncate">{f.name}</span>
-                        {f.id === activeId && (
-                          <span className="ml-auto text-xs text-cyber-cyan/50 shrink-0">✓</span>
+                        <button
+                          onClick={() => { setActiveId(f.id); setShowPicker(false) }}
+                          className={`flex-1 text-left px-4 py-3 font-mono text-sm flex items-center gap-3 transition-colors ${
+                            f.id === activeId ? 'text-cyber-cyan' : 'text-cyber-grid hover:text-cyber-cyan'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(f.id)}`} />
+                          <span className="truncate">{f.name}</span>
+                          {f.id === activeId && (
+                            <span className="ml-auto text-xs text-cyber-cyan/50 shrink-0">✓</span>
+                          )}
+                        </button>
+                        {f.link && (
+                          <a
+                            href={f.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={f.linkLabel || f.name}
+                            className="px-3 py-3 text-cyber-grid/50 hover:text-cyber-cyan transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         )}
-                      </button>
+                      </div>
                     ))}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
-
-          {/* 本期出处 —— 每项挑战都可点击跳转 */}
-          {config.link && (
-            <div className="mt-3 pt-3 border-t border-cyber-grid/15 flex items-center gap-2 min-w-0">
-              <span className="text-xs text-cyber-grid font-mono shrink-0">▸ 出处</span>
-              <a
-                href={config.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs font-mono text-cyber-cyan hover:text-white transition-colors truncate"
-              >
-                {config.linkLabel || config.name}
-                <ExternalLink className="w-3 h-3 shrink-0" />
-              </a>
-            </div>
-          )}
         </motion.div>
 
         {/* Ciphertext card */}
