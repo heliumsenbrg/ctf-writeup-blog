@@ -1,10 +1,21 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
-import FLAGS, { getFlagConfig, computeCipherHex, generateFlag } from '../config/flags'
+import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
+
+/** 每个挑战在选单里的状态点颜色 */
+const DOT_BY_ID = {
+  genshin: 'bg-amber-400',
+  starrail: 'bg-blue-400',
+  zelda: 'bg-green-400',
+  hacker: 'bg-emerald-400',
+  moon: 'bg-purple-400',
+  custom: 'bg-rose-400',
+}
+const dotClass = (id) => DOT_BY_ID[id] || 'bg-rose-400'
 
 function createParticles(count, baseColor) {
   const p = []
@@ -195,7 +206,11 @@ export default function HiddenQuest() {
     setDynamicFlag(generateFlag(config.flag))
   }, [activeId, config.flag])
   const currentFlag = dynamicFlag || config.flag
-  const cipherHex = computeCipherHex(currentFlag, config.key)
+  // 加密含随机盐，必须 memo 住，否则每次 setState（如输入框打字）都会重算、密文乱跳
+  const cipher = useMemo(
+    () => computeCipher(currentFlag, config.key),
+    [currentFlag, config.key]
+  )
 
   // Reset state when switching flag
   useEffect(() => {
@@ -281,14 +296,7 @@ export default function HiddenQuest() {
                 onClick={() => setShowPicker(!showPicker)}
                 className="flex items-center gap-2 px-4 py-2 bg-cyber-darker border border-cyber-grid/30 rounded-lg text-cyber-cyan font-mono text-sm hover:border-cyber-cyan/50 transition-all"
               >
-                <span className={`w-2 h-2 rounded-full ${
-                  activeId === 'genshin' ? 'bg-amber-400' :
-                  activeId === 'starrail' ? 'bg-blue-400' :
-                  activeId === 'zelda' ? 'bg-green-400' :
-                  activeId === 'hacker' ? 'bg-emerald-400' :
-                  activeId === 'moon' ? 'bg-purple-400' :
-                  'bg-rose-400'
-                }`} />
+                <span className={`w-2 h-2 rounded-full ${dotClass(activeId)}`} />
                 {config.name}
                 <ChevronDown className={`w-3 h-3 transition-transform ${showPicker ? 'rotate-180' : ''}`} />
               </button>
@@ -300,37 +308,63 @@ export default function HiddenQuest() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-52 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
+                    className="absolute right-0 mt-2 w-64 bg-cyber-darker border border-cyber-grid/30 rounded-lg overflow-hidden shadow-xl z-50"
                   >
                     {FLAGS.map(f => (
-                      <button
+                      <div
                         key={f.id}
-                        onClick={() => { setActiveId(f.id); setShowPicker(false) }}
-                        className={`w-full text-left px-4 py-3 font-mono text-sm transition-colors flex items-center gap-3 ${
+                        className={`flex items-center transition-colors ${
                           f.id === activeId
-                            ? 'bg-cyber-cyan/10 text-cyber-cyan border-l-2 border-cyber-cyan'
-                            : 'text-cyber-grid hover:bg-cyber-grid/10 hover:text-cyber-cyan'
+                            ? 'bg-cyber-cyan/10 border-l-2 border-cyber-cyan'
+                            : 'hover:bg-cyber-grid/10'
                         }`}
                       >
-                        <span className={`w-2 h-2 rounded-full ${
-                          f.id === 'genshin' ? 'bg-amber-400' :
-                          f.id === 'starrail' ? 'bg-blue-400' :
-                          f.id === 'zelda' ? 'bg-green-400' :
-                          f.id === 'hacker' ? 'bg-emerald-400' :
-                          f.id === 'moon' ? 'bg-purple-400' :
-                          'bg-rose-400'
-                        }`} />
-                        {f.name}
-                        {f.id === activeId && (
-                          <span className="ml-auto text-xs text-cyber-cyan/50">✓</span>
+                        <button
+                          onClick={() => { setActiveId(f.id); setShowPicker(false) }}
+                          className={`flex-1 text-left px-4 py-3 font-mono text-sm flex items-center gap-3 transition-colors ${
+                            f.id === activeId ? 'text-cyber-cyan' : 'text-cyber-grid hover:text-cyber-cyan'
+                          }`}
+                        >
+                          <span className={`w-2 h-2 rounded-full shrink-0 ${dotClass(f.id)}`} />
+                          <span className="truncate">{f.name}</span>
+                          {f.id === activeId && (
+                            <span className="ml-auto text-xs text-cyber-cyan/50 shrink-0">✓</span>
+                          )}
+                        </button>
+                        {f.link && (
+                          <a
+                            href={f.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title={`出处：${f.linkLabel || f.name}`}
+                            className="px-3 py-3 text-cyber-grid/50 hover:text-cyber-cyan transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
                         )}
-                      </button>
+                      </div>
                     ))}
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
           </div>
+
+          {/* 本期出处 —— 每项挑战都可点击跳转 */}
+          {config.link && (
+            <div className="mt-3 pt-3 border-t border-cyber-grid/15 flex items-center gap-2 min-w-0">
+              <span className="text-xs text-cyber-grid font-mono shrink-0">▸ 出处</span>
+              <a
+                href={config.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-mono text-cyber-cyan hover:text-white transition-colors truncate"
+              >
+                {config.linkLabel || config.name}
+                <ExternalLink className="w-3 h-3 shrink-0" />
+              </a>
+            </div>
+          )}
         </motion.div>
 
         {/* Ciphertext card */}
@@ -344,10 +378,10 @@ export default function HiddenQuest() {
           <Lock className="w-6 h-6 text-amber-400 mx-auto mb-4" />
           <p className="text-xs text-cyber-grid font-mono mb-2">ENCRYPTED MESSAGE</p>
           <div className="bg-black/50 rounded-lg p-4 font-mono text-sm text-amber-400/80 break-all select-all transition-all">
-            {cipherHex}
+            {cipher}
           </div>
           <p className="text-xs text-cyber-grid mt-3 font-mono">
-            Length: {cipherHex.length} hex chars | Cipher: XOR | Target: {new TextEncoder().encode(currentFlag).length} UTF-8 bytes
+            Payload: {cipher.length} chars | Cipher: ??? | Key: ??? | 盐每次刷新随机
           </p>
         </motion.div>
 
@@ -440,9 +474,9 @@ export default function HiddenQuest() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Hidden key element */}
+        {/* 口令藏点：反转 + Base64URL，不再是明文 */}
         <div
-          data-key={config.key}
+          data-key={encodeKey(config.key)}
           style={{ display: 'none' }}
           aria-hidden="true"
         />

@@ -1,6 +1,15 @@
 /**
- * 动态 Flag 配置
- * 每个条目是一个隐藏挑战，支持独立 flag、密钥、提示和胜利特效
+ * 动态 Flag 配置 · 隐藏挑战
+ *
+ * 加密方案 v2（比 v1 的裸 XOR 难得多，全部自研无依赖）：
+ *   明文 → XOR(xorshift32 密钥流) → 前置 6 字节随机盐 → 整体反转 → Base64URL
+ *   密钥流种子 = FNV-1a(口令 + '::' + 盐的 hex)
+ *
+ * 难度提升点：
+ *   1. 输出不再是 hex，而是「反序 + Base64URL」的载荷，看不出是 XOR；
+ *   2. 每次渲染随机盐，密文不可复用、不可硬编码；
+ *   3. 页面 DOM 里不再有明文口令，只有 Base64URL(反转(口令))；
+ *   4. 页面与控制台均不再提示算法与口令长度。
  */
 function randHex(n) {
   let s = ''
@@ -13,17 +22,123 @@ export function generateFlag(baseFlag) {
   return baseFlag.replace('}', '_' + randHex(4) + '}')
 }
 
+/* ---------- 低层原语 ---------- */
+
+/** FNV-1a 32 位散列，用于把口令派生为 PRNG 种子 */
+function fnv1a(str) {
+  let h = 0x811c9dc5
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i)
+    h = Math.imul(h, 0x01000193) >>> 0
+  }
+  return h >>> 0
+}
+
+/** xorshift32 密钥流；逐字节取不同位段，避免只用低位 */
+function keystream(seed, len) {
+  let x = (seed >>> 0) || 0x9e3779b9
+  const out = new Uint8Array(len)
+  for (let i = 0; i < len; i++) {
+    x ^= x << 13; x >>>= 0
+    x ^= x >>> 17; x >>>= 0
+    x ^= x << 5;  x >>>= 0
+    out[i] = (x >>> ((i % 4) * 8)) & 0xff
+  }
+  return out
+}
+
+function bytesToB64(bytes) {
+  let s = ''
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i])
+  return btoa(s)
+}
+
+function b64ToBytes(str) {
+  const s = atob(str)
+  const out = new Uint8Array(s.length)
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i)
+  return out
+}
+
+/** Base64 → Base64URL（去掉填充与 +/） */
+export function toB64Url(bytes) {
+  return bytesToB64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+/** Base64URL → 字节 */
+export function fromB64Url(str) {
+  const s = String(str).trim().replace(/-/g, '+').replace(/_/g, '/')
+  const pad = s.length % 4 ? s + '='.repeat(4 - (s.length % 4)) : s
+  return b64ToBytes(pad)
+}
+
+/* ---------- 对外：加密 / 解密 / 口令混淆 ---------- */
+
+function makeNonce(n = 6) {
+  const nonce = new Uint8Array(n)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(nonce)
+  } else {
+    for (let i = 0; i < n; i++) nonce[i] = Math.floor(Math.random() * 256)
+  }
+  return nonce
+}
+
+function nonceHex(nonce) {
+  return Array.from(nonce, b => b.toString(16).padStart(2, '0')).join('')
+}
+
+/**
+ * 加密：明文 + 口令 → Base64URL 载荷
+ * 结构（反转前）：[6 字节盐][密文]
+ */
+export function computeCipher(plain, passphrase) {
+  const data = new TextEncoder().encode(plain)
+  const nonce = makeNonce(6)
+  const ks = keystream(fnv1a(passphrase + '::' + nonceHex(nonce)), data.length)
+  const ct = new Uint8Array(data.length)
+  for (let i = 0; i < data.length; i++) ct[i] = data[i] ^ ks[i]
+  const buf = new Uint8Array(nonce.length + ct.length)
+  buf.set(nonce, 0)
+  buf.set(ct, nonce.length)
+  return toB64Url(buf.reverse())
+}
+
+/** 解密：Base64URL 载荷 + 口令 → 明文（供自测与解题器复用） */
+export function decryptCipher(payload, passphrase) {
+  const raw = fromB64Url(payload).reverse()
+  const nonce = raw.slice(0, 6)
+  const ct = raw.slice(6)
+  const ks = keystream(fnv1a(passphrase + '::' + nonceHex(nonce)), ct.length)
+  const pt = new Uint8Array(ct.length)
+  for (let i = 0; i < ct.length; i++) pt[i] = ct[i] ^ ks[i]
+  return new TextDecoder().decode(pt)
+}
+
+/** 口令混淆：反转字节后再 Base64URL，挂在 DOM 上供玩家“剥壳” */
+export function encodeKey(passphrase) {
+  return toB64Url(new Uint8Array(Array.from(new TextEncoder().encode(passphrase)).reverse()))
+}
+
+/** 还原被混淆的口令 */
+export function decodeKey(token) {
+  return new TextDecoder().decode(fromB64Url(token).reverse())
+}
+
+/* ---------- 挑战数据 ---------- */
 const FLAGS = [
   {
     id: 'genshin',
-    name: '原神冲击',
+    name: '原神，启动！',
+    link: 'https://search.bilibili.com/all?keyword=%E5%8E%9F%E7%A5%9E%E5%90%AF%E5%8A%A8',
+    linkLabel: 'B站 · 原神启动',
     flag: 'flag{53cr3t_und3r_7h3_m00n!}',
     key: 'genshin',
     clues: [
-      '密文由 XOR 加密，密钥隐藏在页面中...',
-      '检查页面源代码，有一个隐藏的提示...',
-      'CSS 中藏着一个看不见的"钥匙"',
-      '密钥 = 一款热门游戏的英文名（7个字母）',
+      '载荷被套了三层壳：反序、编码，还有一层你自己得猜。',
+      '开头的 6 个字节是随机盐，不是密文本身。',
+      '密钥流由「口令 + 盐」派生 —— 口令就藏在页面 DOM 的角落里。',
+      'DOM 里的口令是「反转 + Base64」处理过的；内容是那款总被人喊「启动」的游戏（英文小写）。',
     ],
     victory: {
       emoji: '✨🌟⚡',
@@ -36,21 +151,24 @@ const FLAGS = [
     reward: 'https://genshin.hoyoverse.com/en/download',
     consoleMsg: [
       '[SECRET QUEST]',
-      'Encryption: XOR with hidden key',
-      'Key length: 7 characters',
-      'Look closely at the page elements...',
+      'Cipher v2 · three layers, no manual',
+      'Layers: keystream XOR -> random salt -> reversed base64url',
+      'The passphrase is obfuscated, not hidden by luck...',
+      'Read the DOM. Read the clues. Then write six lines of code.',
     ],
   },
   {
     id: 'starrail',
-    name: '星穹铁道',
+    name: '崩坏：星穹铁道',
+    link: 'https://sr.mihoyo.com/',
+    linkLabel: '官网 · 星穹铁道',
     flag: 'flag{7r41n_70_7h3_s74r5!}',
     key: 'starrail',
     clues: [
-      '挑战来自星辰大海...',
-      '密钥藏在某列车的名字中',
-      '提示：星历 2156 年',
-      '密钥 = 一款科幻 RPG（8个字母）',
+      '这一题的载荷同样反序 + Base64URL 了。',
+      '盐是随机生成的，每次刷新密文都会变 —— 别想抄上一次的。',
+      '密钥流不是固定密钥，而是由口令经 FNV-1a 派生后跑 xorshift32。',
+      '口令 = 那趟列车的英文名，全小写连写（8 个字母）。',
     ],
     victory: {
       emoji: '🚀🌠🌌',
@@ -63,21 +181,24 @@ const FLAGS = [
     reward: 'https://hsr.hoyoverse.com/',
     consoleMsg: [
       '[SECRET QUEST: STARRAIL]',
-      'Encryption: XOR - cipher of the stars',
-      'Key length: 8 characters',
+      'Cipher v2 · the stars are salted',
+      'Salt: 6 random bytes, prepended before reversal',
+      'Keystream: FNV-1a(passphrase :: salt) -> xorshift32',
       'The answer is written among the constellations...',
     ],
   },
   {
     id: 'zelda',
-    name: '塞尔达传说',
+    name: '塞尔达传说：旷野之息',
+    link: 'https://www.zelda.com/breath-of-the-wild/',
+    linkLabel: '官网 · 旷野之息',
     flag: 'flag{hyrul3_4w4k3n5!}',
     key: 'zelda',
     clues: [
-      '海拉鲁王国有一个古老的传说...',
-      '密钥与公主有关',
-      '金币之上，勇者之名',
-      '密钥 = 任天堂公主之名（5个字母）',
+      '海拉鲁的符文换了：不再是裸 XOR。',
+      '反转载荷后，前 6 字节是盐，后面才是密文。',
+      '密钥流由口令派生 —— 口令在 DOM 里被反转并做了 Base64。',
+      '口令 = 那位公主之名（5 个字母，小写）。',
     ],
     victory: {
       emoji: '🗡️🛡️👑',
@@ -90,21 +211,23 @@ const FLAGS = [
     reward: 'https://www.zelda.com/',
     consoleMsg: [
       '[SECRET QUEST: ZELDA]',
-      'Encryption: XOR - ancient Hylian cipher',
-      'Key length: 5 characters',
+      'Cipher v2 · ancient Hylian, rewritten',
+      'Order: reverse -> split salt -> derive -> xor',
       'Courage, Wisdom, Power... find the missing piece...',
     ],
   },
   {
     id: 'hacker',
-    name: '黑客帝国',
+    name: '黑客帝国：红色药丸',
+    link: 'https://www.warnerbros.com/movies/matrix',
+    linkLabel: '官网 · The Matrix',
     flag: 'flag{r3d_p1ll_0r_blu3_p1ll}',
     key: 'matrix',
     clues: [
-      '你选择红色药丸还是蓝色药丸？',
-      '密钥隐藏在一个流行的电影三部曲中',
-      '提醒：这不是科幻，这是现实',
-      '密钥 = 电影宇宙名（6个字母）',
+      '你看到的不是代码雨，是「反序 + Base64URL」。',
+      '红色的药丸，是那 6 个字节的盐。',
+      '蓝药丸：把盐拼在口令后面，FNV-1a 派生种子，跑 xorshift32 拿密钥流。',
+      '口令 = 那个电影宇宙的英文名（6 个字母，小写）。',
     ],
     victory: {
       emoji: '💊🔮🕶️',
@@ -118,21 +241,23 @@ const FLAGS = [
     consoleMsg: [
       '[SECRET QUEST: MATRIX]',
       'Wake up, Neo...',
-      'Encryption: XOR - the construct',
-      'Key length: 6 characters',
+      'Cipher v2 · the construct was upgraded',
+      'Salt first. Reverse first. Then think.',
       'Follow the white rabbit...',
     ],
   },
   {
     id: 'moon',
-    name: '月球探秘',
+    name: '独行月球',
+    link: 'https://search.bilibili.com/all?keyword=%E7%8B%AC%E8%A1%8C%E6%9C%88%E7%90%83',
+    linkLabel: 'B站 · 独行月球',
     flag: 'flag{0n3_5m411_5t3p}',
     key: 'moon',
     clues: [
-      '阿姆斯特朗留下了什么？',
-      '密钥藏在那个著名的脚印里',
-      '1969 年 7 月 20 日',
-      '密钥 = 地球的卫星（4个字母）',
+      '一个人的月球，载荷也是反着来的。',
+      '把字符串反转后再 Base64URL 解码，前 6 字节是盐。',
+      '密钥流：FNV-1a(口令 :: 盐) → xorshift32。',
+      '口令 = 地球的卫星（4 个字母，小写）。',
     ],
     victory: {
       emoji: '🌙👨‍🚀🚩',
@@ -146,21 +271,23 @@ const FLAGS = [
     consoleMsg: [
       '[SECRET QUEST: MOON]',
       "That's one small step...",
-      'Encryption: XOR - lunar cipher',
-      'Key length: 4 characters',
+      'Cipher v2 · lunar payload reversed',
+      'Six bytes of regolith come first.',
       'Look to the stars...',
     ],
   },
   {
     id: 'custom',
-    name: '自定义挑战',
+    name: '疯狂星期四',
+    link: 'https://search.bilibili.com/all?keyword=%E7%96%AF%E7%8B%82%E6%98%9F%E6%9C%9F%E5%9B%9B',
+    linkLabel: 'B站 · 疯狂星期四',
     flag: 'flag{cu570m_ch4113n63!}',
     key: 'custom',
     clues: [
-      '这是一个自定义挑战入口',
-      '你可以在 config/flags.js 中修改 flag 和密钥',
-      '密钥就在你自己手中',
-      '用你的智慧解密吧！',
+      '自定义挑战：v2 全部三层壳，一个不少。',
+      '你可以在 config/flags.js 里换掉 flag、口令和名称。',
+      '口令同样被反转 + Base64 挂在 DOM 上。',
+      'V 我 50，我就把口令告诉你。',
     ],
     victory: {
       emoji: '🎉🏆🎊',
@@ -174,7 +301,7 @@ const FLAGS = [
     consoleMsg: [
       '[SECRET QUEST: CUSTOM]',
       'Custom challenge unlocked',
-      'Encryption: XOR - user defined',
+      'Cipher v2 · user defined, still three layers',
       'The key is in your hands...',
     ],
   },
@@ -185,22 +312,6 @@ const FLAGS = [
  */
 export function getFlagConfig(id) {
   return FLAGS.find(f => f.id === id) || FLAGS[0]
-}
-
-/**
- * 计算 XOR 密文（hex）
- * 将 flag 和密钥编码为 UTF-8 字节再进行 XOR 运算
- */
-export function computeCipherHex(flag, key) {
-  const encoder = new TextEncoder()
-  const flagBytes = encoder.encode(flag)
-  const keyBytes = encoder.encode(key)
-  let h = ''
-  for (let i = 0; i < flagBytes.length; i++) {
-    h += (flagBytes[i] ^ keyBytes[i % keyBytes.length])
-      .toString(16).padStart(2, '0')
-  }
-  return h
 }
 
 export default FLAGS
