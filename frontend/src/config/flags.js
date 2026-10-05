@@ -212,7 +212,8 @@ const FLAGS = [
       particleColor: '#f472b6',
       particleCount: 70,
     },
-    reward: '',
+    reward: 'https://www.kfc.com.cn/',
+    rewardLabel: 'V 我 50',
     consoleMsg: [
       '[SECRET QUEST: CUSTOM]',
       'Custom challenge unlocked',
