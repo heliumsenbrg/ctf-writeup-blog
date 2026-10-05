@@ -280,23 +280,56 @@ export default function HiddenQuest() {
           </h1>
         </motion.div>
 
-        {/* Challenge Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="cyber-card p-4 mb-6"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-cyber-grid font-mono">ACTIVE CHALLENGE</span>
+          {/* Challenge Selector */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="cyber-card p-4 mb-6 relative"
+          >
+            {/* 切换题目时：卡片亮一下（不能用 overflow-hidden，会裁掉下拉选单） */}
+            <motion.span
+              key={activeId + '-flash'}
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: 0.7, ease: 'easeOut' }}
+              className="pointer-events-none absolute inset-0 rounded-[14px]"
+              style={{
+                background:
+                  'radial-gradient(120% 150% at 50% 0%, rgba(0,245,255,0.28), transparent 70%)',
+                boxShadow: 'inset 0 0 0 1px rgba(0,245,255,0.28)',
+              }}
+            />
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-cyber-grid font-mono">ACTIVE CHALLENGE</span>
             <div className="relative" ref={pickerRef}>
               <button
                 onClick={() => setShowPicker(!showPicker)}
                 className="flex items-center gap-2 px-4 py-2 bg-cyber-darker border border-cyber-grid/30 rounded-lg text-cyber-cyan font-mono text-sm hover:border-cyber-cyan/50 transition-all"
               >
-                <span className={`w-2 h-2 rounded-full ${dotClass(activeId)}`} />
-                {config.name}
-                <ChevronDown className={`w-3 h-3 transition-transform ${showPicker ? 'rotate-180' : ''}`} />
+                  {/* 圆点弹一下 + 题目名纵向滑换 */}
+                  <motion.span
+                    key={activeId + '-dot'}
+                    initial={{ scale: 0.3, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: 'spring', stiffness: 520, damping: 17 }}
+                    className={`w-2 h-2 rounded-full shrink-0 ${dotClass(activeId)}`}
+                  />
+                  <span className="relative block overflow-hidden">
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.span
+                        key={activeId}
+                        initial={{ y: '110%', opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: '-110%', opacity: 0 }}
+                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        className="block"
+                      >
+                        {config.name}
+                      </motion.span>
+                    </AnimatePresence>
+                  </span>
+                  <ChevronDown className={`w-3 h-3 transition-transform ${showPicker ? 'rotate-180' : ''}`} />
               </button>
 
               <AnimatePresence>
