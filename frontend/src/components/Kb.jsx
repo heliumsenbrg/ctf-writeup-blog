@@ -1,19 +1,31 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, BookOpen } from 'lucide-react'
-import kbIndex from '../data/kb/index.js'
 
 export default function Kb() {
   const [query, setQuery] = useState('')
+  const [kbIndex, setKbIndex] = useState(null)
+
+  // 动态加载元数据 (独立 chunk) —— 主包不因知识库增大
+  useEffect(() => {
+    let alive = true
+    import('../data/kb/index.js').then(m => { if (alive) setKbIndex(m.default) })
+    return () => { alive = false }
+  }, [])
+
   const q = query.trim().toLowerCase()
 
   const results = useMemo(() => {
-    if (!q) return null
+    if (!kbIndex || !q) return null
     return kbIndex.sections
       .flatMap(s => s.groups.flatMap(g => g.notes))
       .filter(n => (n.name + n.title + n.summary).toLowerCase().includes(q))
-  }, [q])
+  }, [q, kbIndex])
+
+  if (!kbIndex) {
+    return <div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>
+  }
 
   return (
     <div className="min-h-screen py-12 sm:py-20">

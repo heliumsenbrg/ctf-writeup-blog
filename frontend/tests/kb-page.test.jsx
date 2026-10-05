@@ -1,13 +1,13 @@
 import { test, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Kb from '../src/components/Kb.jsx'
 import kbIndex from '../src/data/kb/index.js'
 
-test('目录页渲染分区、卡片链接与搜索过滤', () => {
+test('目录页渲染分区、卡片链接与搜索过滤', async () => {
   render(<MemoryRouter><Kb /></MemoryRouter>)
 
-  expect(screen.getByText('知识库 · 第二大脑')).toBeTruthy()
+  await waitFor(() => expect(screen.getByText('知识库 · 第二大脑')).toBeTruthy())
   const first = kbIndex.sections[0].groups[0].notes[0]
   expect(screen.getByText(first.title)).toBeTruthy()
   const link = screen.getByText(first.title).closest('a')
