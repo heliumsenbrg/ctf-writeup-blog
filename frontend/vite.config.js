@@ -34,4 +34,10 @@ export default defineConfig({
   optimizeDeps: {
     entries: ['index.html', 'src/**/*.{js,jsx}'],
   },
+  // 测试（vitest 直接读取 vite 配置）
+  test: {
+    environment: 'jsdom',
+    include: ['tests/**/*.test.{js,jsx}'],
+    setupFiles: ['./tests/setup.js'],
+  },
 })
