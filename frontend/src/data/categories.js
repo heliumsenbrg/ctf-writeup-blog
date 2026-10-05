@@ -3,6 +3,38 @@
 
 const categories = [
   {
+    id: 'moectf-emoji',
+    title: 'MoeCTF ez_base_revenge9',
+    subtitle: 'Emoji 编码 (Base100)',
+    icon: 'Code',
+    color: 'cyan',
+    desc: 'Base100 → Base64 → Base58 → Base32 四层链式剥离',
+  },
+  {
+    id: 'moectf-zipcrypto',
+    title: 'ZIP 已知明文攻击',
+    subtitle: 'bkcrack / ZipCrypto',
+    icon: 'Shield',
+    color: 'purple',
+    desc: '提示语即明文 + CRC32 秒级验证 + bkcrack 恢复内部密钥',
+  },
+  {
+    id: 'gift',
+    title: 'Gift - Tcache Double-Free',
+    subtitle: 'UAF + Tcache Poisoning',
+    icon: 'Flag',
+    color: 'red',
+    desc: 'Hidden gift函数UAF, double-free, unsorted bin泄漏, __free_hook覆写',
+  },
+  {
+    id: '0xgame2025',
+    title: '0xGame2025 CTF',
+    subtitle: '2026-06-16 | 16/28 题',
+    icon: 'Flag',
+    color: 'pink',
+    desc: '反序列化/竞态条件/LFI/变量覆盖/MD5 SQLi',
+  },
+  {
     id: 'may-2026',
     title: 'CTF Writeup - May 2026',
     subtitle: 'ISCC/青岑/CTFShow',

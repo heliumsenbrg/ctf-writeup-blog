@@ -93,7 +93,7 @@ function Paragraph({ children }) {
 }
 
 // 文章顺序 - 用于上一篇/下一篇导航
-const articleOrder = ['tools', 'infoleak', 'php', 'cmd', 'pwn', 'stego', 're-plzdebugme', 'misc', 'may-2026', 'qingcen-web-2026-06-10', 'northbridge', 'qc733', 'qc734', 'qc747', 'yaml', 'timing', 'typejuggling', 'sourceleak', 'sigforge', 'notallmilk']
+const articleOrder = ['tools', 'infoleak', 'php', 'cmd', 'pwn', 'stego', 're-plzdebugme', 'misc', 'may-2026', 'qingcen-web-2026-06-10', 'northbridge', 'qc733', 'qc734', 'qc747', 'yaml', 'timing', 'typejuggling', 'sourceleak', 'sigforge', 'notallmilk', '0xgame2025', 'gift', 'moectf-emoji', 'moectf-zipcrypto']
 
 // 计算阅读时间（基于字数）
 function estimateReadingTime(content) {
