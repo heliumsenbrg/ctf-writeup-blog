@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter } from 'lucide-react'
+import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter, Library } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState, useRef } from 'react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
@@ -79,7 +79,8 @@ const categories = [
   { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接', color: 'pink' },
   { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写', color: 'blue' },
   { id: 'stego', title: 'Steganography', subtitle: '隐写术', icon: Code, desc: '零宽字符, EXIF隐写, ZIP密码破解', color: 'purple' },
-  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋', color: 'cyan' }
+  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋', color: 'cyan' },
+  { id: 'kb', title: '知识库 · 第二大脑', subtitle: '69 篇 CTF 笔记', icon: Library, desc: 'Web / 逆向 / 密码学 / Pwn / 杂项 / 云容器…', color: 'purple' }
 ]
 
 const particlesInit = async (engine) => {
@@ -473,7 +474,7 @@ export default function Home({ GlitchText, TypewriterText }) {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Link to={`/article/${cat.id}`}>
+                <Link to={cat.id === 'kb' ? '/kb' : `/article/${cat.id}`}>
                   <motion.div
                     whileHover={{ scale: 1.02, y: -5 }}
                     className="glass-card p-4 sm:p-6 h-full cursor-pointer group neon-border-hover"
@@ -590,7 +591,7 @@ export default function Home({ GlitchText, TypewriterText }) {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Link to={`/article/${cat.id}`}>
+                <Link to={cat.id === 'kb' ? '/kb' : `/article/${cat.id}`}>
                   <motion.div
                     whileHover={{ x: 5 }}
                     className="glass-card p-4 sm:p-5 cursor-pointer group neon-border-hover"
