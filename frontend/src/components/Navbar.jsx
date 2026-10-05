@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle } from 'lucide-react'
+import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library } from 'lucide-react'
 
 const GARGANTUA_URL = `${import.meta.env.BASE_URL}gargantua/index.html`
 
@@ -43,6 +43,10 @@ export default function Navbar() {
             <NavLink to="/challenges" active={location.pathname === '/challenges'}>
               <Flag className="w-4 h-4 mr-2" />
               Challenges
+            </NavLink>
+            <NavLink to="/kb" active={location.pathname.startsWith('/kb')}>
+              <Library className="w-4 h-4 mr-2" />
+              知识库
             </NavLink>
             <NavLink to="/about" active={location.pathname === '/about'}>
               <User className="w-4 h-4 mr-2" />
@@ -106,6 +110,18 @@ export default function Navbar() {
             >
               <Flag className="w-4 h-4" />
               Challenges
+            </Link>
+            <Link
+              to="/kb"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono transition-all ${
+                location.pathname.startsWith('/kb')
+                  ? 'text-cyber-cyan bg-cyber-cyan/10'
+                  : 'text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5'
+              }`}
+            >
+              <Library className="w-4 h-4" />
+              知识库
             </Link>
             <Link
               to="/about"
