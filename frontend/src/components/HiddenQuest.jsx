@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
-import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
-import NeverGiveUp, { NEVER_GIVE_UP_URL } from './NeverGiveUp'
+import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey, NEVER_GIVE_UP_URL } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
@@ -15,6 +14,7 @@ const DOT_BY_ID = {
   hacker: 'bg-emerald-400',
   moon: 'bg-purple-400',
   custom: 'bg-rose-400',
+  nevergiveup: 'bg-fuchsia-400',
 }
 const dotClass = (id) => DOT_BY_ID[id] || 'bg-rose-400'
 
@@ -157,7 +157,7 @@ function VictoryModal({ config, onClose }) {
             ))}
           </div>
           <p className="text-xs text-cyber-grid/60 font-mono">
-            正在跳转下载页...
+            正在跳转...
           </p>
         </div>
 
@@ -170,7 +170,7 @@ function VictoryModal({ config, onClose }) {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-white/10 border border-cyber-cyan/40 text-cyber-cyan text-sm font-mono hover:bg-cyber-cyan/20 transition-all mb-3"
           >
             <ExternalLink className="w-4 h-4" />
-            立即下载
+            {config.rewardLabel || '立即下载'}
           </a>
         )}
 
@@ -490,9 +490,6 @@ export default function HiddenQuest() {
           aria-hidden="true"
         />
       </div>
-
-      {/* ♪ NEVER GIVE UP —— 点一下直接跳 B 站视频 */}
-      <NeverGiveUp />
 
       {/* Victory celebration */}
       <AnimatePresence>
