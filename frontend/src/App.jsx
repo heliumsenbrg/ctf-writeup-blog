@@ -7,6 +7,7 @@ import Challenges from './components/Challenges'
 import HiddenQuest from './components/HiddenQuest'
 import NotFound from './components/NotFound'
 import About from './components/About'
+import Kb from './components/Kb'
 
 // ===== Cursor Trail =====
 function CursorTrail() {
@@ -252,6 +253,7 @@ function AppInner() {
             <Route index element={<Home GlitchText={GlitchText} TypewriterText={TypewriterText} />} />
             <Route path="article/:id" element={<Article />} />
             <Route path="challenges" element={<Challenges />} />
+            <Route path="kb" element={<Kb />} />
             <Route path="about" element={<About />} />
             <Route path="secret-quest" element={<HiddenQuest />} />
             <Route path="*" element={<NotFound />} />
