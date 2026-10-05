@@ -127,7 +127,7 @@ export function decodeKey(token) {
 
 /* ---------- 挑战数据 ---------- */
 
-/** 「永不言败」的出处：B 站官方 MV，想换视频只改这一行 */
+/** 「永不言败」的通关奖励：B 站官方 MV，想换视频只改这一行 */
 export const NEVER_GIVE_UP_URL = 'https://www.bilibili.com/video/BV1GJ411x7h7'
 
 const FLAGS = [
@@ -312,7 +312,7 @@ const FLAGS = [
   {
     id: 'nevergiveup',
     name: '永不言败',
-    // 出处故意留空：那个 MV 是「做出来之后」的奖励，提前挂出来就没意思了
+    // 刻意不给外部链接：那个 MV 是「做出来之后」的奖励，提前挂出来就没意思了
     link: '',
     linkLabel: '',
     flag: 'flag{n3v3r_g0nn4_g1v3_y0u_up}',
@@ -337,7 +337,7 @@ const FLAGS = [
       '[SECRET QUEST: NEVER GIVE UP]',
       'Cipher v2 · three layers, same as the others',
       'This one will never give you up...',
-      'No 出处 this time — the name is the hint.',
+      'No external link here — the name is the hint.',
     ],
   },
 ]
