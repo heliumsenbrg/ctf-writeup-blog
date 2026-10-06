@@ -24,7 +24,13 @@ jobs:
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
+
+      # 数据完整性校验 + 单测：把"首页卡片指向不存在的文章""KB 快照漂移""映射表漏项"
+      # 这类问题拦在部署之前（npm run check 里的 kb 部分在没有本地 vault 时会自动跳过源文件比对）
+      - name: Check data & run tests
+        working-directory: frontend
+        run: npm run check && npm test
 
       - name: Build frontend
         working-directory: frontend
