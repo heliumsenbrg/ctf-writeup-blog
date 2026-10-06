@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 隐藏彩蛋 /secret-quest 刻意不在这里提及（此处写 Disallow 反而等于公开它）
+Sitemap: https://heliumsenbrg.github.io/ctf-writeup-blog/sitemap.xml
