@@ -21,6 +21,64 @@ const kbNames = () => {
 }
 
 /**
+ * 知识库关系图数据：节点 = 笔记（带 section/group 用于配色），边 = links.internal。
+ * 边会去重（A→B 与 B→A 合并），自环丢弃。
+ */
+function buildKbGraph() {
+  const NOTES_DIR = path.join(fileURLToPath(new URL('.', import.meta.url)), 'src', 'data', 'kb', 'notes')
+  const nodes = []
+  const links = []
+
+  for (const s of kb.sections) {
+    for (const g of s.groups) {
+      for (const n of g.notes) {
+        let body = ''
+        try {
+          body = JSON.parse(readFileSync(path.join(NOTES_DIR, `${n.name}.json`), 'utf8')).links?.internal || []
+        } catch {
+          body = []
+        }
+        nodes.push({
+          id: n.name,
+          title: n.title || n.name,
+          section: s.id,
+          sectionTitle: s.title,
+          group: g.title,
+          links: body.length,
+        })
+        for (const t of body) {
+          if (t === n.name) continue
+          const a = n.name
+          const b = t
+          const key = a < b ? `${a}||${b}` : `${b}||${a}`
+          links.push({ key, source: a, target: b })
+        }
+      }
+    }
+  }
+
+  // 去重 + 丢弃指向未发布笔记的边
+  const ids = new Set(nodes.map((n) => n.id))
+  const seen = new Set()
+  const edges = []
+  for (const l of links) {
+    if (seen.has(l.key) || !ids.has(l.target)) continue
+    seen.add(l.key)
+    edges.push([l.source, l.target])
+  }
+
+  // 度（决定节点大小）
+  const deg = Object.fromEntries(nodes.map((n) => [n.id, 0]))
+  for (const [a, b] of edges) {
+    deg[a] += 1
+    deg[b] += 1
+  }
+  for (const n of nodes) n.degree = deg[n.id]
+
+  return { generatedAt: new Date().toISOString(), nodes, edges }
+}
+
+/**
  * 全站搜索索引（构建时生成，避免把几十万字的正文塞进主包）：
  *   题解 24 + 知识库笔记 69 + 挑战 53 —— 只收标题/摘要/标签这类轻量字段。
  * 产物：dist/search-index.json，前端按需 fetch（⌘K 打开时）。
@@ -96,12 +154,17 @@ function seoStaticPlugin() {
     configResolved(cfg) {
       outDir = cfg.build.outDir
     },
-    // dev 下也让搜索能用（不写盘，现算现给）
+    // dev 下也让搜索/图谱能用（不写盘，现算现给）
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        if (!req.url || !req.url.includes('search-index.json')) return next()
-        res.setHeader('Content-Type', 'application/json; charset=utf-8')
-        res.end(JSON.stringify(buildSearchIndex()))
+        const url = req.url || ''
+        const send = (obj) => {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify(obj))
+        }
+        if (url.includes('search-index.json')) return send(buildSearchIndex())
+        if (url.includes('kb-graph.json')) return send(buildKbGraph())
+        next()
       })
     },
     closeBundle() {
@@ -176,8 +239,12 @@ function seoStaticPlugin() {
       const searchIndex = buildSearchIndex()
       writeFileSync(abs('search-index.json'), JSON.stringify(searchIndex))
 
+      // ⑥ 知识库关系图数据（节点 = 笔记，边 = 站内双链）
+      const graph = buildKbGraph()
+      writeFileSync(abs('kb-graph.json'), JSON.stringify(graph))
+
       console.log(
-        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条`
+        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条 · 图谱 ${graph.nodes.length} 节点/${graph.edges.length} 边`
       )
     },
   }
