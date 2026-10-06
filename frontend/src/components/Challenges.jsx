@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Flag, CheckCircle, Clock, Zap, Filter } from 'lucide-react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
-import VictoryJingle from './VictoryJingle'
 
 const CYBER_COLORS = {
   cyan: '#00f5ff',
@@ -225,8 +224,6 @@ export default function Challenges() {
             </div>
           </div>
         </motion.div>
-
-        <VictoryJingle autoPlay />
       </div>
     </div>
   )
