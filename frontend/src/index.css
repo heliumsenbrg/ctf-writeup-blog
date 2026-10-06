@@ -420,3 +420,36 @@ body {
     width: 200px;
   }
 }
+
+/* ---------- 键盘可访问性：焦点可见 ----------
+   全站原本没有任何 focus 样式，用键盘 Tab 时看不出焦点在哪。
+   只对 :focus-visible 生效 —— 鼠标点击不会出现焦框，不影响观感。 */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(0, 245, 255, 0.75);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* 深色底上再有底色元素（如导航胶囊）时，用偏移更明显的环 */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.15);
+}
+
+/* 尊重系统的"减少动态效果"偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
