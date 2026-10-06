@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, Github, ExternalLink } from 'lucide-react'
-import { friendLinks } from '../data/friendLinks.js'
 import { buildFriendIssueUrl } from '../utils/friendRequest.js'
+import FriendLinks from './FriendLinks'
 
 export default function About() {
   const [reqName, setReqName] = useState('')
@@ -68,20 +68,7 @@ export default function About() {
           className="glass-card p-6 sm:p-8 mt-6"
         >
           <h2 className="text-xl font-bold text-gradient mb-4">友情链接</h2>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {friendLinks.map(f => (
-              <a
-                key={f.url}
-                href={f.url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-3 p-3 rounded-lg border border-cyber-grid/20 hover:border-cyber-cyan/50 hover:bg-cyber-cyan/5 transition-colors group"
-              >
-                <ExternalLink className="w-4 h-4 text-cyber-purple shrink-0" />
-                <span className="text-sm text-cyber-cyan group-hover:text-white transition-colors">{f.name}</span>
-              </a>
-            ))}
-          </div>
+          <FriendLinks variant="cards" />
 
           <form onSubmit={submitRequest} className="mt-6 pt-5 border-t border-cyber-grid/20">
             <h3 className="text-sm font-mono text-cyber-grid mb-3 tracking-widest">申请友链 / APPLY</h3>

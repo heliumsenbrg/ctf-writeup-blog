@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
-import { ExternalLink } from 'lucide-react'
-import { friendLinks } from '../data/friendLinks.js'
+import FriendLinks from './FriendLinks'
+
 
 export default function Footer() {
   return (
@@ -28,23 +28,9 @@ export default function Footer() {
           </div>
         </div>
         
-        {/* 友情链接 */}
+        {/* 友情链接（头像 + 名称，组件与「关于」页共用） */}
         <div className="mt-6 pt-6 border-t border-cyber-grid/30">
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            <span className="text-cyber-grid/70 text-xs font-mono tracking-widest">FRIEND LINKS</span>
-            {friendLinks.map(f => (
-              <a
-                key={f.url}
-                href={f.url}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs text-cyber-cyan hover:text-white transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-                {f.name}
-              </a>
-            ))}
-          </div>
+          <FriendLinks variant="footer" />
         </div>
 
         {/* Anime style decoration */}
