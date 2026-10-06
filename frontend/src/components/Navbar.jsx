@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library } from 'lucide-react'
+import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search } from 'lucide-react'
 
 const GARGANTUA_URL = `${import.meta.env.BASE_URL}gargantua/index.html`
 
@@ -70,6 +70,18 @@ export default function Navbar() {
               <ExternalLink className="w-4 h-4 mr-2" />
               Platform
             </a>
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+              title="搜索（⌘K）"
+              aria-label="搜索（⌘K）"
+              className="nav-link flex items-center gap-1.5 text-cyber-grid hover:text-cyber-cyan transition-colors"
+            >
+              <Search className="w-4 h-4" />
+              搜索
+              <kbd className="rounded border border-cyber-grid/30 px-1 py-px text-[10px] font-mono leading-none">
+                ⌘K
+              </kbd>
+            </button>
           </div>
 
           {/* Mobile hamburger */}
@@ -153,6 +165,13 @@ export default function Navbar() {
               <ExternalLink className="w-4 h-4" />
               Platform
             </a>
+            <button
+              onClick={() => { setMobileOpen(false); window.dispatchEvent(new Event('open-command-palette')) }}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5 transition-all text-left"
+            >
+              <Search className="w-4 h-4" />
+              搜索
+            </button>
           </div>
         </div>
       </div>

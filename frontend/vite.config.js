@@ -1,9 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { writeFileSync, mkdirSync, readFileSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import { join } from 'path'
 import { articles } from './src/data/articles.js'
 import kb from './src/data/kb/index.js'
+import { allChallenges } from './src/data/challenges.js'
 
 /** 站点正式地址（canonical 用 Pages 那条，Vercel 镜像不作 canonical） */
 const SITE = 'https://heliumsenbrg.github.io/ctf-writeup-blog'
@@ -18,12 +21,71 @@ const kbNames = () => {
 }
 
 /**
+ * 全站搜索索引（构建时生成，避免把几十万字的正文塞进主包）：
+ *   题解 24 + 知识库笔记 69 + 挑战 53 —— 只收标题/摘要/标签这类轻量字段。
+ * 产物：dist/search-index.json，前端按需 fetch（⌘K 打开时）。
+ */
+function buildSearchIndex() {
+  const items = []
+
+  for (const [id, a] of Object.entries(articles)) {
+    items.push({
+      type: 'writeup',
+      path: `/article/${id}`,
+      title: a.title || id,
+      sub: a.subtitle || '',
+      // 正文也进索引：写解题思路里常搜的是 payload/函数名，光看标题搜不到
+      text: `${a.title || ''} ${a.subtitle || ''} ${a.content || ''}`,
+      tags: [],
+    })
+  }
+
+  const NOTES_DIR = path.join(fileURLToPath(new URL('.', import.meta.url)), 'src', 'data', 'kb', 'notes')
+  const readNoteBody = (name) => {
+    try {
+      return JSON.parse(readFileSync(path.join(NOTES_DIR, `${name}.json`), 'utf8')).content || ''
+    } catch {
+      return ''
+    }
+  }
+
+  for (const s of kb.sections) {
+    for (const g of s.groups) {
+      for (const n of g.notes) {
+        items.push({
+          type: 'note',
+          path: `/kb/${n.name}`,
+          title: n.title || n.name,
+          sub: n.summary || '',
+          text: `${n.title || ''} ${n.name} ${n.summary || ''} ${readNoteBody(n.name)}`,
+          tags: [s.title, g.title].filter(Boolean),
+        })
+      }
+    }
+  }
+
+  for (const c of allChallenges) {
+    items.push({
+      type: 'challenge',
+      path: '/challenges',
+      title: c.title || c.slug,
+      sub: c.description || '',
+      text: `${c.title || ''} ${c.slug} ${c.description || ''} ${(c.tags || []).join(' ')}`,
+      tags: [c.platform, c.category].filter(Boolean),
+    })
+  }
+
+  return { generatedAt: new Date().toISOString(), items }
+}
+
+/**
  * 构建后静态生成：
  *  ① 每条路由一个真 index.html —— GitHub Pages 对不存在的路径会走 404.html，
  *     内容能渲染但**状态码是 404，搜索引擎不收录**。预生成目录后深链直接 200。
  *  ② sitemap.xml —— 主路由 + 全部文章 + 全部知识库笔记（**不含隐藏彩蛋 /secret-quest**）。
  *  ③ rss.xml —— index.html 里 <link rel="alternate"> 指向它，此前一直是 404。
  *  ④ 404.html 兜底 + .nojekyll（原 spa-fallback 插件的职责，保留）。
+ *  ⑤ search-index.json —— 全站搜索用（轻量：标题/摘要/标签）。
  * 用 configResolved 取真实 outDir，别再硬编码 'dist'。
  */
 function seoStaticPlugin() {
@@ -33,6 +95,14 @@ function seoStaticPlugin() {
     apply: 'build',
     configResolved(cfg) {
       outDir = cfg.build.outDir
+    },
+    // dev 下也让搜索能用（不写盘，现算现给）
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (!req.url || !req.url.includes('search-index.json')) return next()
+        res.setHeader('Content-Type', 'application/json; charset=utf-8')
+        res.end(JSON.stringify(buildSearchIndex()))
+      })
     },
     closeBundle() {
       const abs = (p) => join(outDir, p)
@@ -102,8 +172,12 @@ function seoStaticPlugin() {
           `${items}\n  </channel>\n</rss>\n`
       )
 
+      // ⑤ 全站搜索索引
+      const searchIndex = buildSearchIndex()
+      writeFileSync(abs('search-index.json'), JSON.stringify(searchIndex))
+
       console.log(
-        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇`
+        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条`
       )
     },
   }
