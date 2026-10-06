@@ -2,5 +2,5 @@
 export const friendLinks = [
   { name: '懒羊羊大佬', url: 'https://yangleduo0629-cloud.github.io/-/#/' },
   { name: '累了', url: 'https://cd835.github.io/ZS/' },
-  { name: '初中生', url: 'https://tsvmv.github.io/' },
+  { name: '初中申', url: 'https://tsvmv.github.io/' },
 ]
