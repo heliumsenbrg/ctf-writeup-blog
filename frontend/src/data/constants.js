@@ -7,15 +7,6 @@ export const SAKURA_COLORS = [
   'rgba(255, 220, 228, 0.65)',
 ]
 
-export const platformNames = {
-  all: { name: '全部', color: 'cyan' },
-  ctfshow: { name: 'CTFShow', color: 'blue' },
-  qc: { name: 'QC 青岑', color: 'purple' }
-}
-
-export const categoryNames = {
-  infoleak: { name: '信息收集与泄露', color: 'cyan' },
-  php: { name: 'PHP 弱类型', color: 'purple' },
-  cmd: { name: '命令注入', color: 'pink' },
-  pwn: { name: 'PWN 与逆向', color: 'blue' }
-}
+// 注：platformNames / categoryNames 曾在这里定义过一份，但只有 3~4 个键且与
+// Challenges.jsx 里的实际版本不一致（那边有 12 个分类、5 个平台），属于会漂移的死代码，已删除。
+// 唯一实际生效的映射在 src/components/Challenges.jsx 顶部。
