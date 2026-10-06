@@ -474,3 +474,77 @@ textarea:focus-visible {
 .katex-error {
   color: #f87171;
 }
+
+/* ---------- 代码块语法高亮（rehype-highlight / highlight.js）----------
+   不引现成主题，按站点的赛博配色自建：粉=关键字、绿=字符串、青=函数名、
+   紫=属性、蓝=内置符号、琥珀=数字、灰=注释。 */
+.hljs {
+  color: #cbd5e1;
+  background: transparent;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #5f6f8a;
+  font-style: italic;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-doctag,
+.hljs-formula {
+  color: #f472b6;
+}
+
+.hljs-string,
+.hljs-regexp,
+.hljs-addition,
+.hljs-attribute {
+  color: #34d399;
+}
+
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-type {
+  color: #fbbf24;
+}
+
+.hljs-title,
+.hljs-title.function_,
+.hljs-section,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class {
+  color: #00f5ff;
+}
+
+.hljs-attr,
+.hljs-property,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #a78bfa;
+}
+
+.hljs-built_in,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link {
+  color: #60a5fa;
+}
+
+.hljs-meta {
+  color: #c084fc;
+}
+
+.hljs-tag {
+  color: #8a9abe;
+}
+
+.hljs-deletion {
+  color: #f87171;
+}
+
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: 700; }

@@ -7,8 +7,10 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeHighlight from 'rehype-highlight'
 import ReadingProgress from './ReadingProgress'
 import TableOfContents from './TableOfContents'
+import { headingSlug, toPlainText } from '../utils/headings.js'
 
 import { articles } from '../data/articles.js'
 
@@ -50,13 +52,11 @@ export default function Article() {
       return <hr className="my-8 border-t border-cyber-grid/30" />
     },
     h2({ children }) {
-      const text = typeof children === 'string' ? children : children?.[0]?.props?.value || ''
-      const id = text.toLowerCase().replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '')
+      const id = headingSlug(toPlainText(children))
       return <h2 id={id} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title scroll-mt-20">{children}</h2>
     },
     h3({ children }) {
-      const text = typeof children === 'string' ? children : children?.[0]?.props?.value || ''
-      const id = text.toLowerCase().replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '')
+      const id = headingSlug(toPlainText(children))
       return <h3 id={id} className="text-xl font-bold text-cyber-purple mt-6 mb-3 scroll-mt-20">{children}</h3>
     },
     strong({ children }) {
@@ -159,7 +159,7 @@ export default function Article() {
             className="cyber-card p-4 sm:p-8"
           >
             <div className="prose prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={components}>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]} components={components}>
                 {article.content}
               </ReactMarkdown>
             </div>

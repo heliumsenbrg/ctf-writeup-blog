@@ -4,9 +4,13 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
+import rehypeHighlight from 'rehype-highlight'
 import { ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import remarkWikilinks from '../utils/remarkWikilinks.js'
 import { MarkdownCode } from './CodeBlock'
+import ReadingProgress from './ReadingProgress'
+import TableOfContents from './TableOfContents'
+import { headingSlug, toPlainText } from '../utils/headings.js'
 import { isWikiHref, wikiTarget, isExternal, resolveWikiLink } from '../utils/kbLinks.js'
 
 // Vite 懒加载：每篇笔记一个 chunk（本文件不可在纯 node 中 import）
@@ -49,10 +53,10 @@ const markdownComponents = {
     <h1 id="note-title" className="text-3xl font-bold mt-2 mb-4 anime-title text-gradient scroll-mt-20">{children}</h1>
   ),
   h2: ({ children }) => (
-    <h2 id={slug(children)} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title scroll-mt-20">{children}</h2>
+    <h2 id={headingSlug(toPlainText(children))} className="text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title scroll-mt-20">{children}</h2>
   ),
   h3: ({ children }) => (
-    <h3 id={slug(children)} className="text-xl font-bold text-cyber-purple mt-6 mb-3 scroll-mt-20">{children}</h3>
+    <h3 id={headingSlug(toPlainText(children))} className="text-xl font-bold text-cyber-purple mt-6 mb-3 scroll-mt-20">{children}</h3>
   ),
   strong: ({ children }) => <strong className="text-cyber-cyan font-bold">{children}</strong>,
   ul: ({ children }) => <ul className="list-disc pl-6 my-3 space-y-1 text-cyber-grid">{children}</ul>,
@@ -128,8 +132,11 @@ export default function KbNote() {
   const next = place && place.index < place.group.notes.length - 1 ? place.group.notes[place.index + 1] : null
 
   return (
+    <>
+      <ReadingProgress />
+      <TableOfContents content={note.content} />
     <div className="min-h-screen py-12 sm:py-16">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:pr-72">
         <nav className="text-xs font-mono text-cyber-grid mb-6">
           <Link to="/kb" className="hover:text-cyber-cyan">知识库</Link>
           {place && (<><span className="mx-2">/</span><span>{place.section.title} · {place.group.title}</span></>)}
@@ -137,7 +144,7 @@ export default function KbNote() {
 
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath, remarkWikilinks]}
-          rehypePlugins={[rehypeKatex]}
+          rehypePlugins={[rehypeKatex, rehypeHighlight]}
           urlTransform={(url) => url}
           components={markdownComponents}
         >
@@ -158,5 +165,6 @@ export default function KbNote() {
         </div>
       </div>
     </div>
+    </>
   )
 }
