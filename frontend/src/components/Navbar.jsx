@@ -56,7 +56,7 @@ export default function Navbar() {
               href={GARGANTUA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="nav-link flex items-center"
+              className="nav-link flex items-center text-cyber-grid hover:text-cyber-cyan transition-colors"
             >
               <Circle className="w-4 h-4 mr-2" />
               Gargantua
@@ -65,7 +65,7 @@ export default function Navbar() {
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="nav-link flex items-center"
+              className="nav-link flex items-center text-cyber-grid hover:text-cyber-cyan transition-colors"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
               Platform
