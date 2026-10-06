@@ -56,7 +56,7 @@ export default function About() {
             </a>
           </div>
           <p className="mt-4 text-xs text-cyber-grid/70">
-            Blog by heliumsenbrg / qiuyida
+            Blog by heliumsenbrg
           </p>
         </motion.div>
 
