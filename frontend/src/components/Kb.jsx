@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, BookOpen } from 'lucide-react'
+import { Search, BookOpen, Share2, LayoutGrid } from 'lucide-react'
+import KbGraph from './KbGraph'
 
 export default function Kb() {
   const [query, setQuery] = useState('')
+  const [view, setView] = useState('cards')
   const [kbIndex, setKbIndex] = useState(null)
 
   // 动态加载元数据 (独立 chunk) —— 主包不因知识库增大
@@ -42,6 +44,28 @@ export default function Kb() {
           </p>
         </motion.div>
 
+        {/* 视图切换：卡片 / 关系图 */}
+        <div className="mb-8 flex justify-center gap-2 font-mono text-xs">
+          {[['cards', '卡片', LayoutGrid], ['graph', '关系图', Share2]].map(([k, label, Icon]) => (
+            <button
+              key={k}
+              onClick={() => setView(k)}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 transition-colors ${
+                view === k
+                  ? 'border-cyber-cyan/60 bg-cyber-cyan/10 text-cyber-cyan'
+                  : 'border-cyber-grid/25 text-cyber-grid hover:border-cyber-cyan/40 hover:text-cyber-cyan'
+              }`}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {view === 'graph' ? (
+          <KbGraph />
+        ) : (
+        <>
         <div className="max-w-xl mx-auto mb-10">
           <div className="glass-card flex items-center gap-3 px-4 py-3">
             <Search className="w-4 h-4 text-cyber-cyan shrink-0" />
@@ -82,6 +106,8 @@ export default function Kb() {
               ))}
             </section>
           ))
+        )}
+        </>
         )}
       </div>
     </div>
