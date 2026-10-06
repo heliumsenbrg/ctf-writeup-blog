@@ -10,6 +10,7 @@ import About from './components/About'
 
 // 知识库页面路由级懒加载：不进主包，只在访问 /kb 时下载
 const KbLazy = lazy(() => import('./components/Kb'))
+const GuestbookLazy = lazy(() => import('./components/Guestbook'))
 const KbNoteLazy = lazy(() => import('./components/KbNote'))
 
 // ===== Cursor Trail =====
@@ -259,6 +260,7 @@ function AppInner() {
             <Route path="kb" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><KbLazy /></Suspense>} />
             <Route path="kb/:name" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><KbNoteLazy /></Suspense>} />
             <Route path="about" element={<About />} />
+            <Route path="guestbook" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><GuestbookLazy /></Suspense>} />
             <Route path="secret-quest" element={<HiddenQuest />} />
             <Route path="*" element={<NotFound />} />
           </Route>
