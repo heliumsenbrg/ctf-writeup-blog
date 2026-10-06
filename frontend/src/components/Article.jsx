@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
+import { MarkdownCode } from './CodeBlock'
 import { ArrowLeft, ArrowRight, Terminal, Copy, Check } from 'lucide-react'
 import { useState, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -11,78 +12,6 @@ import { articles } from '../data/articles.js'
 
 
 // 自定义代码块组件 - 带复制按钮和flag spoiler
-function CodeBlock({ children, className, ...props }) {
-  const [copied, setCopied] = useState(false)
-  const code = String(children).replace(/\n$/, '')
-  const lang = className?.replace('language-', '') || ''
-
-  const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [code])
-
-  // 处理 flag{...} 的 spoiler 包装
-  const renderCode = useCallback(() => {
-    const parts = code.split(/(flag\{[^}]+\})/g)
-    if (parts.length === 1) {
-      return code.split('\n').map((line, i) => (
-        <div key={i}>{line || ' '}</div>
-      ))
-    }
-    return code.split('\n').map((line, i) => {
-      const lineParts = line.split(/(flag\{[^}]+\})/g)
-      return (
-        <div key={i}>
-          {lineParts.map((part, k) =>
-            /^flag\{[^}]+\}$/.test(part)
-              ? <span key={k} className="spoiler-flag">{part}</span>
-              : part || ' '
-          )}
-        </div>
-      )
-    })
-  }, [code])
-
-  return (
-    <div className="relative my-4">
-      <div className="absolute top-2 right-2 flex items-center gap-2">
-        {lang && <span className="text-xs text-cyber-grid font-mono">{lang}</span>}
-        <button
-          onClick={handleCopy}
-          className="p-1 hover:bg-cyber-cyan/10 rounded transition-colors"
-        >
-          {copied ? (
-            <Check className="w-4 h-4 text-cyber-cyan" />
-          ) : (
-            <Copy className="w-4 h-4 text-cyber-grid" />
-          )}
-        </button>
-      </div>
-      <pre className="code-block">
-        <code className="text-cyber-cyan/90">
-          {renderCode()}
-        </code>
-      </pre>
-    </div>
-  )
-}
-
-// 自定义行内代码组件
-function InlineCode({ children }) {
-  const text = String(children)
-  // 检查是否是 flag{...}
-  if (/^flag\{[^}]+\}$/.test(text)) {
-    return <span className="spoiler-flag">{text}</span>
-  }
-  return (
-    <code className="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">
-      {children}
-    </code>
-  )
-}
-
-// 自定义段落组件 - 处理 flag{...} spoiler
 function Paragraph({ children }) {
   // 如果子元素中包含纯文本的 flag{...}，需要包装
   return (
@@ -113,12 +42,7 @@ export default function Article() {
 
   // 自定义组件映射
   const components = useMemo(() => ({
-    code({ node, inline, className, children, ...props }) {
-      if (inline) {
-        return <InlineCode>{children}</InlineCode>
-      }
-      return <CodeBlock className={className}>{children}</CodeBlock>
-    },
+    code: MarkdownCode,
     p: Paragraph,
     hr() {
       return <hr className="my-8 border-t border-cyber-grid/30" />

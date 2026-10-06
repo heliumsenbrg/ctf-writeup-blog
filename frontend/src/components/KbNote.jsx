@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import remarkWikilinks from '../utils/remarkWikilinks.js'
+import { MarkdownCode } from './CodeBlock'
 import { isWikiHref, wikiTarget, isExternal, resolveWikiLink } from '../utils/kbLinks.js'
 
 // Vite 懒加载：每篇笔记一个 chunk（本文件不可在纯 node 中 import）
@@ -24,47 +25,6 @@ function locate(kbIndex, name) {
 }
 
 // —— 与 Article.jsx 同款的代码块/行内代码（副本；不改动 Article.jsx） ——
-function CodeBlock({ children, className }) {
-  const [copied, setCopied] = useState(false)
-  const code = String(children).replace(/\n$/, '')
-  const lang = className?.replace('language-', '') || ''
-  const handleCopy = useCallback(async () => {
-    try { await navigator.clipboard.writeText(code) } catch { /* 忽略剪贴板权限错误 */ }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }, [code])
-  const lines = code.split('\n')
-  return (
-    <div className="relative my-4">
-      <div className="absolute top-2 right-2 flex items-center gap-2">
-        {lang && <span className="text-xs text-cyber-grid font-mono">{lang}</span>}
-        <button onClick={handleCopy} className="p-1 hover:bg-cyber-cyan/10 rounded transition-colors">
-          {copied ? <Check className="w-4 h-4 text-cyber-cyan" /> : <Copy className="w-4 h-4 text-cyber-grid" />}
-        </button>
-      </div>
-      <pre className="my-4 p-4 pr-16 rounded-lg bg-black/60 border border-cyber-grid/20 overflow-x-auto text-sm leading-relaxed">
-        <code className="text-cyber-cyan/90 font-mono">
-          {lines.map((line, i) => (
-            <div key={i}>
-              {line.split(/(flag\{[^}]+\})/g).map((part, k) =>
-                /^flag\{[^}]+\}$/.test(part)
-                  ? <span key={k} className="spoiler-flag">{part}</span>
-                  : (part || ' ')
-              )}
-            </div>
-          ))}
-        </code>
-      </pre>
-    </div>
-  )
-}
-
-function InlineCode({ children }) {
-  const text = String(children)
-  if (/^flag\{[^}]+\}$/.test(text)) return <span className="spoiler-flag">{text}</span>
-  return <code className="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">{children}</code>
-}
-
 const slug = (text) => String(text).toLowerCase().replace(/[^\w一-龥]+/g, '-').replace(/^-+|-+$/g, '')
 
 const markdownComponents = {
@@ -81,10 +41,7 @@ const markdownComponents = {
     }
     return <span className="text-cyber-grid/70">{children}</span>
   },
-  code({ inline, className, children }) {
-    if (inline) return <InlineCode>{children}</InlineCode>
-    return <CodeBlock className={className}>{children}</CodeBlock>
-  },
+  code: MarkdownCode,
   p: ({ children }) => <p className="text-cyber-grid leading-relaxed my-3">{children}</p>,
   h1: ({ children }) => (
     <h1 id="note-title" className="text-3xl font-bold mt-2 mb-4 anime-title text-gradient scroll-mt-20">{children}</h1>
