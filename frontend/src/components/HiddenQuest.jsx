@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Lock, KeyRound, ScanEye, ChevronDown, Sparkles, ExternalLink, X } from 'lucide-react'
+import { Lock, KeyRound, ScanEye, ChevronDown, ExternalLink, X } from 'lucide-react'
 import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
