@@ -91,7 +91,7 @@ const categories = [
     desc: '零宽字符, EXIF隐写, ZIP密码破解',
   },
   {
-    id: 'ssrf',
+    id: 'northbridge',
     title: 'SSRF 服务端请求伪造',
     subtitle: 'Server-Side Request Forgery',
     icon: 'Shield',
@@ -99,7 +99,7 @@ const categories = [
     desc: 'kkfileview SSRF, gopher/HTTP 协议绕过, 内网探测',
   },
   {
-    id: 'php-filter',
+    id: 'qc747',
     title: 'PHP Filter Bypass',
     subtitle: 'PHP Wrapper / 条件竞争',
     icon: 'Code',
@@ -107,7 +107,7 @@ const categories = [
     desc: '大小写绕过, URL编码, 竞态条件刷积分',
   },
   {
-    id: 'yaml-deser',
+    id: 'yaml',
     title: 'YAML 反序列化 RCE',
     subtitle: 'Insecure Deserialization',
     icon: 'Zap',
