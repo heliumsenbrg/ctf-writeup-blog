@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import { ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import remarkWikilinks from '../utils/remarkWikilinks.js'
 import { MarkdownCode } from './CodeBlock'
@@ -134,7 +136,8 @@ export default function KbNote() {
         </nav>
 
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkWikilinks]}
+          remarkPlugins={[remarkGfm, remarkMath, remarkWikilinks]}
+          rehypePlugins={[rehypeKatex]}
           urlTransform={(url) => url}
           components={markdownComponents}
         >

@@ -5,6 +5,8 @@ import { ArrowLeft, ArrowRight, Terminal, Copy, Check } from 'lucide-react'
 import { useState, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkMath from 'remark-math'
+import rehypeKatex from 'rehype-katex'
 import ReadingProgress from './ReadingProgress'
 import TableOfContents from './TableOfContents'
 
@@ -157,7 +159,7 @@ export default function Article() {
             className="cyber-card p-4 sm:p-8"
           >
             <div className="prose prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={components}>
                 {article.content}
               </ReactMarkdown>
             </div>

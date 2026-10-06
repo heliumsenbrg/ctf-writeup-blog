@@ -453,3 +453,24 @@ textarea:focus-visible {
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------- KaTeX 数学公式 ---------- */
+.katex {
+  font-size: 1.05em;
+}
+
+/* 长公式横向滚动，别撑破正文容器（移动端尤其重要） */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35rem 0;
+}
+
+.katex-display > .katex {
+  white-space: normal;
+}
+
+/* KaTeX 解析失败的公式标红 —— 方便一眼发现写错的 LaTeX */
+.katex-error {
+  color: #f87171;
+}
