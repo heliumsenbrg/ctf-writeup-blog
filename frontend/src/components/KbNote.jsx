@@ -8,6 +8,8 @@ import rehypeHighlight from 'rehype-highlight'
 import { ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import remarkWikilinks from '../utils/remarkWikilinks.js'
 import { MarkdownCode } from './CodeBlock'
+import { createPortal } from 'react-dom'
+import { useRef } from 'react'
 import ReadingProgress from './ReadingProgress'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
@@ -19,6 +21,72 @@ const NOTES = Object.fromEntries(
   Object.entries(modules).map(([p, load]) => [p.slice(p.lastIndexOf('/') + 1, -'.json'.length), load])
 )
 const PUBLISHED = new Set(Object.keys(NOTES))
+
+/** gwern.net 式的双链悬停预览：hover [[wikilink]] 时浮动显示目标笔记的标题与摘要。
+ *  用 NOTES[name]() 复用已有的按篇懒加载 chunk，不增加首屏体积。 */
+function WikiPreviewLink({ to, name, children }) {
+  const [open, setOpen] = useState(false)
+  const [info, setInfo] = useState(null)
+  const [pos, setPos] = useState({ x: 0, y: 0, flip: false })
+  const anchorRef = useRef(null)
+  const timer = useRef(null)
+
+  const load = async () => {
+    if (info || !NOTES[name]) return
+    try {
+      const mod = await NOTES[name]()
+      const d = mod?.default ?? mod
+      setInfo({ title: d?.title || name, summary: d?.summary || '' })
+    } catch {
+      setInfo({ title: name, summary: '' })
+    }
+  }
+
+  const onEnter = () => {
+    timer.current = setTimeout(() => {
+      const r = anchorRef.current?.getBoundingClientRect()
+      if (r) {
+        const w = 320
+        const x = Math.max(12, Math.min(r.left, window.innerWidth - w - 12))
+        const flipUp = r.bottom > window.innerHeight - 220
+        setPos({ x, y: flipUp ? r.top - 10 : r.bottom + 10, flip: flipUp })
+      }
+      setOpen(true)
+      load()
+    }, 150)
+  }
+  const onLeave = () => {
+    clearTimeout(timer.current)
+    setOpen(false)
+  }
+
+  return (
+    <span className="relative inline" onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      <Link ref={anchorRef} to={to} className="text-cyber-purple hover:text-cyber-cyan underline decoration-dotted transition-colors">
+        {children}
+      </Link>
+      {open &&
+        createPortal(
+          <div
+            className={`pointer-events-none fixed z-[90] w-80 max-w-[calc(100vw-24px)] rounded-lg border border-cyber-purple/40 bg-cyber-darker/95 p-3 shadow-[0_0_24px_rgba(167,139,250,0.16)] ${pos.flip ? '-translate-y-full' : ''}`}
+            style={{ left: pos.x, top: pos.y }}
+          >
+            <div className="mb-1 text-xs font-bold text-cyber-cyan">
+              {info ? info.title : '加载中…'}
+            </div>
+            <p className="line-clamp-3 text-[11px] leading-relaxed text-cyber-grid/85">
+              {info ? info.summary || '（无摘要）' : ''}
+            </p>
+            <div className="mt-1.5 text-[10px] font-mono text-cyber-purple/70">
+              [[ {name} ]] · 点击跳转
+            </div>
+          </div>,
+          document.body
+        )}
+    </span>
+  )
+}
+
 
 function locate(kbIndex, name) {
   for (const sec of kbIndex.sections) {
@@ -36,9 +104,10 @@ const slug = (text) => String(text).toLowerCase().replace(/[^\w一-龥]+/g, '-')
 const markdownComponents = {
   a({ href = '', children }) {
     if (isWikiHref(href)) {
-      const r = resolveWikiLink(wikiTarget(href), PUBLISHED)
+      const name = wikiTarget(href)
+      const r = resolveWikiLink(name, PUBLISHED)
       if (r.kind === 'kb') {
-        return <Link to={r.to} className="text-cyber-purple hover:text-cyber-cyan underline decoration-dotted">{children}</Link>
+        return <WikiPreviewLink to={r.to} name={name}>{children}</WikiPreviewLink>
       }
       return <span title="库内未发布页" className="text-cyber-grid/70">{children}</span>
     }
