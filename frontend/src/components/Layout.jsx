@@ -3,6 +3,7 @@ import Navbar from './Navbar'
 import Footer from './Footer'
 import ErrorBoundary from './ErrorBoundary'
 import BackToTop from './BackToTop'
+import CommandPalette from './CommandPalette'
 
 export default function Layout() {
   return (
@@ -23,8 +24,9 @@ export default function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
-      <Footer />
-      <BackToTop />
-    </div>
+        <Footer />
+        <BackToTop />
+        <CommandPalette />
+      </div>
   )
 }
