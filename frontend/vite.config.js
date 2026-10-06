@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { writeFileSync, mkdirSync, readFileSync } from 'fs'
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { join } from 'path'
@@ -169,6 +169,12 @@ function seoStaticPlugin() {
     },
     closeBundle() {
       const abs = (p) => join(outDir, p)
+      // 构建失败时不会产出 index.html —— 这里必须优雅退出，
+      // 否则本插件抛的 ENOENT 会**盖住真正的构建错误**
+      if (!existsSync(abs('index.html'))) {
+        console.warn('[seo-static] 未产出 index.html（构建可能已失败），跳过静态生成')
+        return
+      }
       const indexHtml = readFileSync(abs('index.html'))
 
       // ④ 兜底
@@ -179,6 +185,7 @@ function seoStaticPlugin() {
         '/',
         '/challenges',
         '/about',
+        '/guestbook',
         '/kb',
         ...Object.keys(articles).map((id) => `/article/${id}`),
         ...kbNames().map((n) => `/kb/${n}`),

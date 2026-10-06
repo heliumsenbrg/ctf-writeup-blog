@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search } from 'lucide-react'
+import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search, MessageSquare } from 'lucide-react'
 
 const GARGANTUA_URL = `${import.meta.env.BASE_URL}gargantua/index.html`
 
@@ -51,6 +51,10 @@ export default function Navbar() {
             <NavLink to="/about" active={location.pathname === '/about'}>
               <User className="w-4 h-4 mr-2" />
               About
+            </NavLink>
+            <NavLink to="/guestbook" active={location.pathname === '/guestbook'}>
+              <MessageSquare className="w-4 h-4 mr-2" />
+              留言板
             </NavLink>
             <button
               onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
@@ -146,6 +150,18 @@ export default function Navbar() {
             >
               <User className="w-4 h-4" />
               About
+            </Link>
+            <Link
+              to="/guestbook"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono transition-all ${
+                location.pathname === '/guestbook'
+                  ? 'text-cyber-cyan bg-cyber-cyan/10'
+                  : 'text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              留言板
             </Link>
             <button
               onClick={() => { setMobileOpen(false); window.dispatchEvent(new Event('open-command-palette')) }}
