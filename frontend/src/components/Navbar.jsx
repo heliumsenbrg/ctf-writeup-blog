@@ -162,14 +162,22 @@ export default function Navbar() {
 
 function NavLink({ to, active, children }) {
   return (
-    <Link to={to} className={`nav-link flex items-center ${active ? 'text-cyber-cyan' : ''}`}>
-      {children}
+    <Link
+      to={to}
+      className={`nav-link relative flex items-center transition-colors ${
+        active ? 'text-cyber-cyan' : 'text-cyber-grid hover:text-cyber-cyan'
+      }`}
+    >
+      {/* 必须让 Link 自己 relative —— 原来没有 relative，
+          这根 absolute 的指示条就跑到 sticky 的 <nav> 上去了（贴整条底边、不会跟着切换） */}
       {active && (
-        <motion.div
+        <motion.span
           layoutId="activeIndicator"
-          className="absolute bottom-0 left-0 w-full h-px bg-cyber-cyan"
+          transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+          className="absolute -inset-x-2 -inset-y-1.5 rounded-lg bg-cyber-cyan/12 border border-cyber-cyan/30"
         />
       )}
+      <span className="relative flex items-center">{children}</span>
     </Link>
   )
 }
