@@ -6,3 +6,4 @@ dist/
 .vercel
 .hermes/
 .superpowers/
+vite.config.js.timestamp-*.mjs
