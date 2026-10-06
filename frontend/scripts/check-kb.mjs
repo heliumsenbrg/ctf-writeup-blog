@@ -14,6 +14,8 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const KB_DIR = path.join(HERE, '..', 'src', 'data', 'kb')
 const NOTES_DIR = path.join(KB_DIR, 'notes')
 const VAULT = process.env.KB_VAULT || 'C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记'
+// CI 或别人的机器上没有这个 vault → 跳过"与源文件字节一致"这一项，其余检查照跑
+const HAS_VAULT = fs.existsSync(VAULT)
 
 const problems = []
 const check = (ok, msg) => { if (!ok) problems.push(msg) }
@@ -37,9 +39,11 @@ for (const meta of flat) {
   if (!fs.existsSync(p)) { problems.push(`${meta.name}: 缺 notes/${meta.name}.json`); continue }
   const note = JSON.parse(fs.readFileSync(p, 'utf8'))
   check(note.content?.trim().length > 0, `${meta.name}: 正文为空`)
-  const src = findSource(meta.name)
-  check(src !== null, `${meta.name}: vault 中找不到对应 md 文件`)
-  if (src) check(fs.readFileSync(src, 'utf8') === note.content, `${meta.name}: 与 vault 源文件不一致（快照漂移？重跑 build-kb.mjs）`)
+    if (HAS_VAULT) {
+      const src = findSource(meta.name)
+      check(src !== null, `${meta.name}: vault 中找不到对应 md 文件`)
+      if (src) check(fs.readFileSync(src, 'utf8') === note.content, `${meta.name}: 与 vault 源文件不一致（快照漂移？重跑 build-kb.mjs）`)
+    }
   for (const t of note.links?.internal ?? []) {
     check(names.has(t) || t === 'index', `${meta.name}: internal 链接「${t}」不在发布集`)
   }
@@ -61,4 +65,4 @@ if (problems.length) {
   for (const p of problems) console.error('  - ' + p)
   process.exit(1)
 }
-console.log(`✓ kb check ok — ${flat.length} 篇，链接闭包完整，与 vault 一致`)
+console.log(`✓ kb check ok — ${flat.length} 篇，链接闭包完整` + (HAS_VAULT ? '，与 vault 一致' : '（本机无 vault，已跳过源文件比对）'))

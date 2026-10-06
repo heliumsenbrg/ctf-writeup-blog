@@ -4,6 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "check": "npm run check:data && npm run check:kb",
+    "check:data": "node scripts/check-data.mjs",
+    "check:kb": "node scripts/check-kb.mjs",
+    "pretest": "npm run check:data",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
