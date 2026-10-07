@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom'
 import { useRef } from 'react'
 import ReadingProgress from './ReadingProgress'
 import ShareButton from './ShareButton'
+import CommentSection from './CommentSection'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
 import { isWikiHref, wikiTarget, isExternal, resolveWikiLink } from '../utils/kbLinks.js'
@@ -223,6 +224,8 @@ export default function KbNote() {
         >
           {note.content}
         </ReactMarkdown>
+
+        <CommentSection page={'/kb/' + name} />
 
         <div className="flex justify-between gap-4 mt-12 pt-6 border-t border-cyber-grid/20">
           {prev ? (

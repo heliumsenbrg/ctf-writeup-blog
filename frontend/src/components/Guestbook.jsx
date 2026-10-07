@@ -2,22 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { MessageSquare, Send, Loader2, RefreshCw, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
+import { timeAgo } from '../utils/timeAgo.js'
 
 const PAGE_SIZE = 10
 const TABLE = 'guestbook'
 const COOLDOWN_MS = 30 * 1000 // 发完一条后 30 秒内不能再发（配合数据库的长度约束做基本防刷）
 const COOLDOWN_KEY = 'guestbook:last-post'
-
-function relativeTime(iso) {
-  const t = new Date(iso).getTime()
-  if (!Number.isFinite(t)) return ''
-  const diff = Date.now() - t
-  if (diff < 60_000) return '刚刚'
-  if (diff < 3600_000) return `${Math.floor(diff / 60_000)} 分钟前`
-  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)} 小时前`
-  if (diff < 30 * 86400_000) return `${Math.floor(diff / 86400_000)} 天前`
-  return new Date(t).toLocaleDateString('zh-CN')
-}
 
 export default function Guestbook() {
   const [nickname, setNickname] = useState('')
@@ -259,7 +249,7 @@ export default function Guestbook() {
                     {String(m.site).replace(/^https?:\/\//, '').slice(0, 40)}
                   </a>
                 )}
-                <span className="ml-auto text-[11px] font-mono text-cyber-grid/50">{relativeTime(m.created_at)}</span>
+                <span className="ml-auto text-[11px] font-mono text-cyber-grid/50">{timeAgo(m.created_at)}</span>
               </div>
               <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-cyber-grid">
                 {m.content}
