@@ -79,6 +79,87 @@ function buildKbGraph() {
 }
 
 /**
+ * 知识库 ↔ 题解 的关联索引（构建时生成）。
+ * 匹配方式：中文没有词边界，所以对笔记的「标题 + 摘要」切 2~5 字 n-gram，
+ *          再看哪些 n-gram 出现在文章正文里 —— 命中数够多就算相关。
+ *          （最初只拿整段笔记名去比，命中率极低，才 3 对；n-gram 才能抓到
+ *             「反序列化」「弱类型」这类跨笔记的公共术语。）
+ */
+function buildRelated() {
+  const CJK = /[\u4e00-\u9fa5]/
+  const STOP = new Set(['的', '了', '与', '和', '在', '是', '为', '及', '等', '中', '对', '从'])
+
+  /** 标题+摘要 → 去重后的 n-gram 集合 */
+  const gramsOf = (text) => {
+    const t = String(text || '').replace(/[\s`*_#>\[\]()（）:：,，.。;；!！?？"'“”]/g, ' ')
+    const set = new Set()
+    // 中文 n-gram
+    for (const run of t.match(/[\u4e00-\u9fa5]{2,}/g) || []) {
+      for (let n = 5; n >= 3; n--) {
+        for (let i = 0; i + n <= run.length; i++) {
+          const g = run.slice(i, i + n)
+          if (!STOP.has(g)) set.add(g)
+        }
+      }
+    }
+    // 拉丁词（长度 ≥3）
+    for (const w of t.match(/[A-Za-z][A-Za-z0-9+#.]{2,}/g) || []) set.add(w.toLowerCase())
+    return [...set]
+  }
+
+  const notes = []
+  for (const sec of kb.sections) {
+    for (const g of sec.groups) {
+      for (const n of g.notes) {
+        notes.push({
+          name: n.name,
+          title: n.title || n.name,
+          summary: n.summary || '',
+          grams: gramsOf((n.title || n.name) + ' ' + (n.summary || '')),
+        })
+      }
+    }
+  }
+
+  const arts = Object.entries(articles).map(([id, a]) => {
+    const hay = ((a.title || '') + ' ' + (a.subtitle || '') + ' ' + (a.content || '')).toLowerCase()
+    return { id, title: a.title || id, subtitle: a.subtitle || '', hay }
+  })
+
+  const byArticle = {}
+  const byNote = {}
+  for (const a of arts) byArticle[a.id] = []
+  for (const n of notes) byNote[n.name] = []
+
+  for (const a of arts) {
+    const scored = notes
+      .map((n) => {
+        let hits = 0
+        let weight = 0
+        for (const g of n.grams) {
+          // 3 字以上才计分，避免「测试」这类短词乱命中
+          if (g.length < 3) continue
+          if (a.hay.includes(g)) { hits++; weight += g.length }
+        }
+        return { n, hits, weight }
+      })
+      .filter((x) => x.hits >= 4)
+      .sort((x, y) => y.weight - x.weight)
+      .slice(0, 3)
+
+    for (const { n } of scored) {
+      byArticle[a.id].push({ name: n.name, title: n.title, summary: n.summary })
+      if (byNote[n.name] && byNote[n.name].length < 3) {
+        byNote[n.name].push({ id: a.id, title: a.title, subtitle: a.subtitle })
+      }
+    }
+  }
+
+  void CJK
+  return { articles: byArticle, notes: byNote }
+}
+
+/**
  * 全站搜索索引（构建时生成，避免把几十万字的正文塞进主包）：
  *   题解 24 + 知识库笔记 69 + 挑战 53 —— 只收标题/摘要/标签这类轻量字段。
  * 产物：dist/search-index.json，前端按需 fetch（⌘K 打开时）。
@@ -164,6 +245,7 @@ function seoStaticPlugin() {
         }
         if (url.includes('search-index.json')) return send(buildSearchIndex())
         if (url.includes('kb-graph.json')) return send(buildKbGraph())
+        if (url.includes('related.json')) return send(buildRelated())
         next()
       })
     },
@@ -294,8 +376,12 @@ function seoStaticPlugin() {
       const graph = buildKbGraph()
       writeFileSync(abs('kb-graph.json'), JSON.stringify(graph))
 
+      // ⑦ 知识库 ↔ 题解 关联索引
+      const related = buildRelated()
+      writeFileSync(abs('related.json'), JSON.stringify(related))
+
       console.log(
-        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条 · 图谱 ${graph.nodes.length} 节点/${graph.edges.length} 边`
+        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条 · 图谱 ${graph.nodes.length} 节点/${graph.edges.length} 边 · 关联 ${Object.values(related.articles).reduce((n, v) => n + v.length, 0)} 对`
       )
     },
   }
