@@ -9,6 +9,7 @@ import remarkMath from 'remark-math'
 import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from 'rehype-highlight'
 import ReadingProgress from './ReadingProgress'
+import ShareButton from './ShareButton'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
 
@@ -148,6 +149,7 @@ export default function Article() {
               <span>{article.subtitle}</span>
               <span className="text-cyber-grid/50">·</span>
               <span className="text-cyber-cyan/70">{readingTime} 分钟阅读</span>
+              <ShareButton title={article.title} />
             </div>
           </motion.div>
 
