@@ -11,6 +11,7 @@ import { MarkdownCode } from './CodeBlock'
 import { createPortal } from 'react-dom'
 import { useRef } from 'react'
 import ReadingProgress from './ReadingProgress'
+import ShareButton from './ShareButton'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
 import { isWikiHref, wikiTarget, isExternal, resolveWikiLink } from '../utils/kbLinks.js'
@@ -206,9 +207,12 @@ export default function KbNote() {
       <TableOfContents content={note.content} />
     <div className="min-h-screen py-12 sm:py-16">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:pr-72">
-        <nav className="text-xs font-mono text-cyber-grid mb-6">
-          <Link to="/kb" className="hover:text-cyber-cyan">知识库</Link>
-          {place && (<><span className="mx-2">/</span><span>{place.section.title} · {place.group.title}</span></>)}
+        <nav className="mb-6 flex items-center justify-between gap-4 text-xs font-mono text-cyber-grid">
+          <span className="min-w-0 truncate">
+            <Link to="/kb" className="hover:text-cyber-cyan">知识库</Link>
+            {place && (<><span className="mx-2">/</span><span>{place.section.title} · {place.group.title}</span></>)}
+          </span>
+          <ShareButton title={note.title} className="shrink-0" />
         </nav>
 
         <ReactMarkdown
