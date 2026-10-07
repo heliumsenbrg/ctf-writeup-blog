@@ -175,7 +175,7 @@ function seoStaticPlugin() {
         console.warn('[seo-static] 未产出 index.html（构建可能已失败），跳过静态生成')
         return
       }
-      const indexHtml = readFileSync(abs('index.html'))
+      const indexHtml = readFileSync(abs('index.html'), 'utf8')
 
       // ④ 兜底
       writeFileSync(abs('404.html'), indexHtml)
@@ -191,6 +191,49 @@ function seoStaticPlugin() {
         ...kbNames().map((n) => `/kb/${n}`),
       ]
 
+      // ⓿ 逐页 meta：给每条路由算自己的 title / description（og、twitter 同步改）
+      const SITE_TITLE = "heliumsenbrg's CTF Writeups"
+      const kbMeta = new Map()
+      for (const sec of kb.sections) for (const g of sec.groups) for (const n of g.notes) kbMeta.set(n.name, n)
+      const escHtml = (v) =>
+        String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+      const metaOf = (route) => {
+        const mArt = route.match(/^\/article\/(.+)$/)
+        if (mArt) {
+          const a = articles[decodeURIComponent(mArt[1])]
+          if (a) return { title: a.title + ' | ' + SITE_TITLE, desc: a.subtitle || a.title }
+        }
+        const mKb = route.match(/^\/kb\/(.+)$/)
+        if (mKb) {
+          const n = kbMeta.get(decodeURIComponent(mKb[1]))
+          if (n) return { title: n.title + ' | 知识库 | ' + SITE_TITLE, desc: String(n.summary || n.title).slice(0, 160) }
+        }
+        const STATIC_META = {
+          '/challenges': ['全部挑战', '按平台与分类浏览全部 CTF 挑战记录。'],
+          '/kb': ['知识库', '第二大脑：CTF 概念、项目与解题记录，支持双链与关系图。'],
+          '/guestbook': ['留言板', '无需注册，直接留言。'],
+          '/about': ['关于', '关于本站、技能方向与友情链接。'],
+        }
+        const hit = STATIC_META[route]
+        return hit ? { title: hit[0] + ' | ' + SITE_TITLE, desc: hit[1] } : null
+      }
+
+      const withMeta = (html, route, meta) => {
+        const url = SITE + route
+        const T = meta.title
+        const D = meta.desc
+        return html
+          .replace(/<title>[\s\S]*?<\/title>/, '<title>' + escHtml(T) + '</title>')
+          .replace(/(<meta name="description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
+          .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + escHtml(T) + '$2')
+          .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
+          .replace(/(<meta property="og:url" content=")[^"]*(")/, '$1' + escHtml(url) + '$2')
+          .replace(/(<meta name="twitter:title" content=")[^"]*(")/, '$1' + escHtml(T) + '$2')
+          .replace(/(<meta name="twitter:description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
+          .replace(/(<meta name="twitter:url" content=")[^"]*(")/, '$1' + escHtml(url) + '$2')
+      }
+
       // ① 每条路由预生成 index.html（深链返回 200）
       let made = 0
       for (const r of routes) {
@@ -198,7 +241,8 @@ function seoStaticPlugin() {
         try {
           const dir = abs(r.slice(1))
           mkdirSync(dir, { recursive: true })
-          writeFileSync(join(dir, 'index.html'), indexHtml)
+          const pageMeta = metaOf(r)
+          writeFileSync(join(dir, 'index.html'), pageMeta ? withMeta(indexHtml, r, pageMeta) : indexHtml)
           made++
         } catch (e) {
           console.warn(`[seo-static] 跳过 ${r}：${e.message}`)
