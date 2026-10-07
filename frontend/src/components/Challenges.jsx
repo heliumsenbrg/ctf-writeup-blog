@@ -47,10 +47,36 @@ function getDifficulty(points) {
 
 export default function Challenges() {
   const [platform, setPlatform] = useState('all')
+  const [category, setCategory] = useState('all')
+  const [difficulty, setDifficulty] = useState('all')
+  const [tag, setTag] = useState('all')
+  const [q, setQ] = useState('')
 
-  const filtered = platform === 'all'
-    ? allChallenges
-    : allChallenges.filter(c => platformKey(c.platform) === platform)
+  // 选项从数据里派生（不写死，新增挑战自动出现）
+  const catOptions = [...new Set(allChallenges.map(c => c.category))]
+  const diffOptions = [...new Set(allChallenges.map(c => c.difficulty).filter(Boolean))]
+  const tagOptions = Object.entries(
+    allChallenges.reduce((acc, c) => {
+      for (const t of c.tags || []) acc[t] = (acc[t] || 0) + 1
+      return acc
+    }, {})
+  ).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => t)
+
+  const hasFilter = platform !== 'all' || category !== 'all' || difficulty !== 'all' || tag !== 'all' || q.trim() !== ''
+  const clearAll = () => { setPlatform('all'); setCategory('all'); setDifficulty('all'); setTag('all'); setQ('') }
+
+  const kw = q.trim().toLowerCase()
+  const filtered = allChallenges.filter(c => {
+    if (platform !== 'all' && platformKey(c.platform) !== platform) return false
+    if (category !== 'all' && c.category !== category) return false
+    if (difficulty !== 'all' && c.difficulty !== difficulty) return false
+    if (tag !== 'all' && !(c.tags || []).includes(tag)) return false
+    if (kw) {
+      const hay = `${c.title || ''} ${c.slug || ''} ${c.description || ''} ${(c.tags || []).join(' ')}`.toLowerCase()
+      if (!hay.includes(kw)) return false
+    }
+    return true
+  })
 
   const grouped = filtered.reduce((acc, c) => {
     if (!acc[c.category]) acc[c.category] = []
@@ -102,7 +128,66 @@ export default function Challenges() {
             </button>
           ))}
         </motion.div>
-        
+
+        {/* 多维筛选：分类 / 难度 / 标签 + 关键词 */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-10 flex flex-col gap-3"
+        >
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-mono text-cyber-grid/60">分类</span>
+            {catOptions.map(c => (
+              <button key={c} onClick={() => setCategory(category === c ? 'all' : c)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-mono transition-colors ${
+                  category === c ? 'border-cyber-cyan/60 bg-cyber-cyan/10 text-cyber-cyan' : 'border-cyber-grid/25 text-cyber-grid hover:border-cyber-cyan/40 hover:text-cyber-cyan'
+                }`}>
+                {catMeta(c).name}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-mono text-cyber-grid/60">难度</span>
+            {diffOptions.map(d => (
+              <button key={d} onClick={() => setDifficulty(difficulty === d ? 'all' : d)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-mono transition-colors ${
+                  difficulty === d ? 'border-cyber-purple/60 bg-cyber-purple/10 text-cyber-purple' : 'border-cyber-grid/25 text-cyber-grid hover:border-cyber-purple/40 hover:text-cyber-purple'
+                }`}>
+                {d}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-mono text-cyber-grid/60">标签</span>
+            {tagOptions.map(t => (
+              <button key={t} onClick={() => setTag(tag === t ? 'all' : t)}
+                className={`rounded border px-2 py-0.5 text-[11px] font-mono transition-colors ${
+                  tag === t ? 'border-cyber-cyan/60 bg-cyber-cyan/10 text-cyber-cyan' : 'border-cyber-grid/20 text-cyber-grid/70 hover:text-cyber-cyan'
+                }`}>
+                #{t}
+              </button>
+            ))}
+          </div>
+
+          <div className="mx-auto flex w-full max-w-md items-center gap-2">
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="搜标题 / 描述 / 标签…"
+              className="w-full rounded-lg border border-cyber-grid/30 bg-cyber-darker/60 px-3 py-1.5 text-xs text-cyber-cyan placeholder:text-cyber-grid/50 outline-none focus:border-cyber-cyan/50"
+            />
+            {hasFilter && (
+              <button onClick={clearAll}
+                className="shrink-0 rounded-lg border border-cyber-grid/30 px-2.5 py-1.5 text-xs font-mono text-cyber-grid transition-colors hover:border-cyber-red/50 hover:text-cyber-red">
+                清除
+              </button>
+            )}
+          </div>
+        </motion.div>
+
         {/* Challenge categories */}
         {Object.entries(grouped).map(([cat, items], catIndex) => (
           <motion.div
