@@ -13,6 +13,7 @@ import { useRef } from 'react'
 import ReadingProgress from './ReadingProgress'
 import ShareButton from './ShareButton'
 import CommentSection from './CommentSection'
+import RelatedLinks from './RelatedLinks'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
 import { isWikiHref, wikiTarget, isExternal, resolveWikiLink } from '../utils/kbLinks.js'
@@ -224,6 +225,8 @@ export default function KbNote() {
         >
           {note.content}
         </ReactMarkdown>
+
+        <RelatedLinks kind="note" id={name} />
 
         <CommentSection page={'/kb/' + name} />
 

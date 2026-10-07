@@ -11,6 +11,7 @@ import rehypeHighlight from 'rehype-highlight'
 import ReadingProgress from './ReadingProgress'
 import ShareButton from './ShareButton'
 import CommentSection from './CommentSection'
+import RelatedLinks from './RelatedLinks'
 import TableOfContents from './TableOfContents'
 import { headingSlug, toPlainText } from '../utils/headings.js'
 
@@ -167,6 +168,8 @@ export default function Article() {
               </ReactMarkdown>
             </div>
           </motion.div>
+
+          <RelatedLinks kind="article" id={id} />
 
           <CommentSection page={'/article/' + id} />
 
