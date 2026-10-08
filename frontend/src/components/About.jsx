@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { Mail, Github, ExternalLink } from 'lucide-react'
 import { buildFriendIssueUrl } from '../utils/friendRequest.js'
 import FriendLinks from './FriendLinks'
+import { friendLinks } from '../data/friendLinks.js'
 
 export default function About() {
   const [reqName, setReqName] = useState('')
@@ -67,10 +68,18 @@ export default function About() {
           transition={{ delay: 0.1 }}
           className="glass-card p-6 sm:p-8 mt-6"
         >
-          <h2 className="text-xl font-bold text-gradient mb-4">友情链接</h2>
-          <FriendLinks variant="cards" />
+          {/* 友链列表：空的时候连标题一起隐藏，只保留下面的「申请友链」入口 */}
+          {friendLinks.length > 0 && (
+            <>
+              <h2 className="text-xl font-bold text-gradient mb-4">友情链接</h2>
+              <FriendLinks variant="cards" />
+            </>
+          )}
 
-          <form onSubmit={submitRequest} className="mt-6 pt-5 border-t border-cyber-grid/20">
+          <form
+            onSubmit={submitRequest}
+            className={friendLinks.length > 0 ? 'mt-6 pt-5 border-t border-cyber-grid/20' : ''}
+          >
             <h3 className="text-sm font-mono text-cyber-grid mb-3 tracking-widest">申请友链 / APPLY</h3>
             <div className="flex flex-col sm:flex-row gap-3">
               <input

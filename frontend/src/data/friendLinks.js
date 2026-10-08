@@ -3,8 +3,12 @@
 // ⚠️ **数组顺序就是展示顺序**（页脚从左到右、关于页从上到下按这个顺序渲染）。
 //    想调整排序，直接改这个数组即可，不用动组件。
 //    当前顺序：新加入的朋友排在前面。
-export const friendLinks = [
-  { name: '初中申', url: 'https://tsvmv.github.io/' },
-  { name: '累了', url: 'https://cd835.github.io/ZS/' },
-  { name: '懒羊羊大佬', url: 'https://yangleduo0629-cloud.github.io/-/#/' },
-]
+//
+// 2026-10-09：按主人要求清空（原有「初中申 / 累了 / 懒羊羊大佬」三条全部移除）。
+//   → 空数组时 FriendLinks 组件返回 null，页脚与「关于」页的友链区**整块隐藏**，
+//     不会留下光秃秃的 "FRIEND LINKS" 标题和空分隔线（见 FriendLinks.jsx）。
+//   → 「关于」页的「申请友链」入口仍在，有人想换友链照常可以提交 Issue。
+//
+// 想加回来时按下面格式追加即可，加完友链区会自动重新出现：
+//   { name: '显示名', url: 'https://example.com/' },
+export const friendLinks = []

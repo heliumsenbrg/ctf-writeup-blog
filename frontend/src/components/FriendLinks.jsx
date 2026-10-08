@@ -62,6 +62,9 @@ export function FriendAvatar({ name = '', url = '', size = 'md' }) {
 
 /** variant: 'footer' 一行 chips ｜ 'cards' 两列卡片 */
 export default function FriendLinks({ variant = 'footer' }) {
+  // 没有友链时整块不渲染 —— 否则会剩一个孤零零的 "FRIEND LINKS" 标题 / 空网格
+  if (!friendLinks.length) return null
+
   if (variant === 'footer') {
     return (
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
