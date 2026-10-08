@@ -7,6 +7,7 @@ import { join } from 'path'
 import { articles } from './src/data/articles.js'
 import kb from './src/data/kb/index.js'
 import { allChallenges } from './src/data/challenges.js'
+import { articleDates, dateOf } from './src/data/articleDates.js'
 
 /** 站点正式地址（canonical 用 Pages 那条，Vercel 镜像不作 canonical） */
 const SITE = 'https://heliumsenbrg.github.io/ctf-writeup-blog'
@@ -342,11 +343,18 @@ function seoStaticPlugin() {
       writeFileSync(
         abs('sitemap.xml'),
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-          routes.map((r) => `  <url><loc>${urlOf(r)}</loc></url>`).join('\n') +
+          routes
+            .map((r) => {
+              const d = r.startsWith('/article/')
+                ? dateOf(decodeURIComponent(r.slice('/article/'.length)))
+                : null
+              return `  <url><loc>${urlOf(r)}</loc>${d ? `<lastmod>${d}</lastmod>` : ''}</url>`
+            })
+            .join('\n') +
           `\n</urlset>\n`
       )
 
-      // ③ rss（文章数据里没有日期字段，统用构建时间）
+      // ③ rss（pubDate 用 src/data/articleDates.js 里的真实发布日期）
       const now = new Date().toUTCString()
       const items = Object.entries(articles)
         .map(([id, a]) => {
@@ -356,7 +364,9 @@ function seoStaticPlugin() {
             `      <title>${xmlEsc(a.title)}</title>\n` +
             `      <link>${link}</link>\n` +
             `      <guid isPermaLink="true">${link}</guid>\n` +
-            `      <pubDate>${now}</pubDate>\n` +
+            // 有真实发布日期的写 pubDate（RSS 里 pubDate 是可选的）；
+            // 没日期的**省略**，不再用构建时间冒充 —— 否则每篇都显示成刚发布
+            (dateOf(id) ? `      <pubDate>${new Date(dateOf(id) + 'T09:00:00Z').toUTCString()}</pubDate>\n` : '') +
             `      <description>${xmlEsc(a.subtitle || a.title)}</description>\n` +
             `    </item>`
           )
