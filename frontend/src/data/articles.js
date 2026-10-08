@@ -1011,7 +1011,7 @@ sig = hmac.new(
 
 ## 三、CTFShow Basic（部分完成）
 
-**账号**: （已清理） / （已清理）
+**账号**: （平台账号凭据已移除 —— 本站为公开站点，不公开任何账号口令）
 
 ### 已解题目
 
@@ -1912,13 +1912,20 @@ curl -s "http://target/secret_report.php?no=9e9"
 
   "0xgame2025": {
     title: "0xGame2025 CTF WriteUp",
-    subtitle: "2026-06-16 | 16/28 题解出",
+    subtitle: "2026-06-16 | 16 题赛时解出 · 1 题已成文",
     content: `
 # 0xGame2025 CTF WriteUp
 
 **日期**: 2026-06-16
 **平台**: 青岑 CTF (ctf.qingcen.net)
-**战绩**: 16/28 题解出，Problemset 72
+**战绩**: 赛时解出 16/28 题；本文已成文 1 题，其余 15 题仅有思路摘要（见下方状态说明）
+
+> **状态说明（诚实标注）**
+>
+> 本文是赛后速记，**16 题中只有「马哈鱼商店 (621)」有完整攻击链和真实 flag**。
+> 其余 15 题目前只有一句话思路摘要，当时没有记录 flag，统一标注为「待补」。
+> 这些标注不是占位符疏漏，而是"确实没写"的如实呈现 —— 补齐后会删掉本说明。
+> 请把本页当作**题目清单 + 思路索引**，而不是可复现的 WriteUp。
 
 ---
 
@@ -1949,7 +1956,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: HTTP 方法测试，找到正确的请求方式获取 flag。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -1959,7 +1966,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: 留言板应用，通过 XSS 或其他 Web 漏洞获取 flag。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -1969,7 +1976,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: Lemon 框架相关漏洞利用。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -1979,7 +1986,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: 远程代码执行漏洞，通过命令注入获取 flag。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -1989,7 +1996,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: PHP 反序列化漏洞，利用 \`__destruct()\` 或 \`__wakeup()\` magic 方法。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2014,7 +2021,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: DNS 相关漏洞，可能涉及 DNS 重绑定或 DNS 查询注入。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2024,7 +2031,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: PHP 变量覆盖漏洞，利用 \`extract()\` 或 \`$$\` 可变变量。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2034,7 +2041,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: 404 页面信息泄露或目录遍历。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2044,7 +2051,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: 登录绕过，可能涉及 SQL 注入或弱密码。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2054,7 +2061,7 @@ curl -s "http://target/secret_report.php?no=9e9"
 
 **解题思路**: Web 综合测试，涉及多种 Web 漏洞。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2087,7 +2094,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             break
 \`\`\`
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2109,7 +2116,7 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
 
 **原理**: WAF 使用字符串匹配检测 \`/flag\`，但 \`%09\`（TAB 字符）被 PHP 当作空白符，打断了连续字符串匹配。
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2132,7 +2139,7 @@ $b = FALSE;
 // md5($a) === md5($b) 为 true（都是 md5("") = "d41d8cd98f00b204e9800998ecf8427e"）
 \`\`\`
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2153,7 +2160,7 @@ $a = NULL;  // 不含 "NAN"
 $b = FALSE; // 不含 "NAN"
 \`\`\`
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 
@@ -2178,7 +2185,7 @@ password = ffifdyop
 SELECT * FROM users WHERE password = ''or'6....'
 \`\`\`
 
-**Flag**: \`flag{...}\`
+**Flag**: 待补（赛时未记录）
 
 ---
 

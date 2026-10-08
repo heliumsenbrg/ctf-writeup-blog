@@ -283,11 +283,49 @@ function seoStaticPlugin() {
       const escHtml = (v) =>
         String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+      /**
+       * 把 Markdown 正文压成一段纯文本摘要（给 meta description / og:description / RSS 用）。
+       *
+       * 目的是替换掉原来拿 subtitle 充当摘要的做法 —— subtitle 是「2026-06-16 | 16 题赛时解出」
+       * 这种元信息，分享卡片和 RSS 里看不出文章讲了什么。
+       * 逐类剥掉：代码块、表格、标题行、正文开头那几行 `**字段**：值` 形式的元信息、
+       * 图片、链接语法、强调符号，再压空白。
+       */
+      const mdExcerpt = (md, max = 118) => {
+        const raw = String(md || '')
+          .replace(/```[\s\S]*?```/g, ' ')
+          // 目录条目（`1. [标题](#锚点)`）—— 必须在"链接去语法"之前处理，
+          // 否则会残留成「1. Http的真理 (615) 2. 留言板（粉）(616)…」这种目录噪音
+          .replace(/^\s*\d+\.\s*\[[^\]]*\]\(#[^)]*\)\s*$/gm, ' ')
+          .replace(/^\s*\|\s*.*$/gm, ' ')
+          .replace(/^\s*#{1,6}\s.*$/gm, ' ')
+          // 注意：只去掉 `>` 这个**标记符号**，保留引用里的文字。
+          // 有些文章开头就是一段 `>` 状态说明，那恰恰是最适合当摘要的句子；
+          // 整行删掉会让摘要退化成目录噪音。
+          .replace(/^\s*>\s?/gm, ' ')
+          .replace(/^\s*[-*_]{3,}\s*$/gm, ' ')
+          // 正文开头的元信息行：`**日期**: …` / `**靶场**: …` / `**Platform**: …`
+          .replace(/^\s*\*\*(?:日期|时间|平台|靶场|战绩|分值|难度|类型|题目|赛事|积分|来源|环境|附件|提示|Flag|账号|Platform|Type|Difficulty|Points?|Category|Tags?)\*\*\s*[:：].*$/gim, ' ')
+          .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+          .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+          .replace(/^\s*[-*+]\s+/gm, ' ')
+          .replace(/[*_`~]/g, '')
+          .replace(/\\/g, '')
+          .replace(/\s+/g, ' ')
+          .trim()
+        if (!raw) return ''
+        return raw.length > max ? raw.slice(0, max) + '…' : raw
+      }
+
+      /** 文章摘要：优先正文，其次副标题，最后标题 */
+      const articleDesc = (id, a) => mdExcerpt(a.content) || a.subtitle || a.title
+
       const metaOf = (route) => {
         const mArt = route.match(/^\/article\/(.+)$/)
         if (mArt) {
-          const a = articles[decodeURIComponent(mArt[1])]
-          if (a) return { title: a.title + ' | ' + SITE_TITLE, desc: a.subtitle || a.title }
+          const key = decodeURIComponent(mArt[1])
+          const a = articles[key]
+          if (a) return { title: a.title + ' | ' + SITE_TITLE, desc: articleDesc(key, a) }
         }
         const mKb = route.match(/^\/kb\/(.+)$/)
         if (mKb) {
@@ -304,13 +342,27 @@ function seoStaticPlugin() {
         return hit ? { title: hit[0] + ' | ' + SITE_TITLE, desc: hit[1] } : null
       }
 
+      /**
+       * 路由 → 规范 URL（末尾统一带斜杠）。
+       * GitHub Pages 对无尾斜杠的深链会 301 跳一次（/article/x → /article/x/），
+       * 所以 canonical / og:url / sitemap 全部写"跳转之后"的形态，避免自我指涉到 301 源。
+       */
+      const urlOf = (r) => {
+        const p = r.split('/').map((seg, i) => (i === 0 ? '' : encodeURIComponent(seg))).join('/')
+        return SITE + (p.endsWith('/') ? p : p + '/')
+      }
+
       const withMeta = (html, route, meta) => {
-        const url = SITE + route
+        const url = urlOf(route)
         const T = meta.title
         const D = meta.desc
         return html
           .replace(/<title>[\s\S]*?<\/title>/, '<title>' + escHtml(T) + '</title>')
           .replace(/(<meta name="description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
+          // ★ canonical 也要按路由重写。之前只改了 og:url，漏了 canonical，
+          //   导致**所有文章页的 canonical 都指向首页** —— 等于告诉搜索引擎
+          //   "这些文章都是首页的重复副本"，按页 meta 的收益被抵消大半。
+          .replace(/(<link rel="canonical" href=")[^"]*(")/, '$1' + escHtml(url) + '$2')
           .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + escHtml(T) + '$2')
           .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
           .replace(/(<meta property="og:url" content=")[^"]*(")/, '$1' + escHtml(url) + '$2')
@@ -334,12 +386,7 @@ function seoStaticPlugin() {
         }
       }
 
-      // ② sitemap
-      // 末尾统一带斜杠：GitHub Pages 对无尾斜杠的深链会 301 跳一次，sitemap 里直接写规范形态
-      const urlOf = (r) => {
-        const path = r.split('/').map((seg, i) => (i === 0 ? '' : encodeURIComponent(seg))).join('/')
-        return SITE + (path.endsWith('/') ? path : path + '/')
-      }
+      // ② sitemap（urlOf 已在前面定义：末尾统一带斜杠）
       writeFileSync(
         abs('sitemap.xml'),
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -358,7 +405,8 @@ function seoStaticPlugin() {
       const now = new Date().toUTCString()
       const items = Object.entries(articles)
         .map(([id, a]) => {
-          const link = `${SITE}/article/${id}`
+          // 用规范 URL（带尾斜杠）：原来是无斜杠形态，24 条每条都要被 301 一次
+          const link = urlOf(`/article/${id}`)
           return (
             `    <item>\n` +
             `      <title>${xmlEsc(a.title)}</title>\n` +
@@ -367,7 +415,8 @@ function seoStaticPlugin() {
             // 有真实发布日期的写 pubDate（RSS 里 pubDate 是可选的）；
             // 没日期的**省略**，不再用构建时间冒充 —— 否则每篇都显示成刚发布
             (dateOf(id) ? `      <pubDate>${new Date(dateOf(id) + 'T09:00:00Z').toUTCString()}</pubDate>\n` : '') +
-            `      <description>${xmlEsc(a.subtitle || a.title)}</description>\n` +
+            // description 用正文摘要，而不是副标题（副标题是「日期 | 战绩」，不算内容）
+            `      <description>${xmlEsc(articleDesc(id, a))}</description>\n` +
             `    </item>`
           )
         })
