@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { parseHeadings } from '../utils/headings'
+import Spoiler from './Spoiler'
 
 /** 目录里的 flag 也要打码（跟正文一致的剧透保护） */
 function SpoilerText({ text }) {
@@ -7,7 +8,7 @@ function SpoilerText({ text }) {
   if (parts.length === 1) return parts[0]
   return parts.map((p, i) =>
     /^flag\{[^}]+\}$/.test(p) ? (
-      <span key={i} className="spoiler-flag">{p}</span>
+      <Spoiler key={i} tooltip={false}>{p}</Spoiler>
     ) : (
       p
     )

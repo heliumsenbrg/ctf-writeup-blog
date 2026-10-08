@@ -1,5 +1,6 @@
 import { Fragment, createElement, isValidElement, useCallback, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
+import Spoiler from './Spoiler'
 
 /**
  * 代码块 / 行内代码 —— Article 与 KbNote 共用一份。
@@ -25,13 +26,13 @@ export function isBlockCode({ className, children } = {}) {
   return extractText(children).includes('\n')
 }
 
-/** flag{...} 打码：默认糊住，鼠标悬停/点击才显形（样式见 .spoiler-flag） */
+/** flag{...} 打码：用首页同款黑幕遮挡（见 components/Spoiler.jsx） */
 function SpoilerText({ text }) {
   const parts = String(text).split(/(flag\{[^}]+\})/g)
   if (parts.length === 1) return String(text)
   return parts.map((part, i) =>
     /^flag\{[^}]+\}$/.test(part) ? (
-      <span key={i} className="spoiler-flag">{part}</span>
+      <Spoiler key={i} tooltip={false}>{part}</Spoiler>
     ) : (
       <Fragment key={i}>{part}</Fragment>
     )
@@ -102,7 +103,7 @@ export function CodeBlock({ children, className }) {
 
 export function InlineCode({ children }) {
   const text = extractText(children)
-  if (/^flag\{[^}]+\}$/.test(text)) return <span className="spoiler-flag">{text}</span>
+  if (/^flag\{[^}]+\}$/.test(text)) return <Spoiler>{text}</Spoiler>
   return (
     <code className="px-1 py-0.5 bg-cyber-darker rounded text-cyber-pink font-mono text-sm">
       {children}
