@@ -90,7 +90,9 @@ const flagIds = FLAGS.map((f) => f.id)
 check(new Set(flagIds).size === flagIds.length, 'flags.js 存在重复 id')
 for (const f of FLAGS) {
   check(!!f.key, `挑战 ${f.name}：口令为空`)
-  check(/^flag\{.+\}$/.test(f.flag), `挑战 ${f.name}：flag 格式不对`)
+  // 答案必须只以密文形式存在：出现过明文 flag 就算失败（防回归）
+  check(!('flag' in f), `挑战 ${f.name}：flags.js 里出现了明文 flag（应改为 flagEnc 密文）`)
+  check(typeof f.flagEnc === 'string' && f.flagEnc.length > 8, `挑战 ${f.name}：缺 flagEnc（加密后的答案）`)
   check(!f.link || /^https?:\/\//.test(f.link), `挑战 ${f.name}：link 非法`)
   check(!f.reward || /^https?:\/\//.test(f.reward), `挑战 ${f.name}：reward 非法`)
   check((f.clues || []).length > 0, `挑战 ${f.name}：没有线索`)

@@ -136,7 +136,7 @@ const FLAGS = [
     name: '原神，启动！',
     link: 'https://ys.mihoyo.com/',
     linkLabel: '官网 · 原神',
-    flag: 'flag{53cr3t_und3r_7h3_m00n!}',
+    flagEnc: '86tNqiptCKh_d6Cqalxb8pHignLEbYPQAa-suywXrHjsgA',
     key: 'genshin',
     clues: [
       '载荷被套了三层壳：反序、编码，还有一层你自己得猜。',
@@ -166,7 +166,7 @@ const FLAGS = [
     name: '崩坏：星穹铁道',
     link: 'https://sr.mihoyo.com/',
     linkLabel: '官网 · 星穹铁道',
-    flag: 'flag{7r41n_70_7h3_s74r5!}',
+    flagEnc: 'aSHQ5hVR8J63GFIHnRrfHq-4l47Tp4fDG8j5HO0KTg',
     key: 'starrail',
     clues: [
       '这一题的载荷同样反序 + Base64URL 了。',
@@ -196,7 +196,7 @@ const FLAGS = [
     name: '疯狂星期四',
     link: 'https://search.bilibili.com/all?keyword=%E7%96%AF%E7%8B%82%E6%98%9F%E6%9C%9F%E5%9B%9B',
     linkLabel: 'B站 · 疯狂星期四',
-    flag: 'flag{cu570m_ch4113n63!}',
+    flagEnc: 'ses-2GKh6nrHpvccwyvRbnlb4zlw2kPVji5epMk',
     key: 'custom',
     clues: [
       'v2 全部三层壳，一个不少。',
@@ -227,7 +227,7 @@ const FLAGS = [
     // 刻意不给外部链接：那个 MV 是「做出来之后」的奖励，提前挂出来就没意思了
     link: '',
     linkLabel: '',
-    flag: 'flag{n3v3r_g0nn4_g1v3_y0u_up}',
+    flagEnc: 'ujPrUsDp4AiTUZ4uz-FxXARyPNGTIiZgiaV5zq1uhgI93Gw',
     key: 'rickroll',
     clues: [
       '这是一道永远不会放弃你的题。',

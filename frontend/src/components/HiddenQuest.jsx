@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import QuestBoard, { QuestSignIn } from './QuestBoard'
 import { Lock, KeyRound, ScanEye, ChevronDown, ExternalLink, X } from 'lucide-react'
-import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
+import FLAGS, { getFlagConfig, computeCipher, decryptCipher, generateFlag, encodeKey } from '../config/flags'
 
 /* ---------- Particle / Confetti Engine ---------- */
 const COLORS = ['#00f5ff', '#a78bfa', '#f472b6', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#00ff41']
@@ -205,11 +205,14 @@ export default function HiddenQuest() {
   const pickerRef = useRef(null)
 
   const config = getFlagConfig(activeId)
+  // 答案在 flags.js 里是**密文**（flagEnc），这里用该题口令在运行时解密。
+  // 目的：包里不再有可读的明文答案（原来 grep 一下就能看到，谜题形同虚设）。
+  const baseFlag = useMemo(() => decryptCipher(config.flagEnc, config.key), [config.flagEnc, config.key])
   // 每次切换挑战生成新的动态 flag
   useEffect(() => {
-    setDynamicFlag(generateFlag(config.flag))
-  }, [activeId, config.flag])
-  const currentFlag = dynamicFlag || config.flag
+    setDynamicFlag(generateFlag(baseFlag))
+  }, [activeId, baseFlag])
+  const currentFlag = dynamicFlag || baseFlag
   // 加密含随机盐，必须 memo 住，否则每次 setState（如输入框打字）都会重算、密文乱跳
   const cipher = useMemo(
     () => computeCipher(currentFlag, config.key),
