@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import Spoiler from './Spoiler'
 import { Link } from 'react-router-dom'
 import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter, Library } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState, useRef } from 'react'
@@ -191,78 +192,6 @@ function MouseTrail() {
   return <canvas ref={canvasRef} className="fixed inset-0 z-50 pointer-events-none" />
 }
 
-// 黑幕遮挡组件 - 萌娘百科风格
-function Spoiler({ children, className = '' }) {
-  const [isHovered, setIsHovered] = useState(false)
-  const [showTooltip, setShowTooltip] = useState(false)
-
-  const handleMouseEnter = () => {
-    setIsHovered(true)
-    setShowTooltip(true)
-  }
-
-  const handleMouseLeave = () => {
-    setIsHovered(false)
-    setShowTooltip(false)
-  }
-
-  return (
-    <span className="relative inline-block">
-      <span
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-        className={`
-          relative cursor-pointer select-none
-          ${isHovered ? 'text-yellow-400' : 'text-transparent'}
-          ${className}
-        `}
-        style={{
-          backgroundColor: isHovered ? 'transparent' : '#000',
-          borderRadius: '4px',
-          padding: '2px 8px',
-          minWidth: '40px',
-          display: 'inline-block',
-          transition: 'all 0.15s ease',
-          boxShadow: isHovered ? 'none' : 'inset 0 0 0 1px rgba(255,255,255,0.3)'
-        }}
-      >
-        {/* 黑幕遮挡层 */}
-        {!isHovered && (
-          <span 
-            className="absolute inset-0 bg-[#0a0a0a]"
-            style={{ borderRadius: '4px' }}
-          />
-        )}
-        <span className="relative z-10">{children}</span>
-      </span>
-      
-      {/* 提示框 */}
-      <AnimatePresence>
-        {showTooltip && (
-          <motion.span
-            initial={{ opacity: 0, scale: 0.8, y: 5 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: 5 }}
-            className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 z-50 pointer-events-none"
-          >
-            <span className="inline-block bg-black border border-red-500 rounded px-3 py-1.5 text-red-500 text-xs font-bold whitespace-nowrap">
-              你知道的太多了
-            </span>
-            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-red-500" />
-          </motion.span>
-        )}
-      </AnimatePresence>
-    </span>
-  )
-}
-
-const platformNames = {
-  all: { label: '全部', color: 'cyan' },
-  ctfshow: { label: 'CTFShow', color: 'blue' },
-  qingcen: { label: '青岑 QC', color: 'purple' },
-  moectf: { label: 'MoeCTF', color: 'pink' },
-  other: { label: '其他', color: 'cyan' }
-}
 
 export default function Home({ GlitchText, TypewriterText }) {
   const [typedDone, setTypedDone] = useState(false)

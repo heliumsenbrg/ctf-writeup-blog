@@ -291,32 +291,6 @@ body {
   50% { opacity: 0; }
 }
 
-/* ===== Spoiler Flag (黑幕遮挡) ===== */
-.spoiler-flag {
-  background: #0a0a0a;
-  color: transparent;
-  border-radius: 3px;
-  padding: 0 2px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  user-select: none;
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
-}
-.spoiler-flag:hover {
-  background: transparent;
-  color: #fbbf24;
-  box-shadow: none;
-}
-.spoiler-flag::after {
-  content: '░';
-  color: rgba(255,255,255,0.3);
-  position: absolute;
-  margin-left: -0.5em;
-}
-.spoiler-flag:hover::after {
-  display: none;
-}
-
 /* ===== Cursor Trail ===== */
 #cursor-trail-canvas {
   position: fixed;
