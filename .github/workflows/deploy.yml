@@ -41,4 +41,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
-          force_orphan: true
+          # 不要 force_orphan：它会把 gh-pages 上**上一次部署的产物全删掉**。
+          # 后果：访客浏览器缓存的旧入口包，其引用的 vendor 分包（带哈希）直接 404
+          # → 应用启动不了 → 首页一直卡在加载态（实测复现：旧哈希的 react-vendor-*.js 返回 404）。
+          # 保留历史文件后，旧页面也能继续跑，只是版本旧一点，不会白屏。
