@@ -390,7 +390,11 @@ function seoStaticPlugin() {
 
 export default defineConfig({
   // 环境感知：GitHub Pages 需要子路径，Vercel 根路径
-  base: process.env.VERCEL ? '/' : '/ctf-writeup-blog/',
+  // VITE_BASE 优先（发布到 WorkBuddy 沙箱时挂在域名根路径 → VITE_BASE=/）；
+  // 默认 /ctf-writeup-blog/ 供 GitHub Pages 使用。
+  // 用环境变量而不是命令行 --base=/ 有个额外好处：MSYS/Git-Bash 会把以 / 开头的
+  // 命令行参数当路径转换，环境变量不受影响。
+  base: process.env.VITE_BASE || (process.env.VERCEL ? '/' : '/ctf-writeup-blog/'),
   plugins: [react(), seoStaticPlugin()],
   server: {
     host: '0.0.0.0',
