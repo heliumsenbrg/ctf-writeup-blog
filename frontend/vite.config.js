@@ -268,6 +268,7 @@ function seoStaticPlugin() {
         '/challenges',
         '/about',
         '/guestbook',
+        '/stats',
         '/kb',
         ...Object.keys(articles).map((id) => `/article/${id}`),
         ...kbNames().map((n) => `/kb/${n}`),

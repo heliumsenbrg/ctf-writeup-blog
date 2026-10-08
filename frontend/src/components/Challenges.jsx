@@ -12,7 +12,7 @@ const CYBER_COLORS = {
   pink: '#f472b6',
 }
 
-const platformNames = {
+export const platformNames = {
   all: { name: '全部靶场', color: 'cyan' },
   ctfshow: { name: 'CTFShow', color: 'blue' },
   qingcen: { name: '青岑 QC', color: 'purple' },
@@ -20,7 +20,7 @@ const platformNames = {
   other: { name: '其他', color: 'cyan' }
 }
 
-const categoryNames = {
+export const categoryNames = {
   infoleak: { name: '信息收集与泄露', color: 'cyan' },
   php: { name: 'PHP 弱类型', color: 'purple' },
   cmd: { name: '命令注入', color: 'pink' },
