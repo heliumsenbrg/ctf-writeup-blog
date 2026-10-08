@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { BarChart3, CalendarDays, Tag, Trophy, Target, Flame } from 'lucide-react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
-import { categoryNames } from './Challenges.jsx'
+import { categoryNames } from '../data/constants.js'
 
 /**
  * 战绩页 —— 全部基于 challenges.js 里已有的 date / tags / points / difficulty 派生，

@@ -5,6 +5,7 @@ import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter, Lib
 import { lazy, Suspense, useEffect, useState, useRef } from 'react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
+import { platformNames } from '../data/constants.js'
 
 // 懒加载粒子库 - 减少首屏加载时间
 const Particles = lazy(() => import('@tsparticles/react'))
@@ -202,7 +203,7 @@ export default function Home({ GlitchText, TypewriterText }) {
   const solved = filtered.filter(c => c.solved).length
   const firstBloods = filtered.filter(c => c.firstBlood).length
   const totalPts = filtered.reduce((s, c) => s + c.points, 0)
-  const platformName = platform === 'all' ? '' : platformNames[platform].label
+  const platformName = platform === 'all' ? '' : (platformNames[platform]?.name || platform)
   const subtitle = `{ ${solved} challenges solved, ${totalPts}pts }${platformName ? ' [' + platformName + ']' : ''}`
 
   // When typewriter finishes, wait 3s then loop
@@ -302,7 +303,7 @@ export default function Home({ GlitchText, TypewriterText }) {
                     : { color: 'rgba(138,154,190,0.4)', borderColor: 'transparent' }
                   }
                 >
-                  {val.label}
+                  {val.name}
                 </button>
               ))}
             </motion.div>
