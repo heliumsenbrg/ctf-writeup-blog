@@ -4,14 +4,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "check": "npm run check:undef && npm run check:data && npm run check:kb && npm run check:secrets",
+    "check": "npm run check:undef && npm run check:data && npm run check:kb && npm run check:secrets && npm run audit:flags",
     "check:undef": "node scripts/check-undef.mjs",
+    "audit:flags": "node scripts/audit-flags.mjs",
     "check:secrets": "node scripts/check-secrets.mjs",
     "check:data": "node scripts/check-data.mjs",
     "check:kb": "node scripts/check-kb.mjs",
     "pretest": "npm run check:data",
     "build": "vite build",
-    "postbuild": "node scripts/check-size.mjs",
+    "postbuild": "node scripts/check-size.mjs && node scripts/check-secrets.mjs --dist",
     "preview": "vite preview",
     "test": "vitest run",
     "deploy": "npm run build && npx gh-pages -d dist"
