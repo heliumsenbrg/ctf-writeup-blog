@@ -2,14 +2,17 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 import Home from './components/Home'
-import Article from './components/Article'
-import Challenges from './components/Challenges'
-import HiddenQuest from './components/HiddenQuest'
-import NotFound from './components/NotFound'
-import About from './components/About'
 
 // 知识库页面路由级懒加载：不进主包，只在访问 /kb 时下载
 const KbLazy = lazy(() => import('./components/Kb'))
+// 以下页面原先都是静态导入 —— 导致云服务 SDK / markdown / KaTeX 等大依赖全被打进
+// 入口包（实测 853KB → gzip 263KB），首屏在慢网上要等很久。改成懒加载后
+// 只有真正进入该页才下载，落地页 Home 仍保持即时加载。
+const ArticleLazy = lazy(() => import('./components/Article'))
+const ChallengesLazy = lazy(() => import('./components/Challenges'))
+const HiddenQuestLazy = lazy(() => import('./components/HiddenQuest'))
+const NotFoundLazy = lazy(() => import('./components/NotFound'))
+const AboutLazy = lazy(() => import('./components/About'))
 const GuestbookLazy = lazy(() => import('./components/Guestbook'))
 const StatsLazy = lazy(() => import('./components/Stats'))
 const KbNoteLazy = lazy(() => import('./components/KbNote'))
@@ -256,15 +259,15 @@ function AppInner() {
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Home GlitchText={GlitchText} TypewriterText={TypewriterText} />} />
-            <Route path="article/:id" element={<Article />} />
-            <Route path="challenges" element={<Challenges />} />
+            <Route path="article/:id" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><ArticleLazy /></Suspense>} />
+            <Route path="challenges" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><ChallengesLazy /></Suspense>} />
             <Route path="kb" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><KbLazy /></Suspense>} />
             <Route path="kb/:name" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><KbNoteLazy /></Suspense>} />
-            <Route path="about" element={<About />} />
+            <Route path="about" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><AboutLazy /></Suspense>} />
             <Route path="guestbook" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><GuestbookLazy /></Suspense>} />
             <Route path="stats" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><StatsLazy /></Suspense>} />
-            <Route path="secret-quest" element={<HiddenQuest />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="secret-quest" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><HiddenQuestLazy /></Suspense>} />
+            <Route path="*" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><NotFoundLazy /></Suspense>} />
           </Route>
         </Routes>
       </BrowserRouter>

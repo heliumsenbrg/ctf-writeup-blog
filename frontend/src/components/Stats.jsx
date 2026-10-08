@@ -42,7 +42,7 @@ export default function Stats() {
   const W = 560
   const H = 120
   const pts = s.cum
-    .map((v, i) => `${(i / Math.max(1, s.cum.length - 1)) * W},${H - (v / Math.max(1, s.cum.at(-1))) * (H - 12)}`)
+    .map((v, i) => `${(i / Math.max(1, s.cum.length - 1)) * W},${H - (v / Math.max(1, s.cum[s.cum.length - 1])) * (H - 12)}`)
     .join(' ')
 
   return (
