@@ -18,6 +18,8 @@ import kb from '../src/data/kb/index.js'
 import { allChallenges } from '../src/data/challenges.js'
 import { friendLinks } from '../src/data/friendLinks.js'
 import FLAGS from '../src/config/flags.js'
+import { platformNames, categoryNames } from '../src/data/constants.js'
+import { platformKey } from '../src/utils/platform.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const NOTES_DIR = path.join(HERE, '..', 'src', 'data', 'kb', 'notes')
@@ -67,15 +69,24 @@ for (const c of allChallenges) {
   }
   check(typeof c.points === 'number' && Number.isFinite(c.points), `挑战 ${c.slug}：points 不是数字`)
 }
-// category 必须在 Challenges.jsx 的映射表里有名字（否则界面上直接显示英文键）
-const challengesSrc = fs.readFileSync(path.join(HERE, '..', 'src', 'components', 'Challenges.jsx'), 'utf8')
-const mapBlock = challengesSrc.match(/const categoryNames = \{([\s\S]*?)\n\}/)
-check(!!mapBlock, 'Challenges.jsx 里找不到 categoryNames 映射表')
-if (mapBlock) {
-  const mapped = new Set([...mapBlock[1].matchAll(/^\s*'?([\w-]+)'?\s*:/gm)].map((m) => m[1]))
-  for (const k of new Set(allChallenges.map((c) => c.category))) {
-    check(mapped.has(k), `挑战分类「${k}」在 categoryNames 里没有映射（界面会显示英文键名）`)
-  }
+// category / platform 必须在 data/constants.js 的映射表里有名字（否则界面上直接显示英文键）
+// 映射表的唯一来源是 src/data/constants.js —— 这里直接 import 来查，不再用正则去组件文件里捞，
+// 因为"文件里有没有那个字符串"和"运行时到底用的是哪份表"是两回事。
+for (const k of new Set(allChallenges.map((c) => c.category))) {
+  check(!!categoryNames[k]?.name, `挑战分类「${k}」在 categoryNames 里没有映射（界面会显示英文键名）`)
+}
+for (const k of new Set(allChallenges.map((c) => platformKey(c.platform)))) {
+  check(!!platformNames[k]?.name, `挑战平台「${k}」在 platformNames 里没有映射（界面会显示英文键名）`)
+}
+
+// 防回归：映射表只允许存在于 constants.js。曾经 Challenges.jsx 和 constants.js 各存一份，
+// 后来 Home.jsx 引用的那份被删掉，直接导致线上首页 ReferenceError 白屏。
+for (const rel of ['components/Challenges.jsx', 'components/Home.jsx', 'components/Stats.jsx']) {
+  const src = fs.readFileSync(path.join(HERE, '..', 'src', rel), 'utf8')
+  check(
+    !/export\s+const\s+(platformNames|categoryNames)\s*=/.test(src),
+    `${rel} 里又出现了 platformNames/categoryNames 的本地定义 —— 唯一来源必须是 src/data/constants.js`
+  )
 }
 
 /* ---------- 4. 友链 ---------- */

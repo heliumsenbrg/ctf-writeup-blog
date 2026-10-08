@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Flag, CheckCircle, Clock, Zap, Filter } from 'lucide-react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
+import { platformNames, categoryNames } from '../data/constants.js'
 
 const CYBER_COLORS = {
   cyan: '#00f5ff',
@@ -12,28 +13,8 @@ const CYBER_COLORS = {
   pink: '#f472b6',
 }
 
-export const platformNames = {
-  all: { name: '全部靶场', color: 'cyan' },
-  ctfshow: { name: 'CTFShow', color: 'blue' },
-  qingcen: { name: '青岑 QC', color: 'purple' },
-  moectf: { name: 'MoeCTF', color: 'pink' },
-  other: { name: '其他', color: 'cyan' }
-}
-
-export const categoryNames = {
-  infoleak: { name: '信息收集与泄露', color: 'cyan' },
-  php: { name: 'PHP 弱类型', color: 'purple' },
-  cmd: { name: '命令注入', color: 'pink' },
-  pwn: { name: 'PWN 与逆向', color: 'blue' },
-  web: { name: 'Web 练习', color: 'cyan' },
-  reverse: { name: '逆向工程', color: 'purple' },
-  crypto: { name: '密码学', color: 'pink' },
-  stego: { name: '隐写术', color: 'cyan' },
-  misc: { name: '杂项', color: 'blue' },
-  tools: { name: '工具', color: 'cyan' },
-  'moectf-emoji': { name: '编码与进制', color: 'cyan' },
-  'moectf-zipcrypto': { name: '压缩包密码学', color: 'purple' },
-}
+// platformNames / categoryNames 的唯一来源是 src/data/constants.js，
+// 不要再在本文件里重复定义（曾因此导致 Home.jsx 引用到不存在的裸标识符 → 整页崩）
 
 // 兜底：未知分类不应让整页崩掉
 const catMeta = (cat) => categoryNames[cat] || { name: cat, color: 'cyan' }
