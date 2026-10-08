@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { MessageSquare, Send, Loader2, RefreshCw, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
+import { safeHref, displayHost } from '../utils/safeUrl.js'
 
 const PAGE_SIZE = 10
 const TABLE = 'guestbook'
@@ -239,16 +240,21 @@ export default function Guestbook() {
             >
               <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="text-sm font-bold text-cyber-cyan">{m.nickname}</span>
-                {m.site && (
+                {m.site && (safeHref(m.site) ? (
                   <a
-                    href={m.site}
+                    href={safeHref(m.site)}
                     target="_blank"
                     rel="noreferrer nofollow"
                     className="truncate text-[11px] font-mono text-cyber-purple hover:text-cyber-cyan"
                   >
-                    {String(m.site).replace(/^https?:\/\//, '').slice(0, 40)}
+                    {displayHost(m.site)}
                   </a>
-                )}
+                ) : (
+                  // 非 http(s)（javascript: / data: 等）只当纯文本显示，绝不放进 href
+                  <span className="truncate text-[11px] font-mono text-cyber-grid/50">
+                    {String(m.site).slice(0, 40)}
+                  </span>
+                ))}
                 <span className="ml-auto text-[11px] font-mono text-cyber-grid/50">{timeAgo(m.created_at)}</span>
               </div>
               <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-cyber-grid">
