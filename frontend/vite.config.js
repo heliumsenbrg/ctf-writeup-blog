@@ -409,11 +409,15 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
+    // 默认 target 偏新，老设备（尤其旧 iOS Safari）可能直接语法报错 → 整个 SPA 黑屏。
+    // 压到 iOS 13 / Chrome 79 一代，代价是包略大，换取老手机也能打开。
+    target: ['es2020', 'safari14', 'chrome87', 'firefox78', 'edge88'],
     rollupOptions: {
       output: {
         manualChunks: {
           'framer-motion': ['framer-motion'],
-          tsparticles: ['@tsparticles/react', '@tsparticles/slim', 'tsparticles'],
+          // tsparticles 不在这里声明：声明后 Vite 会把它当成入口图的一部分**预加载**，
+          // 而它其实只在首页懒加载用 → 不声明它就自然成为懒加载 chunk（省 183KB 首屏）。
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
         },
       },

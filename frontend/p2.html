@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="manifest" href="/ctf-writeup-blog/manifest.webmanifest">
+    <link rel="apple-touch-icon" href="/ctf-writeup-blog/icon-192.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>heliumsenbrg's CTF Writeups - Web/Crypto/Pwn 安全研究</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="CTF WriteUp 博客 - 记录 Web 安全、密码学、二进制利用的学习历程。包含 ISCC、青岑 CTF、CTFShow 等平台的 53 条挑战记录与 24 篇题解，另有 69 篇知识库笔记，涵盖信息泄露、PHP 弱类型、命令注入、PWN 等方向。">
+    <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow">
+    <meta name="author" content="heliumsenbrg">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/">
+    <meta property="og:title" content="heliumsenbrg's CTF Writeups - Web/Crypto/Pwn 安全研究">
+    <meta property="og:description" content="CTF WriteUp 博客 - 53 条挑战记录、24 篇题解与 69 篇知识库笔记，涵盖信息泄露、PHP 弱类型、命令注入、PWN 等方向。">
+    <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客">
+    <meta property="og:site_name" content="heliumsenbrg's CTF Writeups">
+    <meta property="og:locale" content="zh_CN">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/">
+    <meta name="twitter:title" content="heliumsenbrg's CTF Writeups - Web/Crypto/Pwn 安全研究">
+    <meta name="twitter:description" content="CTF WriteUp 博客 - 53 条挑战记录、24 篇题解与 69 篇知识库笔记，涵盖信息泄露、PHP 弱类型、命令注入、PWN 等方向。">
+    <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png">
+    <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://heliumsenbrg.github.io/ctf-writeup-blog/">
+
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="heliumsenbrg's CTF Writeups" href="/rss.xml">
+
+    <!-- 防止点击劫持 -->
+    <meta http-equiv="X-Frame-Options" content="SAMEORIGIN">
+
+    <!-- 防止 MIME 类型嗅探 -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+    <!-- Referrer 策略 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- 禁用 DNS prefetch，保护隐私 -->
+    <meta http-equiv="x-dns-prefetch-control" content="off">
+
+    <!-- 禁用 IE 兼容模式 -->
+    <meta http-equiv="x-ua-compatible" content="IE=edge">
+
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#080818">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <!-- 字体改成**非阻塞**加载：原先 rel=stylesheet 放在 head 会阻塞首屏渲染，
+         而 fonts.googleapis.com 在国内时通时不通 —— 一旦慢/被墙，整页就一直白屏。
+         现在用 media=print 先降级成"不阻塞"，加载完再切回 all；JS 关闭时用 noscript 兜底。 -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&amp;family=Noto+Sans+JP:wght@400;500;700&amp;display=swap" rel="stylesheet" media="all" onload="this.media='all'">
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+    </noscript>
+    <script type="module" crossorigin="" src="/assets/index-BxRtP-al.js"></script>
+    <link rel="modulepreload" crossorigin="" href="/assets/react-vendor-7IviXddT.js">
+    <link rel="modulepreload" crossorigin="" href="/assets/tsparticles-_YUqh1I1.js">
+    <link rel="modulepreload" crossorigin="" href="/assets/framer-motion-COeskg79.js">
+    <link rel="stylesheet" crossorigin="" href="/assets/index-CSyh6jIA.css">
+  </head>
+  <!-- 
+███████╗███████╗ ██████╗██████╗ ███████╗████████╗
+██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝╚══██╔══╝
+███████╗█████╗  ██║     ██████╔╝█████╗     ██║   
+╚════██║██╔══╝  ██║     ██╔══██╗██╔══╝     ██║   
+███████║███████╗╚██████╗██║  ██║███████╗   ██║   
+╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝   
+    
+    🕵️ 你发现了隐藏的线索...
+    试试在地址栏输入 /secret-quest
+    
+    Hint: 密钥就藏在这个页面的某个角落里...
+    "在看不见的地方，藏着打开秘密的钥匙"
+  -->
+  <body class="bg-cyber-darker text-cyber-cyan font-mono">
+    <div id="root"><canvas id="cursor-trail-canvas" width="762" height="428"></canvas></div>
+  
+
+</body></html>
