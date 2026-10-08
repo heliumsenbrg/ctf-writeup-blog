@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
   <head>
+    <style>
+      /* 首屏加载提示：内联样式 + 纯 HTML，网络再慢也能立刻显示，
+         不会像原来那样"深色底 + 无内容"让人以为站点挂了 */
+      .boot-hint {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        gap: 10px; background: #080818; color: #8a9abe;
+        font: 14px ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.05em;
+      }
+      .boot-hint .dot {
+        width: 8px; height: 8px; border-radius: 50%; background: #00f5ff;
+        animation: bootpulse 1.2s ease-in-out infinite;
+      }
+      @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
+    </style>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="manifest" href="/ctf-writeup-blog/manifest.webmanifest" />
@@ -83,7 +98,9 @@
     "在看不见的地方，藏着打开秘密的钥匙"
   -->
   <body class="bg-cyber-darker text-cyber-cyan font-mono">
-    <div id="root"></div>
+    <div id="root">
+      <div class="boot-hint"><span class="dot"></span>正在加载…</div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
