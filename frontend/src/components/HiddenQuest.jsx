@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import QuestBoard, { QuestSignIn } from './QuestBoard'
 import { Lock, KeyRound, ScanEye, ChevronDown, ExternalLink, X } from 'lucide-react'
 import FLAGS, { getFlagConfig, computeCipher, generateFlag, encodeKey } from '../config/flags'
 
@@ -170,6 +171,11 @@ function VictoryModal({ config, onClose }) {
             {config.rewardLabel || '立即下载'}
           </a>
         )}
+
+        {/* 通关留名（自助记录：彩蛋 flag 动态生成，服务端无法校验） */}
+        <div className="mb-3 flex flex-col items-center">
+          <QuestSignIn quest={config.victory.title} />
+        </div>
 
         <div className="flex justify-center">
           <button
@@ -496,6 +502,8 @@ export default function HiddenQuest() {
           aria-hidden="true"
         />
       </div>
+
+      <QuestBoard />
 
       {/* Victory celebration */}
       <AnimatePresence>
