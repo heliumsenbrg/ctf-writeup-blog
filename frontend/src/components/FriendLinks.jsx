@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 import { friendLinks } from '../data/friendLinks.js'
+import { safeHref } from '../utils/safeUrl.js'
 
 /**
  * 友链 —— 页脚与「关于」页共用一份（原先两处各写一遍 markup）。
@@ -68,7 +69,7 @@ export default function FriendLinks({ variant = 'footer' }) {
         {friendLinks.map((f) => (
           <a
             key={f.url}
-            href={f.url}
+            href={safeHref(f.url) || undefined}
             target="_blank"
             rel="noreferrer"
             className="group inline-flex items-center gap-2 text-xs text-cyber-cyan transition-colors hover:text-white"
@@ -89,7 +90,7 @@ export default function FriendLinks({ variant = 'footer' }) {
         return (
           <a
             key={f.url}
-            href={f.url}
+            href={safeHref(f.url) || undefined}
             target="_blank"
             rel="noreferrer"
             className="group flex items-center gap-3 rounded-lg border border-cyber-grid/20 p-3 transition-colors hover:border-cyber-cyan/50 hover:bg-cyber-cyan/5"
