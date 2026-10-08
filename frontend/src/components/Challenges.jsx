@@ -51,6 +51,8 @@ export default function Challenges() {
   const [difficulty, setDifficulty] = useState('all')
   const [tag, setTag] = useState('all')
   const [q, setQ] = useState('')
+  const [points, setPoints] = useState('all')
+  const [sort, setSort] = useState('default')
 
   // 选项从数据里派生（不写死，新增挑战自动出现）
   const catOptions = [...new Set(allChallenges.map(c => c.category))]
@@ -62,8 +64,8 @@ export default function Challenges() {
     }, {})
   ).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([t]) => t)
 
-  const hasFilter = platform !== 'all' || category !== 'all' || difficulty !== 'all' || tag !== 'all' || q.trim() !== ''
-  const clearAll = () => { setPlatform('all'); setCategory('all'); setDifficulty('all'); setTag('all'); setQ('') }
+  const hasFilter = platform !== 'all' || category !== 'all' || difficulty !== 'all' || tag !== 'all' || points !== 'all' || sort !== 'default' || q.trim() !== ''
+  const clearAll = () => { setPlatform('all'); setCategory('all'); setDifficulty('all'); setTag('all'); setPoints('all'); setSort('default'); setQ('') }
 
   const kw = q.trim().toLowerCase()
   const filtered = allChallenges.filter(c => {
@@ -75,7 +77,16 @@ export default function Challenges() {
       const hay = `${c.title || ''} ${c.slug || ''} ${c.description || ''} ${(c.tags || []).join(' ')}`.toLowerCase()
       if (!hay.includes(kw)) return false
     }
+    const pts = Number(c.points || 0)
+    if (points === 'low' && pts > 100) return false
+    if (points === 'mid' && (pts <= 100 || pts > 300)) return false
+    if (points === 'high' && pts <= 300) return false
     return true
+  }).sort((a, b) => {
+    if (sort === 'points-desc') return (b.points || 0) - (a.points || 0)
+    if (sort === 'points-asc') return (a.points || 0) - (b.points || 0)
+    if (sort === 'date-desc') return String(b.date || '').localeCompare(String(a.date || ''))
+    return 0
   })
 
   const grouped = filtered.reduce((acc, c) => {
@@ -170,6 +181,29 @@ export default function Challenges() {
                 #{t}
               </button>
             ))}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[11px] font-mono text-cyber-grid/60">分值</span>
+            {[['low', '≤100'], ['mid', '101–300'], ['high', '>300']].map(([k, label]) => (
+              <button key={k} onClick={() => setPoints(points === k ? 'all' : k)}
+                className={`rounded-lg border px-2.5 py-1 text-xs font-mono transition-colors ${
+                  points === k ? 'border-cyber-cyan/60 bg-cyber-cyan/10 text-cyber-cyan' : 'border-cyber-grid/25 text-cyber-grid hover:border-cyber-cyan/40 hover:text-cyber-cyan'
+                }`}>
+                {label}
+              </button>
+            ))}
+            <span className="ml-3 text-[11px] font-mono text-cyber-grid/60">排序</span>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="rounded-lg border border-cyber-grid/30 bg-cyber-darker/60 px-2 py-1 text-xs font-mono text-cyber-cyan outline-none focus:border-cyber-cyan/50"
+            >
+              <option value="default">默认</option>
+              <option value="points-desc">分值从高到低</option>
+              <option value="points-asc">分值从低到高</option>
+              <option value="date-desc">最新在前</option>
+            </select>
           </div>
 
           <div className="mx-auto flex w-full max-w-md items-center gap-2">

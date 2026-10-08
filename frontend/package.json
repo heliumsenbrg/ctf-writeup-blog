@@ -10,6 +10,7 @@
     "check:kb": "node scripts/check-kb.mjs",
     "pretest": "npm run check:data",
     "build": "vite build",
+    "postbuild": "node scripts/check-size.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "deploy": "npm run build && npx gh-pages -d dist"
