@@ -269,6 +269,7 @@ function seoStaticPlugin() {
         '/about',
         '/guestbook',
         '/stats',
+        '/secret-quest',
         '/kb',
         ...Object.keys(articles).map((id) => `/article/${id}`),
         ...kbNames().map((n) => `/kb/${n}`),
@@ -333,8 +334,11 @@ function seoStaticPlugin() {
       }
 
       // ② sitemap
-      const urlOf = (r) =>
-        SITE + r.split('/').map((seg, i) => (i === 0 ? '' : encodeURIComponent(seg))).join('/')
+      // 末尾统一带斜杠：GitHub Pages 对无尾斜杠的深链会 301 跳一次，sitemap 里直接写规范形态
+      const urlOf = (r) => {
+        const path = r.split('/').map((seg, i) => (i === 0 ? '' : encodeURIComponent(seg))).join('/')
+        return SITE + (path.endsWith('/') ? path : path + '/')
+      }
       writeFileSync(
         abs('sitemap.xml'),
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +

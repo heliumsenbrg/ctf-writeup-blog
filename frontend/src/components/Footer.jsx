@@ -12,7 +12,7 @@ export default function Footer() {
               &lt;CTF WriteUp /&gt; <span className="text-cyber-purple">v1.0.0</span>
             </div>
             <div className="text-cyber-grid text-xs mt-1">
-              生成时间: 2026-04-26 | 全部题目均为一血解题
+              记录 Web / 逆向 / 密码学 / Pwn / 杂项 方向的学习与解题过程
             </div>
           </div>
           
