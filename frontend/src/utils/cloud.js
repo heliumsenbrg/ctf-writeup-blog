@@ -9,8 +9,22 @@ import { createWorkBuddyCloud } from '@tencent-ai/workbuddy-cloud-sdk'
  *
  * 全应用只初始化一次，各模块复用同一个 client。
  */
+/**
+ * 数据面地址。允许用**构建期环境变量**覆盖：
+ *
+ *   设了 VITE_CLOUD_ENDPOINT  → 指向自建中转（如 cloudflare/ 下那个 Worker），
+ *                              由它去掉 Origin 再转发 → 绕开 CORS（GitHub Pages 上唯一可行的路）
+ *   没设（默认）              → 直连云服务数据面
+ *                              （在 WorkBuddy 发布域上没问题；在 GitHub Pages 上会被
+ *                                Origin 白名单拒掉，见下面那段说明）
+ *
+ * 用环境变量而不是把地址写死在源码里，是为了「切过去 / 退回来」都只改构建参数，
+ * 不用动这行代码、也不用担心忘了改回来。
+ */
+const DEFAULT_ENDPOINT = 'https://ctf-writeup-blog.app.workbuddy.host'
+
 export const cloudConfig = {
-  endpoint: 'https://ctf-writeup-blog.app.workbuddy.host',
+  endpoint: import.meta.env.VITE_CLOUD_ENDPOINT || DEFAULT_ENDPOINT,
   publishableKey: 'wbpk_amJCk3tyxjtHbVB4JE3NNS_kZ4ZseaRE1oL556oz5mlibKyUME0Drsc',
 }
 
@@ -62,15 +76,22 @@ export function friendlyDbError(err) {
     console.warn('[cloud] 请求失败，原始错误：', err?.message || err, err)
   }
 
-  const code = err?.code
-  // 23514 = CHECK 约束不通过。服务端除了长度，还拦「控制字符」这类纯垃圾内容。
-  if (code === '23514' || code === '23502') {
+  // ⚠️ PostgREST 会把 SQLSTATE 包一层前缀（实测是 `DATABASE_23514`），
+  //    所以不能直接拿 code 跟 '23514' 比 —— 那样判断**永远不成立**（这是个既有的哑 bug）。
+  const code = String(err?.code || '').replace(/^DATABASE_/, '')
+  const rawMsg = String(err?.message || '')
+
+  // 23514 = CHECK 约束 / 反垃圾触发器拒绝。
+  // 触发器抛的 message 本身就是写给人看的中文，直接透出；剩下的才是长度等结构性问题。
+  if (code === '23514') {
+    if (/未发布|请稍后再试/.test(rawMsg)) return rawMsg
     return '内容不符合要求：昵称 1-20 字、留言 1-500 字，且不能含不可见字符'
   }
+  if (code === '23502') return '内容不符合要求：昵称 1-20 字、留言 1-500 字，且不能含不可见字符'
   if (code === '42501') return '服务器拒绝了这次操作（权限不足）'
   if (code === '42P01') return '留言表不存在，请稍后再试'
 
-  const msg = String(err?.message || '')
+  const msg = rawMsg
   // 后端没返回 JSON 而是返回了 HTML（SPA 兜底页 / 网关错误页）——
   // 浏览器抛的是 "Unexpected token '<'" 这类 JSON 解析错误，对访客毫无意义。
   if (/Unexpected token\s*'<'|not valid JSON|is not valid JSON|<!DOCTYPE/i.test(msg)) {

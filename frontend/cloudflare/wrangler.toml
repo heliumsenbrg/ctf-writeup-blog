@@ -1,0 +1,20 @@
+# Cloudflare Worker：云数据库同源中转（解决 GitHub Pages 上的 CORS）
+#
+# 部署：
+#   cd cloudflare
+#   npm i -g wrangler      # 只要一次
+#   wrangler login         # 浏览器里登录你的 Cloudflare 账号
+#   wrangler deploy        # 约 10 秒，会打印出 workers.dev 地址
+#
+# 然后把打印出来的地址填到前端构建环境变量里：
+#   VITE_CLOUD_ENDPOINT=https://ctf-blog-cloud-proxy.<你的子域>.workers.dev
+#
+# 免费额度：每天 10 万次请求，个人博客绰绰有余。
+
+name = "ctf-blog-cloud-proxy"
+main = "cloud-proxy-worker.js"
+compatibility_date = "2024-11-01"
+
+# 想改允许来源不用重新部署代码，在 Dashboard 的
+# Settings → Variables and Secrets 里加（名称需与代码里读的一致，目前是硬编码在文件顶部）。
+# 目前直接写在 cloud-proxy-worker.js 的 ALLOWED_ORIGINS 里，改完重新 deploy 即可。
