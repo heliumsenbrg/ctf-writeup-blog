@@ -66,10 +66,19 @@ export default function CommentSection({ page }) {
 
     setPosting(true)
     try {
-      await unwrap(getCloud().database.from(TABLE).insert({ page, nickname: n, content: c }).select('id'))
+      // 这里不用 unwrap 的返回值判成功与否，而是看回读结果：
+      // 返回空数组 = 行写进去了、但被服务端审核触发器置为 hidden（读策略过滤掉了）
+      // → 属于"待审核"，不是失败，也不该说成"评论成功"。
+      const rows = await unwrap(getCloud().database.from(TABLE).insert({ page, nickname: n, content: c }).select('id'))
+      const pending = !Array.isArray(rows) || rows.length === 0
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 隐私模式 */ }
       setNickname(''); setContent('')
-      setMsg({ type: 'ok', text: '评论成功' })
+      setMsg({
+        type: 'ok',
+        text: pending
+          ? '已提交，站长审核通过后显示（含推广链接或疑似广告的内容会自动进入审核）'
+          : '评论成功',
+      })
       await load()
     } catch (e2) {
       setMsg({ type: 'err', text: friendlyDbError(e2) })

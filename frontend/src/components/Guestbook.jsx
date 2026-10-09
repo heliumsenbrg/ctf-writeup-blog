@@ -96,12 +96,21 @@ export default function Guestbook() {
     setPosting(true)
     try {
       // 不传 owner_id —— 该表是公开留言表，没有归属列，写入由 RLS 的 INSERT 策略放行
-      await unwrap(
+      // 注意：返回**空数组**是有意义的 —— 行确实写进去了，但被服务端的审核触发器
+      // 置成了 hidden=true，而读策略是 `hidden = false`，所以回读拿不到它。
+      // 也就是"内容进入了待审核状态"。这里如实告诉访客，别让人以为发丢了。
+      const rows = await unwrap(
         getCloud().database.from(TABLE).insert({ nickname: n, content: c, site: s || null }).select('id')
       )
+      const pending = !Array.isArray(rows) || rows.length === 0
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 忽略隐私模式报错 */ }
       setNickname(''); setContent(''); setSite('')
-      setMsg({ type: 'ok', text: '留言成功，谢谢！' })
+      setMsg({
+        type: 'ok',
+        text: pending
+          ? '已提交，站长审核通过后显示（含推广链接或疑似广告的内容会自动进入审核）'
+          : '留言成功，谢谢！',
+      })
       formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       await load(1)
     } catch (err) {
