@@ -1,6 +1,4 @@
 import { motion } from 'framer-motion'
-import FriendLinks from './FriendLinks'
-import { friendLinks } from '../data/friendLinks.js'
 
 
 export default function Footer() {
@@ -29,14 +27,9 @@ export default function Footer() {
           </div>
         </div>
         
-        {/* 友情链接（头像 + 名称，组件与「关于」页共用）
-            没有友链时整块隐藏 —— 连带这圈 border-t 一起去掉，
-            否则会剩一道没有内容的分隔线。 */}
-        {friendLinks.length > 0 && (
-          <div className="mt-6 pt-6 border-t border-cyber-grid/30">
-            <FriendLinks variant="footer" />
-          </div>
-        )}
+        {/* 友链区已移除：主人要求「关于页保留、底部删掉」（2026-10-09）。
+            想加回来的话，git 历史里有原实现；
+            数据源仍是 src/data/friendLinks.js，FriendLinks 组件的 footer/卡片两种版式都还在。 */}
 
         {/* Anime style decoration */}
         <div className="mt-6 pt-6 border-t border-cyber-grid/30 text-center">

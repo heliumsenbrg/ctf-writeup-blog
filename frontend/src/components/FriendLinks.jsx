@@ -4,9 +4,15 @@ import { friendLinks } from '../data/friendLinks.js'
 import { safeHref } from '../utils/safeUrl.js'
 
 /**
- * 友链 —— 页脚与「关于」页共用一份（原先两处各写一遍 markup）。
+ * 友链列表。
+ *
+ * 当前用法：**只有「关于」页在用**（variant="cards"）。
+ * 页脚那处（variant="footer"）已按主人要求于 2026-10-09 移除
+ * —— 见 Footer.jsx 里的说明。footer 版式保留在此，方便日后想加回来时一行还原。
+ *
  * 头像策略：先试对方站点的 /favicon.ico，取不到就退化成"首字渐变圆"，
  * 保证任何情况下都有视觉锚点、不会出现破图。
+ * （注：首字兜底圆挨着名字看会像"初初中申"重了两遍，属预期效果，不是渲染 bug。）
  */
 
 const AVATAR_COLORS = [
