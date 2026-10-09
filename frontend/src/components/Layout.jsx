@@ -4,6 +4,7 @@ import Footer from './Footer'
 import ErrorBoundary from './ErrorBoundary'
 import BackToTop from './BackToTop'
 import CommandPalette from './CommandPalette'
+import MusicPlayer from './MusicPlayer'
 
 export default function Layout() {
   return (
@@ -24,9 +25,10 @@ export default function Layout() {
           <Outlet />
         </ErrorBoundary>
       </main>
-        <Footer />
-        <BackToTop />
-        <CommandPalette />
-      </div>
+      <Footer />
+      <BackToTop />
+      <CommandPalette />
+      <MusicPlayer />
+    </div>
   )
 }

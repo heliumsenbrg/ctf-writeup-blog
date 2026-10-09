@@ -15,22 +15,23 @@ export const cloudConfig = {
 }
 
 /**
- * ⚠️ 已知问题（2026-10-09 无头浏览器实测取证）：评论 / 留言 / 通关榜在**线上不可用**。
+ * ⚠️ 已知问题（2026-10-10 复核定案）：评论 / 留言 / 通关榜在 **GitHub Pages 上不可用**，
+ * 但在 WorkBuddy 发布域上是好的。根因是**服务的 Origin 白名单**，不是后端挂了、
+ * 也不是凭据失效：
  *
- * 真实请求地址是 `https://ctf-writeup-blog.app.workbuddy.host/.cloud/database/rest/...`，
- * 后端是活的，但浏览器报：
- *   Access to fetch ... from origin 'https://heliumsenbrg.github.io'
- *   has been blocked by CORS policy: Response to preflight request doesn't pass
- *   access control check: No 'Access-Control-Allow-Origin' header is present.
+ *   · 重新绑定云服务拿回的 publicConfig 与下面这两个值**完全一致**
+ *     （endpoint / publishableKey 都没变）→ 凭据是当前有效的。
+ *   · 该服务**要求 Origin 精确匹配它自己的保留域** `ctf-writeup-blog.app.workbuddy.host`。
+ *   · 站点部署在 `heliumsenbrg.github.io`，Origin 不匹配 → 预检失败 →
+ *     浏览器报 "No 'Access-Control-Allow-Origin' header is present"。
  *
- * 也就是：云服务的**允许来源（Origin）白名单里没有 GitHub Pages 这个域名**
- * —— 当初是给 WorkBuddy 发布域配的，站点搬到 Pages 后就跨域了。
+ * 两条出路（都要站点所有者操作）：
+ *   ① 用 WorkBuddy 发布站点并**复用同一个 applicationId**
+ *      （appId 相同 → 保留域相同 → Origin 匹配 → 评论/留言直接可用）；
+ *   ② 或改用 Giscus（GitHub Discussions，静态站零运维，没有跨域问题）。
  *
- * 两条出路（都需要站点所有者操作）：
- *   ① 在云服务侧把 `https://heliumsenbrg.github.io` 加进允许来源；
- *   ② 或改用 Giscus（GitHub Discussions，静态站零运维，天然无跨域问题）。
- * 在此之前，friendlyDbError 会给出明确文案，而不是让访客看到
- * "Failed to fetch" 或 "Unexpected token '<'" 这类天书。
+ * 另外：这三张表已经上了服务端反垃圾（屏蔽词 + 自动隐藏，见仓库 db/moderation.sql），
+ * 前端只需在"内容被隐藏（待审核）"时如实提示，别让人以为发丢了。
  */
 
 let client = null
@@ -62,7 +63,10 @@ export function friendlyDbError(err) {
   }
 
   const code = err?.code
-  if (code === '23514' || code === '23502') return '内容不符合要求（昵称 1-20 字、留言 1-500 字）'
+  // 23514 = CHECK 约束不通过。服务端除了长度，还拦「控制字符」这类纯垃圾内容。
+  if (code === '23514' || code === '23502') {
+    return '内容不符合要求：昵称 1-20 字、留言 1-500 字，且不能含不可见字符'
+  }
   if (code === '42501') return '服务器拒绝了这次操作（权限不足）'
   if (code === '42P01') return '留言表不存在，请稍后再试'
 
