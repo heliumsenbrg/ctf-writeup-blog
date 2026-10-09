@@ -337,6 +337,12 @@ function seoStaticPlugin() {
           '/kb': ['知识库', '第二大脑：CTF 概念、项目与解题记录，支持双链与关系图。'],
           '/guestbook': ['留言板', '无需注册，直接留言。'],
           '/about': ['关于', '关于本站、技能方向与友情链接。'],
+          // ⚠️ 这个表必须覆盖 routes 里的**每一条静态路由**。
+          // 漏一条的后果不是"没有 meta"，而是该页**继承首页的 title/canonical/og:url**
+          // —— 等于把这一页声明成首页的副本。上一轮加 /stats 路由时就漏了，
+          // 线上实测 /stats/ 的 canonical 指向首页（外部审计第五轮抓到）。
+          '/stats': ['战绩', 'CTF 战绩一览：解题时间线、平台与方向分布、技能标签云。'],
+          '/secret-quest': ['隐藏关卡', '彩蛋页。'],
         }
         const hit = STATIC_META[route]
         return hit ? { title: hit[0] + ' | ' + SITE_TITLE, desc: hit[1] } : null
@@ -356,6 +362,11 @@ function seoStaticPlugin() {
         const url = urlOf(route)
         const T = meta.title
         const D = meta.desc
+        // 文章页用 og:type=article（分享到社交平台会被识别成"文章"而不是普通网页），
+        // 并补 article:published_time。有真实发布日期才写 —— 不拿构建时间冒充。
+        const mArt = route.match(/^\/article\/(.+)$/)
+        const artId = mArt ? decodeURIComponent(mArt[1]) : null
+        const pub = artId ? dateOf(artId) : null
         return html
           .replace(/<title>[\s\S]*?<\/title>/, '<title>' + escHtml(T) + '</title>')
           .replace(/(<meta name="description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
@@ -363,15 +374,36 @@ function seoStaticPlugin() {
           //   导致**所有文章页的 canonical 都指向首页** —— 等于告诉搜索引擎
           //   "这些文章都是首页的重复副本"，按页 meta 的收益被抵消大半。
           .replace(/(<link rel="canonical" href=")[^"]*(")/, '$1' + escHtml(url) + '$2')
+          .replace(/(<meta property="og:type" content=")[^"]*(")/, '$1' + (artId ? 'article' : 'website') + '$2')
           .replace(/(<meta property="og:title" content=")[^"]*(")/, '$1' + escHtml(T) + '$2')
           .replace(/(<meta property="og:description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
           .replace(/(<meta property="og:url" content=")[^"]*(")/, '$1' + escHtml(url) + '$2')
           .replace(/(<meta name="twitter:title" content=")[^"]*(")/, '$1' + escHtml(T) + '$2')
           .replace(/(<meta name="twitter:description" content=")[^"]*(")/, '$1' + escHtml(D) + '$2')
           .replace(/(<meta name="twitter:url" content=")[^"]*(")/, '$1' + escHtml(url) + '$2')
+          // 用函数式替换，避免内容里的 $ 被当成捕获组引用
+          .replace(/(<meta property="og:type"[^>]*>)/, (tag) =>
+            pub ? `${tag}\n    <meta property="article:published_time" content="${pub}T09:00:00Z" />` : tag
+          )
       }
 
       // ① 每条路由预生成 index.html（深链返回 200）
+      // 先断言：routes 里的每条静态路由都必须在 STATIC_META 里有条目。
+      // 漏一条不会"没有 meta"，而是**整页继承首页 meta**（title/canonical/og:url 全错），
+      // 属于静默降级、肉眼极难发现 —— 所以这里是**硬失败**，不给"警告后照常构建"的机会。
+      // 先断言：routes 里的每条静态路由都必须在 STATIC_META 里有条目。
+      // 漏一条不会"没有 meta"，而是**整页继承首页 meta**（title/canonical/og:url 全错），
+      // 属于静默降级、肉眼极难发现 —— 所以这里是**硬失败**，不给"警告后照常构建"的机会。
+      // 例外：'/' 本身——index.html 里写的就是首页 meta，且预生成时会跳过它。
+      const missingMeta = routes.filter(
+        (r) => r !== '/' && !/^\/(article|kb)\//.test(r) && !metaOf(r)
+      )
+      if (missingMeta.length) {
+        throw new Error(
+          `[seo-static] 这些静态路由在 STATIC_META 里没有条目，会导致整页继承首页 meta：${missingMeta.join(', ')}`
+        )
+      }
+
       let made = 0
       for (const r of routes) {
         if (r === '/') continue
@@ -387,10 +419,14 @@ function seoStaticPlugin() {
       }
 
       // ② sitemap（urlOf 已在前面定义：末尾统一带斜杠）
+      // 隐藏彩蛋不进 sitemap —— 注释里一直这么写，但代码直接把 routes 全量写进去了，
+      // 实测线上 sitemap 里确实有 /secret-quest/。这里显式排除，让注释和代码一致。
+      const SITEMAP_EXCLUDE = new Set(['/secret-quest'])
+      const sitemapRoutes = routes.filter((r) => !SITEMAP_EXCLUDE.has(r))
       writeFileSync(
         abs('sitemap.xml'),
         `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-          routes
+          sitemapRoutes
             .map((r) => {
               const d = r.startsWith('/article/')
                 ? dateOf(decodeURIComponent(r.slice('/article/'.length)))
@@ -445,7 +481,7 @@ function seoStaticPlugin() {
       writeFileSync(abs('related.json'), JSON.stringify(related))
 
       console.log(
-        `[seo-static] 预生成 ${made} 条路由 · sitemap ${routes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条 · 图谱 ${graph.nodes.length} 节点/${graph.edges.length} 边 · 关联 ${Object.values(related.articles).reduce((n, v) => n + v.length, 0)} 对`
+        `[seo-static] 预生成 ${made} 条路由 · sitemap ${sitemapRoutes.length} 条 · rss ${Object.keys(articles).length} 篇 · 搜索索引 ${searchIndex.items.length} 条 · 图谱 ${graph.nodes.length} 节点/${graph.edges.length} 边 · 关联 ${Object.values(related.articles).reduce((n, v) => n + v.length, 0)} 对`
       )
     },
   }
