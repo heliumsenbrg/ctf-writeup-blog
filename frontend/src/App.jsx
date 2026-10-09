@@ -94,16 +94,25 @@ const BOOT_LINES = [
 
 // 检查是否应该显示 boot 动画
 function shouldShowBoot() {
-  // 如果用户偏好减少动画，跳过
+  // ① 强制播放口子：`?boot=1`（或 #boot）。给"系统开了减少动态效果、但仍想看一眼"的情况用。
+  try {
+    if (new URLSearchParams(window.location.search).get('boot') === '1' || window.location.hash === '#boot') {
+      return true
+    }
+  } catch {
+    // URL 解析失败就按默认逻辑走
+  }
+
+  // ② 无障碍：系统开了「减少动态效果」就跳过。
+  //    这条**不能被站点偏好覆盖** —— 那是使用者的明确诉求（可能出于晕动症等原因），
+  //    不属于"每次打开都播"能决定的范围。想看就用上面的 ?boot=1。
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     return false
   }
-  // 如果今天已经播放过，跳过
-  const lastBoot = localStorage.getItem('ctf-blog-boot-date')
-  const today = new Date().toDateString()
-  if (lastBoot === today) {
-    return false
-  }
+
+  // ③ 2026-10-09 按主人要求：**每次打开都播**。
+  //    原来是"每天只播一次"（读 localStorage['ctf-blog-boot-date'] 比对日期），已移除 ——
+  //    想改回每天一次，在这里加回那段日期比对即可。
   return true
 }
 
@@ -112,10 +121,8 @@ function BootScreen({ onDone }) {
   const [progress, setProgress] = useState(0)
   const [done, setDone] = useState(false)
 
-  // 记录播放日期
-  useEffect(() => {
-    localStorage.setItem('ctf-blog-boot-date', new Date().toDateString())
-  }, [])
+  // 注：原来这里会往 localStorage 写「今天已播过」的日期，用于"每天只播一次"。
+  // 改成每次都播之后这个记录已无用处，故移除（想恢复每天一次时再加回来）。
 
   useEffect(() => {
     if (visibleLines < BOOT_LINES.length) {
@@ -275,5 +282,5 @@ function AppInner() {
   )
 }
 
-export { GlitchText, TypewriterText }
+export { GlitchText, TypewriterText, shouldShowBoot }
 export default AppInner
