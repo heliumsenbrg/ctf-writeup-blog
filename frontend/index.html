@@ -102,6 +102,14 @@
     <div id="root">
       <div class="boot-hint"><span class="dot"></span>正在加载…</div>
     </div>
+    <noscript>
+      <!-- JS 被禁用时，上面那句「正在加载…」会永远停在那儿，访客只会以为站点挂了。
+           原来 head 里的 noscript 只兜底了字体，没兜底这个 —— 这里给一句明确说明。 -->
+      <div style="max-width:36rem;margin:5rem auto;padding:1.5rem 1.25rem;border:1px solid rgba(0,245,255,.35);border-radius:.75rem;text-align:center;line-height:1.9">
+        <p style="margin:0 0 .6rem;font-size:15px">本站是单页应用，需要启用 JavaScript 才能浏览。</p>
+        <p style="margin:0;font-size:12px;opacity:.72">请在浏览器设置里开启 JavaScript 后刷新本页。</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
