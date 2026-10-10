@@ -34,14 +34,26 @@ jobs:
 
       - name: Build frontend
         working-directory: frontend
-        # 云服务同源中转开关（Cloudflare Worker，见 frontend/cloudflare/）：
-        #   · 部署 Worker：cd frontend/cloudflare && wrangler deploy —— 它会打印 workers.dev 地址
-        #   · 然后在仓库 Settings → Secrets and variables → Actions → **Variables** 里加一条：
-        #       VITE_CLOUD_ENDPOINT = https://ctf-blog-cloud-proxy.<你的子域>.workers.dev
-        #   · 没设这条变量时为空 → 前端回退直连云服务（GitHub Pages 上会被 Origin 白名单拒）
-        #   · 想退回直连：删掉这条变量即可，不用改任何代码
+        # 两个构建期开关，都通过仓库 Variables 传（不用改代码）：
+        #
+        # ① 云服务同源中转（Cloudflare Worker，见 frontend/cloudflare/）
+        #    · 部署 Worker：cd frontend/cloudflare && wrangler deploy —— 它会打印 workers.dev 地址
+        #    · Settings → Secrets and variables → Actions → **Variables** 加：
+        #        VITE_CLOUD_ENDPOINT = https://ctf-blog-cloud-proxy.<你的子域>.workers.dev
+        #    · 不设 → 前端回退直连云服务（GitHub Pages 上会被 Origin 白名单拒，留言/评论不可用）
+        #
+        # ② 人机校验（Cloudflare Turnstile）
+        #    · 控制台 → Turnstile 建站点，拿到 site key / secret
+        #    · 这里加 Variables：VITE_TURNSTILE_SITE_KEY = <site key>
+        #    · Worker 那边配 secret：cd frontend/cloudflare && wrangler secret put TURNSTILE_SECRET
+        #    · ⚠️ 两边必须一起配：只配前端 → 校验被跳过（不报错也不设防）；
+        #      只配 Worker → 访客拿不到 token，写操作全部 403
+        #    · 不设 → 挂件整体不渲染，站点行为与之前完全一样
+        #
+        # 想退回去：删掉对应变量即可。
         env:
           VITE_CLOUD_ENDPOINT: ${{ vars.VITE_CLOUD_ENDPOINT }}
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
         run: npm run build
 
       - name: Deploy to gh-pages
