@@ -9,6 +9,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import kbIndex from '../src/data/kb/index.js'
+import { maskUnpublished } from './kb-mask.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const KB_DIR = path.join(HERE, '..', 'src', 'data', 'kb')
@@ -42,7 +43,12 @@ for (const meta of flat) {
     if (HAS_VAULT) {
       const src = findSource(meta.name)
       check(src !== null, `${meta.name}: vault 中找不到对应 md 文件`)
-      if (src) check(fs.readFileSync(src, 'utf8') === note.content, `${meta.name}: 与 vault 源文件不一致（快照漂移？重跑 build-kb.mjs）`)
+      // 与 vault 比对时，也要套用与生成端**同一套**屏蔽规则（kb-mask.mjs），
+      // 否则会把"未发布引用被屏蔽"误判成快照漂移
+      if (src) {
+        const expected = maskUnpublished(fs.readFileSync(src, 'utf8'), new Set([...names, 'index']))
+        check(expected === note.content, `${meta.name}: 与 vault 源文件不一致（快照漂移？重跑 build-kb.mjs）`)
+      }
     }
   for (const t of note.links?.internal ?? []) {
     check(names.has(t) || t === 'index', `${meta.name}: internal 链接「${t}」不在发布集`)

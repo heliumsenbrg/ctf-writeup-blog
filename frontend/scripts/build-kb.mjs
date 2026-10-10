@@ -7,6 +7,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { WIKILINK, MASK, maskUnpublished } from './kb-mask.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = path.join(HERE, '..', 'src', 'data', 'kb')
@@ -27,7 +28,6 @@ const SECTIONS = [
   { id: 'output', title: '输出', dir: '输出', groups: [{ id: 'output', title: '输出', prefix: null }] },
   { id: 'entity', title: '实体', dir: '实体', groups: [{ id: 'entity', title: '实体', prefix: null }] },
 ]
-const WIKILINK = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
 
 const fail = (msg) => { console.error('✗ ' + msg); process.exit(1) }
 
@@ -64,6 +64,25 @@ for (const n of notes.values()) {
   n.links = { internal: [...internal].sort(), unresolved: [...unresolved].sort() }
 }
 
+// ---------- 屏蔽未发布页的引用（只在快照里替换；vault 原文一字不动） ----------
+// 背景：笔记正文会引用「摘录」「对话存档」等**不发布**的页（如 [[对话纪要-糯米与主人]]）。
+// 这些引用若原样发布，既会渲染成空链接，又把私人页标题泄露到公开的 search-index 里。
+// 处理：指向未发布目标的 [[双链]] → 中性占位，链接的显示别名则保留（那是作者本来就要展示的文字）。
+// 反向也不受影响：vault 里照旧用 [[文件名]]，Obsidian 图谱、死规矩 1、对账输出全都不变。
+// 先在"改之前"把对账清单抓下来（供日志/本地排查用），随后所有外发字段统一屏蔽
+const unresolvedAll = [...new Set([...notes.values()].flatMap(n => n.links.unresolved))].sort()
+// 计数用 matchAll（/g 下 match() 只返回整串、拿不到捕获组，会误计）
+const countMasked = (s) => [...String(s ?? '').matchAll(WIKILINK)].filter(m => !resolvable.has(m[1].trim())).length
+let maskedCount = 0
+for (const n of notes.values()) {
+  maskedCount += countMasked(n.title) + countMasked(n.summary) + countMasked(n.content)
+  n.title = maskUnpublished(n.title, resolvable)
+  n.summary = maskUnpublished(n.summary, resolvable)   // 摘要会进 index.js（首屏就加载）—— 必须一起屏蔽
+  n.content = maskUnpublished(n.content, resolvable)
+  // 对账数组同样不外发：数组里的每一项就是私人页标题本身 → 只保留条数
+  n.links = { internal: n.links.internal, unresolvedCount: n.links.unresolved.length }
+}
+
 // ---------- 组装 index ----------
 const index = {
   generatedAt: new Date().toISOString(),
@@ -93,9 +112,11 @@ for (const n of notes.values()) {
 }
 
 // ---------- 对账输出 ----------
-const unresolvedAll = [...new Set([...notes.values()].flatMap(n => n.links.unresolved))].sort()
 console.log(`✓ 生成 ${notes.size} 篇 → src/data/kb/`)
 for (const sec of index.sections) {
   console.log(`  ${sec.title}: ${sec.groups.reduce((a, g) => a + g.notes.length, 0)} 篇`)
 }
-console.log(`  未解析双链 (${unresolvedAll.length}): ${unresolvedAll.join(', ')}`)
+console.log(`  未解析双链 ${unresolvedAll.length} 条（已在快照中屏蔽 ${maskedCount} 处）`)
+// 私人页标题不打印到日志：公开仓库的 Actions 日志人人可看。
+// 本地排查需要看名字时：KB_SHOW_UNRESOLVED=1 node scripts/build-kb.mjs
+if (process.env.KB_SHOW_UNRESOLVED) console.log(`  未解析目标: ${unresolvedAll.join(', ')}`)
