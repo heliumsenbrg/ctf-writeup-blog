@@ -8,6 +8,7 @@
  *   [实] 有直接证据 —— 正文页脚「生成时间」或 subtitle 自带日期
  *   [挑] 由挑战数据推出 —— 该分类下挑战的最晚解题日期，约等于文章完成时间
  *   [推] 由挑战 slug 推断 —— 题号/主题与文章对应
+ *   [史] 由 git 历史推出 —— 首次进入本仓的提交日期（≈写作完成日），见各条注释里的 commit
  *   [缺] 完全没线索 —— 留 null，RSS 与 sitemap 会跳过它（而不是拿构建时间冒充）
  */
 export const articleDates = {
@@ -35,13 +36,14 @@ export const articleDates = {
   qc734: '2026-03-20', // 挑战 qingcen-734-race 日期
   sigforge: '2026-04-02', // crypto 分类唯一题目描述含「JWT 伪造」
 
-  // [缺] 无任何线索 —— 需要主人补
-  northbridge: null,
-  yaml: null,
-  typejuggling: null,
-  sourceleak: null,
-  notallmilk: null,
-  gift: null,
+  // [史] 由 git 历史推出 —— 首次进入本仓的提交日期（≈写作完成日）
+  //       取法：git log --format='%h %ad %s' --date=short -S'<id>:' -- frontend/src/data/articles.js | tail -1
+  northbridge: '2026-06-11', // 8fd67ca add 4 CTF writeups (Northbridge/734/747/yaml)
+  yaml: '2026-06-11', // 8fd67ca 同批提交
+  typejuggling: '2026-06-11', // b195053 add 10 CTF writeups (…TypeJuggling/SourceLeak…)
+  sourceleak: '2026-06-11', // b195053 同批提交
+  notallmilk: '2026-07-17', // 3f9b149 add writeup: NewStar 2025 Not All Milk (TLS decrypt + QR)
+  gift: '2026-10-05', // ea25392 publish pending writeups (0xGame2025 / gift / MoeCTF x2)
 }
 
 /** 取某篇文章的发布日期（没有就返回 null，调用方不要拿构建时间冒充） */
