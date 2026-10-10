@@ -4,6 +4,7 @@ import { MessageSquare, Send, Loader2, RefreshCw, AlertCircle, CheckCircle2, Che
 import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
 import { safeHref, displayHost } from '../utils/safeUrl.js'
+import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
 
 const PAGE_SIZE = 10
 const TABLE = 'guestbook'
@@ -15,6 +16,7 @@ export default function Guestbook() {
   const [content, setContent] = useState('')
   const [site, setSite] = useState('')
   const [honeypot, setHoneypot] = useState('') // 机器人会填它，真人看不到
+  const [tsToken, setTsToken] = useState('')   // Turnstile 人机校验 token（未启用时恒为空）
   const [posting, setPosting] = useState(false)
   const [msg, setMsg] = useState(null) // { type: 'ok' | 'err', text }
   const [list, setList] = useState([])
@@ -24,6 +26,7 @@ export default function Guestbook() {
   const [loading, setLoading] = useState(true)
   const [loadErr, setLoadErr] = useState('')
   const formRef = useRef(null)
+  const tsRef = useRef(null)
 
   // ⚠️ 实测这个信封**不回 count**（`{count:'exact'}` 拿到的始终是 null），
   //    所以分页不依赖总数：多取一行来判断"还有没有下一页"。
@@ -93,15 +96,22 @@ export default function Guestbook() {
     const left = cooldownLeft()
     if (left > 0) return setMsg({ type: 'err', text: `发得太快了，请等 ${Math.ceil(left / 1000)} 秒` })
 
+    // 人机校验（未配置 site key 时 turnstileEnabled 为 false，整段跳过）
+    if (turnstileEnabled && !tsToken) {
+      return setMsg({ type: 'err', text: '请先完成下方的人机校验' })
+    }
+
     setPosting(true)
     try {
       // 不传 owner_id —— 该表是公开留言表，没有归属列，写入由 RLS 的 INSERT 策略放行
       // 反垃圾由**服务端触发器**负责：命中规则时整条 INSERT 会被拒（SQLSTATE 23514），
       // 走 catch 分支、由 friendlyDbError 给出友好文案。前端这边不做拦截 ——
       // 前端过滤随手就能绕过，做了只会给人"防住了"的错觉。
-      await unwrap(
-        getCloud().database.from(TABLE).insert({ nickname: n, content: c, site: s || null }).select('id')
-      )
+      // token 用 setHeader 单独带出去：Worker 校验完就不会转发给后端。
+      let q = getCloud().database.from(TABLE).insert({ nickname: n, content: c, site: s || null })
+      if (tsToken) q = q.setHeader('x-turnstile-token', tsToken)
+      await unwrap(q.select('id'))
+
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 忽略隐私模式报错 */ }
       setNickname(''); setContent(''); setSite('')
       setMsg({ type: 'ok', text: '留言成功，谢谢！' })
@@ -110,6 +120,7 @@ export default function Guestbook() {
     } catch (err) {
       setMsg({ type: 'err', text: friendlyDbError(err) })
     } finally {
+      tsRef.current?.reset()   // token 一次性，无论成败都要重置
       setPosting(false)
     }
   }
@@ -170,6 +181,9 @@ export default function Guestbook() {
               placeholder="说点什么…（最多 500 字）"
               className="w-full resize-y bg-cyber-darker/60 border border-cyber-grid/30 rounded-lg px-3 py-2 text-sm text-cyber-cyan placeholder:text-cyber-grid/50 outline-none focus:border-cyber-cyan/50"
             />
+
+            {/* 人机校验：没配 VITE_TURNSTILE_SITE_KEY 时该组件自己不渲染 */}
+            <TurnstileBox ref={tsRef} onToken={setTsToken} />
 
             <div className="flex items-center justify-between gap-3">
               <span className="text-[11px] font-mono text-cyber-grid/50">

@@ -69,6 +69,11 @@ export async function unwrap(promise) {
   return data
 }
 
+/** 把任意错误对象转成字符串，用于在字段名不确定时做关键字匹配（不会因循环引用抛错） */
+const safeStringify = (v) => {
+  try { return JSON.stringify(v) ?? String(v) } catch { return String(v) }
+}
+
 /** 数据库错误 → 给用户看的话（不暴露原始细节） */
 export function friendlyDbError(err) {
   // 给站点所有者留一条可诊断的原始日志（访客看不到，DevTools 里能看到）
@@ -90,6 +95,14 @@ export function friendlyDbError(err) {
   if (code === '23502') return '内容不符合要求：昵称 1-20 字、留言 1-500 字，且不能含不可见字符'
   if (code === '42501') return '服务器拒绝了这次操作（权限不足）'
   if (code === '42P01') return '留言表不存在，请稍后再试'
+
+  // Cloudflare Worker 挡下的（见 frontend/cloudflare/cloud-proxy-worker.js）：
+  // 人机校验没通过 / 来源不在白名单 / 上游连不上。
+  // Worker 返回的是自造 JSON，字段名不固定，所以整条错误串起来匹配，别只认某个字段。
+  const all = `${code} ${rawMsg} ${safeStringify(err)}`
+  if (/human_verification_failed/.test(all)) return '人机校验未通过，请刷新页面重试'
+  if (/origin_not_allowed/.test(all)) return '当前站点未被授权访问评论服务'
+  if (/upstream_unreachable/.test(all)) return '评论服务暂时不可用，稍后再试'
 
   const msg = rawMsg
   // 后端没返回 JSON 而是返回了 HTML（SPA 兜底页 / 网关错误页）——

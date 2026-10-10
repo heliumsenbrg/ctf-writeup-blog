@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquare, Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
+import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
 
 const TABLE = 'comments'
 const COOLDOWN_MS = 30 * 1000
@@ -10,7 +11,8 @@ const COOLDOWN_KEY = 'comment:last-post'
 /**
  * 文章/笔记页的评论区 —— 复用云数据库（同一个 app），按 page 字段分区。
  * 访客**不需要 GitHub 账号**（这是它相对 giscus 的优势）。
- * 反刷：30 秒冷却 + 蜜罐字段 + 数据库侧长度约束。
+ * 反刷：30 秒冷却 + 蜜罐字段 + 数据库侧长度约束 + 服务端关键词/规则
+ * （见 db/moderation.sql）+ Turnstile 人机校验（配了 site key 才生效）。
  */
 export default function CommentSection({ page }) {
   const [list, setList] = useState([])
@@ -19,8 +21,10 @@ export default function CommentSection({ page }) {
   const [nickname, setNickname] = useState('')
   const [content, setContent] = useState('')
   const [honeypot, setHoneypot] = useState('')
+  const [tsToken, setTsToken] = useState('')
   const [posting, setPosting] = useState(false)
   const [msg, setMsg] = useState(null)
+  const tsRef = useRef(null)
 
   const load = useCallback(async () => {
     if (!page) return
@@ -63,12 +67,16 @@ export default function CommentSection({ page }) {
     if (honeypot) { setMsg({ type: 'ok', text: '已发表' }); setNickname(''); setContent(''); return }
     const left = cooldownLeft()
     if (left > 0) return setMsg({ type: 'err', text: `发得太快了，请等 ${Math.ceil(left / 1000)} 秒` })
+    if (turnstileEnabled && !tsToken) return setMsg({ type: 'err', text: '请先完成下方的人机校验' })
 
     setPosting(true)
     try {
       // 反垃圾在**服务端**：命中规则时整条 INSERT 被拒（SQLSTATE 23514），
       // 走 catch 分支由 friendlyDbError 给出友好文案。前端不拦截。
-      await unwrap(getCloud().database.from(TABLE).insert({ page, nickname: n, content: c }).select('id'))
+      // token 用 setHeader 带出去，Worker 校验完不会转发给后端。
+      let q = getCloud().database.from(TABLE).insert({ page, nickname: n, content: c })
+      if (tsToken) q = q.setHeader('x-turnstile-token', tsToken)
+      await unwrap(q.select('id'))
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 隐私模式 */ }
       setNickname(''); setContent('')
       setMsg({ type: 'ok', text: '评论成功' })
@@ -76,6 +84,7 @@ export default function CommentSection({ page }) {
     } catch (e2) {
       setMsg({ type: 'err', text: friendlyDbError(e2) })
     } finally {
+      tsRef.current?.reset()   // token 一次性，无论成败都要重置
       setPosting(false)
     }
   }
@@ -119,6 +128,9 @@ export default function CommentSection({ page }) {
             发表
           </button>
         </div>
+
+        {/* 人机校验：没配 VITE_TURNSTILE_SITE_KEY 时该组件自己不渲染 */}
+        <TurnstileBox ref={tsRef} onToken={setTsToken} />
 
         {msg && (
           <div className={`flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-mono ${
