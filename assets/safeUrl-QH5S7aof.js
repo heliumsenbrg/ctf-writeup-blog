@@ -1,0 +1,1 @@
+function e(r){const t=String(r??"").trim();return t&&/^https?:\/\//i.test(t)?t:null}function n(r,t=40){const s=e(r);return s?s.replace(/^https?:\/\//i,"").replace(/\/+$/,"").slice(0,t):""}export{n as d,e as s};

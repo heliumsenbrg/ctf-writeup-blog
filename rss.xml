@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>heliumsenbrg's CTF Writeups</title>
+    <link>https://heliumsenbrg.github.io/ctf-writeup-blog/</link>
+    <description>CTF WriteUp 博客 - Web 安全 / 密码学 / 二进制利用</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Sat, 10 Oct 2026 19:25:34 GMT</lastBuildDate>
+    <item>
+      <title>CTF 工具使用指南</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/tools/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/tools/</guid>
+      <pubDate>Mon, 05 Jan 2026 09:00:00 GMT</pubDate>
+      <description>CTF 比赛中工具的使用至关重要。这里总结了我常用的工具及其使用技巧。 IDA Pro 是最强大的静态反汇编工具，CTF 逆向必备。 打开文件 拖入 PE/ELF 文件即可自动识别架构 首次打开选择 &quot;New&quot;，后续选 &quot;Load ex…</description>
+    </item>
+    <item>
+      <title>信息收集与泄露</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/infoleak/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/infoleak/</guid>
+      <pubDate>Thu, 15 Jan 2026 09:00:00 GMT</pubDate>
+      <description>做信息收集这类题，我最大的感受就是别放过后台的每一条线索。很多 flag 其实就藏在眼皮底下，只是我们没注意到。 最早的题目就有隐藏在 HTML 注释里的 base64 字符串。我习惯 Ctrl+U 看源码，结果在注释中发现一串可疑字符…</description>
+    </item>
+    <item>
+      <title>PHP 弱类型</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/php/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/php/</guid>
+      <pubDate>Thu, 05 Feb 2026 09:00:00 GMT</pubDate>
+      <description>PHP 的弱类型比较是 CTF 中最经典的知识点之一，也是这次刷题里踩坑最多的地方。核心原理很简单：PHP 在用 == 比较时会自动做类型转换，而 === 严格比较则不会。 最典型的场景是同时要求一个变量&quot;为真&quot;且&quot;等于 0&quot;。看起来矛…</description>
+    </item>
+    <item>
+      <title>命令注入</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/cmd/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/cmd/</guid>
+      <pubDate>Mon, 16 Feb 2026 09:00:00 GMT</pubDate>
+      <description>命令注入的考点从简单到变态，层层加码，每一道题都在考验对 Linux 命令行和 PHP 函数的理解深度。 最基础的题目输入直接拼进 system()，没有任何过滤： 稍微加了点料——过滤了 flag 关键词——就用分号截断： 过滤了空格…</description>
+    </item>
+    <item>
+      <title>PWN 与逆向</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/pwn/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/pwn/</guid>
+      <pubDate>Fri, 10 Apr 2026 09:00:00 GMT</pubDate>
+      <description>这次来聊聊 CTF 中两个最&quot;硬核&quot;的方向——PWN 和逆向。我挑了三道有意思的题目，难度从简单到困难都有覆盖。 给了一个 ELF binary，用 IDA 打开一看，核心逻辑就是两层 XOR。先把数据提取出来： 踩坑：从反汇编提取密文…</description>
+    </item>
+    <item>
+      <title>隐写术与加密</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/stego/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/stego/</guid>
+      <pubDate>Sun, 01 Mar 2026 09:00:00 GMT</pubDate>
+      <description>隐写术的核心思想是让秘密看起来不像秘密。这次我遇到了三种不同的隐写题：零宽字符、EXIF 图片隐写、以及 ZIP 多重密码破解。 零宽字符是 Unicode 中看不见也打不出来的特殊字符。它们在屏幕上不占任何位置，但文本里确实存在。 常…</description>
+    </item>
+    <item>
+      <title>杂项与综合</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/misc/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/misc/</guid>
+      <pubDate>Wed, 24 Jun 2026 09:00:00 GMT</pubDate>
+      <description>杂项题往往是最有意思的，因为什么都有可能考到。这里总结了几道不同类型的杂项题。 CTFHub 平台有一个隐藏的彩蛋页面，不需要登录就能拿到 flag： 注意：这是平台的彩蛋 flag，不是某道具体题目的 flag。 这是青岑 CTF 中…</description>
+    </item>
+    <item>
+      <title>CTF Writeup - 2026年5月</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026/</guid>
+      <pubDate>Wed, 06 May 2026 09:00:00 GMT</pubDate>
+      <description>从 .git/objects 中还原了旧版 legacyprobestub.py，获取两个关键密钥： JWT 密钥: ISCC2026JWTDEBUGKEY#9527 旧版 HMAC 密钥: ISCCSERVERSECRETREAL （…</description>
+    </item>
+    <item>
+      <title>Northbridge -- SSRF Bypass</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/northbridge/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/northbridge/</guid>
+      <pubDate>Thu, 11 Jun 2026 09:00:00 GMT</pubDate>
+      <description>Northbridge 是一道典型的 SSRF 题。服务端集成了 kkfileview，其中 getCorsFile 接口直接读取用户提供的 URL 并返回内容，没有任何白名单校验。 urlPath 完全可控，可以指向内网服务或本地文件…</description>
+    </item>
+    <item>
+      <title>QingCen #734 -- Race Condition</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc734/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc734/</guid>
+      <pubDate>Fri, 20 Mar 2026 09:00:00 GMT</pubDate>
+      <description>积分商城的兑换接口存在经典的 TOCTOU 漏洞：服务端先检查余额再扣减，但两个操作之间没有锁。 1. 一开始只用了 threads，实际 aiohttp 异步比多线程更高效 2. 没检查返回值格式，有的返回 200 但内容是 erro…</description>
+    </item>
+    <item>
+      <title>QingCen #747 -- PHP Filter Bypass</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc747/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc747/</guid>
+      <pubDate>Wed, 18 Mar 2026 09:00:00 GMT</pubDate>
+      <description>1. 大小写变体：PHP -&gt; Php -&gt; pHp -&gt; phP 2. URL 编码：单字节编码比双字节更隐蔽 3. 先读 index.php 确认路径，再定向攻击</description>
+    </item>
+    <item>
+      <title>[re] plzdebugme — 调试优先</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/re-plzdebugme/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/re-plzdebugme/</guid>
+      <pubDate>Fri, 20 Feb 2026 09:00:00 GMT</pubDate>
+      <description>题目给了一个 Linux x64 ELF，名字就是 &quot;plz debug me&quot;。题目提示直接 break 在 x0r() 上，整体思路：输入 → RC4 → AES-128-ECB → BTEA → x0r() → 与 BSS 中的 …</description>
+    </item>
+    <item>
+      <title>喵喵宠物医院 -- YAML 反序列化 RCE</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/yaml/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/yaml/</guid>
+      <pubDate>Thu, 11 Jun 2026 09:00:00 GMT</pubDate>
+      <description>10001: 过滤了 !!python/object/apply 10002: 部分过滤 10003: 直接可执行 1. 载荷格式：JSON 转义后 YAML 多行 payload 需要正确换行 2. 编码：sys.stdout.rec…</description>
+    </item>
+    <item>
+      <title>QingCen #733 -- WebSocket / XXE / Pickle / Smuggle</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc733/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/qc733/</guid>
+      <pubDate>Mon, 16 Mar 2026 09:00:00 GMT</pubDate>
+      <description>多层协议与反序列化</description>
+    </item>
+    <item>
+      <title>CTFShow -- Timing Attack</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/timing/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/timing/</guid>
+      <pubDate>Sun, 15 Mar 2026 09:00:00 GMT</pubDate>
+      <description>逐字节比较时，每个字节猜对会多执行一次循环，响应时间更长。 1. 时间归一化：减去基础响应时间再看增量 2. 多次采样：每个字符测 10-20 次取平均值 3. 避开网络波动：在稳定时段跑，减少噪音</description>
+    </item>
+    <item>
+      <title>CTFShow -- PHP Type Juggling</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/typejuggling/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/typejuggling/</guid>
+      <pubDate>Thu, 11 Jun 2026 09:00:00 GMT</pubDate>
+      <description>已知碰撞： QNKCDZO -&gt; 0e462097431906509019562988736854 240610708 -&gt; 0e462097431906509019562988736854 1. 先判断 == 还是 === 2. 0e…</description>
+    </item>
+    <item>
+      <title>CTFShow -- Source Code Leak</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/sourceleak/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/sourceleak/</guid>
+      <pubDate>Thu, 11 Jun 2026 09:00:00 GMT</pubDate>
+      <description>1. 目录扫描：dirsearch / gobuster 2. 敏感文件：.git/config, .env, web.config 3. 压缩包：试 zip/tar/gz 后缀 4. git log：找到旧版本找 flag</description>
+    </item>
+    <item>
+      <title>HMAC Signature Forgery</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/sigforge/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/sigforge/</guid>
+      <pubDate>Thu, 02 Apr 2026 09:00:00 GMT</pubDate>
+      <description>1. 长度扩展攻击：在原有签名基础上追加新参数 2. 密钥爆破：短密钥 + 字典攻击 3. 编码混淆：利用 WAF 编码处理不一致 1. 先验证本地签名 2. 利用错误信息泄露中间状态 3. 多层编码要逐层剥离</description>
+    </item>
+    <item>
+      <title>NewStar 2025 — 不是所有牛奶都叫___</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/notallmilk/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/notallmilk/</guid>
+      <pubDate>Fri, 17 Jul 2026 09:00:00 GMT</pubDate>
+      <description>TLS 流量解密、SSL key log、Wireshark 配置、QR码 1. 审题：题目名「不是所有牛奶都叫」暗示 TLS（特仑苏 → TLS） 2. 找 key log：在 HTTP 流量中筛查，找到区别于噪声文件的 SSL ke…</description>
+    </item>
+    <item>
+      <title>青岑 CTF Web 入门 WriteUp</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/qingcen-web-2026-06-10/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/qingcen-web-2026-06-10/</guid>
+      <pubDate>Wed, 10 Jun 2026 09:00:00 GMT</pubDate>
+      <description>题目描述: &quot;万卷文章，不过引路之石；真相不在字里行间，而在纸面之下。善观者，自有慧眼识珠。F12一窥，当有所获。&quot; 解题思路: 查看 HTML 源码，寻找注释中的隐藏信息。 Payload: 题目描述: &quot;姐姐说不许偷看，但规矩向来是…</description>
+    </item>
+    <item>
+      <title>0xGame2025 CTF WriteUp</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/0xgame2025/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/0xgame2025/</guid>
+      <pubDate>Tue, 16 Jun 2026 09:00:00 GMT</pubDate>
+      <description>状态说明（诚实标注） 本文是赛后速记，16 题中只有「马哈鱼商店 (621)」有完整攻击链和真实 flag。 其余 15 题目前只有一句话思路摘要，当时没有记录 flag，统一标注为「待补」。 这些标注不是占位符疏漏，而是&quot;确实没写&quot;的…</description>
+    </item>
+    <item>
+      <title>Gift - Tcache Double-Free</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/gift/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/gift/</guid>
+      <pubDate>Mon, 05 Oct 2026 09:00:00 GMT</pubDate>
+      <description>Full RELRO prevents GOT overwrite. CET (SHSTK+IBT) makes ROP difficult. The attack must go through libc hooks like fre…</description>
+    </item>
+    <item>
+      <title>MoeCTF ez_base_revenge9 — Emoji 编码</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/moectf-emoji/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/moectf-emoji/</guid>
+      <pubDate>Tue, 01 Sep 2026 09:00:00 GMT</pubDate>
+      <description>附件解压出 flag9.txt，里面一个正经字都没有，只有 104 个 emoji： 416 字节，无换行。 先别急着猜编码，把字节扒开看： 416 / 4 = 104 个字符，全是 4 字节 UTF-8 首字节恒为 F0，次字节恒为 …</description>
+    </item>
+    <item>
+      <title>ZIP 已知明文攻击 (bkcrack)</title>
+      <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/moectf-zipcrypto/</link>
+      <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/moectf-zipcrypto/</guid>
+      <pubDate>Tue, 01 Sep 2026 09:00:00 GMT</pubDate>
+      <description>没有源码、没有靶机，只有一句提示和一份附件： 有时候，一线生机往往藏在最明显的地方 外加一个 388 字节的 flag.zip。 先别急着上 rockyou，把 ZIP 结构扒开： 输出： 三个结论： 1. flags &amp; 1 置位 →…</description>
+    </item>
+  </channel>
+</rss>

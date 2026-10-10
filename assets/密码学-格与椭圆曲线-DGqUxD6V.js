@@ -1,0 +1,182 @@
+const n="密码学-格与椭圆曲线",$="密码学-格与椭圆曲线",a='拿到一组曲线参数先做什么？这页是一张 **ECC 攻击决策表**：曲线基础与 Hasse 界 → 按条件选攻击的判据表 → 六类攻击骨架（Smart / 奇异 / MOV / Pohlig-Hellman / 无效曲线 / ECDSA nonce）→ DH 与小群攻击，外加 0xGame 493 Ez_ECC 实战。**本页是库中"椭圆曲线"这条线的唯一权威页**；格的方法论见 [[密码学-格与LLL]]。',e=`# 密码学-格与椭圆曲线
+
+> 拿到一组曲线参数先做什么？这页是一张 **ECC 攻击决策表**：曲线基础与 Hasse 界 → 按条件选攻击的判据表 → 六类攻击骨架（Smart / 奇异 / MOV / Pohlig-Hellman / 无效曲线 / ECDSA nonce）→ DH 与小群攻击，外加 0xGame 493 Ez_ECC 实战。**本页是库中"椭圆曲线"这条线的唯一权威页**；格的方法论见 [[密码学-格与LLL]]。
+
+## 一、曲线基础与 Hasse 界
+
+短 Weierstrass 形式（$p>3$）：$E:y^2=x^3+ax+b\\pmod p$，判别式 $\\Delta=-16(4a^3+27b^2)\\not\\equiv0\\pmod p$。
+
+- **判别式 $\\Delta\\neq0$** 才有资格叫椭圆曲线；$\\Delta=0$ 是奇异曲线（3.2）。
+- 点集 + 无穷远点 $O$（单位元）成群。点加/倍点用弦切法：$\\lambda=\\frac{y_2-y_1}{x_2-x_1}$ 或 $\\frac{3x_1^2+a}{2y_1}$，$x_3=\\lambda^2-x_1-x_2$，$y_3=\\lambda(x_1-x_3)-y_1$。
+- **群阶**满足 Hasse：$|\\#E-(p+1)|\\le2\\sqrt p$，迹 $t=p+1-\\#E$；生成元 $G$、点的阶 $n\\mid\\#E$；**ECDLP**：已知 $P$、$Q=dP$ 求 $d$。
+- 上机第一步永远是：校验 $y^2=x^3+ax+b$、\`E.order()\`、\`P.order()\`、\`factor(ord)\`。
+
+**ECDLP 与 BSGS**：$k$ 的范围小时用 **Baby-step Giant-step**，复杂度 $O(\\sqrt k)$——取 $m\\approx\\sqrt k$，小步把 $jP$（$0\\le j<m$）存表，大步算 $Q-i(mP)$（$i=0,1,\\dots$）与表中点碰撞，则 $k=im+j$。**解完先验根**：\`ec_mul(s, P) == Q\` 再进入下一步，别把错误答案往解密里套。
+
+## 二、判据表：拿到 ECC 参数按什么选攻击
+
+| 观察到的条件 | 攻击 | 要 sage？ |
+|---|---|---|
+| $\\#E=p$（迹 $t=1$，异常曲线 anomalous） | **Smart's attack**（p-adic 提升 + 形式群对数） | **是**（要 Qp） |
+| $4a^3+27b^2\\equiv0\\pmod p$（判别式为 0） | **奇异曲线**：退化成加法群/乘法群 | 否（纯 Python） |
+| $\\#E=p+1$、曲线超奇异（如 $y^2=x^3+x$，$p\\equiv3\\bmod4$） | **MOV / Frey-Rück**：embedding degree 小，转到 $\\mathbb{F}_{p^k}^*$ | **是**（配对） |
+| $\\mathrm{ord}(P)$ 最大素因子很小（阶光滑） | **Pohlig-Hellman** + CRT | 否（可手写） |
+| 服务端不校验点是否在曲线上 | **Invalid Curve Attack**：换 b 造小阶点，泄漏 $d\\bmod r_i$ | 否 |
+| 两次签名 r 相同 / $k$ 复用 | **ECDSA nonce 重用**：直接解出 k 与 d | 否（一行公式） |
+| $k$ 有偏、高位或低位泄漏 | **HNP + LLL**（见 [[密码学-格与LLL]] 5.2） | **是** |
+| 只给 x / 只校验 x | twist attack（搬到二次扭曲线） | 是 |
+| 阶 n 有小因子且服务端接受任意点 | 小阶点 + CRT（同无效曲线） | 否 |
+| 曲线定义在 $\\mathbb{F}_{2^m}$（特征 2） | 加法公式不同，常配 MOV | 是 |
+
+**固定动作**：①算 $\\#E$；②分解 $\\#E$ 与 $\\mathrm{ord}(G)$；③看判别式、看 $\\#E$ 与 p 的关系；④看服务端校验逻辑。四步之后攻击基本唯一。
+
+> **曲线"有猫腻"常考三类**：**奇异曲线**（$\\Delta=0$，退化成加法群/乘法群）、**小阶子群 / 无效曲线**（服务端不校验点是否在曲线上）、**MOV**（低嵌入度，配对把 ECDLP 打到有限域乘法群）。题目给的 (p, a, b, 阶, G) **每个都值得验一遍**——不要假设曲线是"安全参数"。
+
+## 三、六类攻击的细节与骨架
+
+### 3.1 异常曲线：Smart's attack（$\\#E=p$）
+
+$\\#E=p$ 时曲线上的 DLP 可以搬到 $p$-adic 数上变成**线性**问题：把曲线提升到 $\\mathbb{Q}_p$，用形式群对数把点映到 $p\\mathbb{Z}_p$，一除就出 $d$。**必须 sage**（要 \`Qp\`）。
+
+\`\`\`python
+def smart_attack(P, Q, p):
+    E = P.curve()
+    Eqp = EllipticCurve(Qp(p, 2), [ZZ(t) + randint(0, p)*p for t in E.a_invariants()])
+    P_Qp = next(z for z in Eqp.lift_x(ZZ(P.xy()[0]), all=True) if GF(p)(z.xy()[1]) == P.xy()[1])
+    Q_Qp = next(z for z in Eqp.lift_x(ZZ(Q.xy()[0]), all=True) if GF(p)(z.xy()[1]) == Q.xy()[1])
+    xP, yP = (p*P_Qp).xy(); xQ, yQ = (p*Q_Qp).xy()
+    return ZZ((-(xQ/yQ)) / (-(xP/yP)))      # 形式群对数之比
+\`\`\`
+
+### 3.2 奇异曲线（$\\Delta=0$）
+
+$a,b$ 不满足判别式条件时，非奇异点构成的群退化成两类：
+- **cusp（三重根）**：平移成 $y^2=x^3$。$t=x/y$ 是**加法同构**——$P\\leftrightarrow t$、$P+Q\\leftrightarrow t_P+t_Q$，DLP 直接是除法 $d=t_Q\\cdot t_P^{-1}\\bmod p$。（本机实测 $t(3P+5P)=8=t(7P)$ ✓）
+- **node（二重根）**：$x^3+ax+b=(x-\\alpha)^2(x-2\\alpha)$，平移奇点到原点得 $y^2=x^2(x+3\\alpha)$。令 $s^2=3\\alpha$，则 $u=\\frac{y+s(x-\\alpha)}{y-s(x-\\alpha)}$ 是**乘法同构**（$u(P+Q)=u(P)u(Q)$，实测 ✓），DLP 变成 $\\mathbb{F}_p^*$ 的离散对数 $d=\\log_{u(P)}u(Q)$。
+- 坑：$3\\alpha$ 非二次剩余时 $u$ 落在 $\\mathbb{F}_{p^2}$ 的 norm-1 子群；**公式必须先做平移**，直接抄别人的会差一个 $\\alpha$。
+
+### 3.3 超奇异 + MOV（embedding degree 小）
+
+超奇异曲线（$p\\ge5$ 时等价于迹 $t\\equiv0$，即 $\\#E=p+1$）的 embedding degree $k$（最小使 $\\mathrm{ord}(P)\\mid p^k-1$ 的 k）**不超过 6**。配 Weil/Tate 配对把 ECDLP 变成 $\\mathbb{F}_{p^k}^*$ 的 DLP：
+
+\`\`\`python
+n = P.order(); k = 1
+while (p**k - 1) % n: k += 1                    # k 小才算得动
+K.<a> = GF(p**k); EK = E.change_ring(K); PK, QK = EK(P), EK(Q)
+while True:                                     # 找一个 e(P,T) != 1 的 T
+    T = (EK.order()//n) * EK.random_point()
+    if T.order() == n and PK.weil_pairing(T, n) != 1: break
+alpha = PK.weil_pairing(T, n); beta = QK.weil_pairing(T, n)
+d = discrete_log(beta, alpha)                   # 注意：sage 这里是 log_alpha(beta)
+\`\`\`
+
+k=2/3/4/6 时 $\\mathbb{F}_{p^k}^*$ 的 DLP 用 index calculus 能出；k 一大就放弃这条线。
+
+### 3.4 Pohlig-Hellman（阶光滑）
+
+$\\mathrm{ord}(P)=\\prod q_i^{e_i}$：在每个 $q_i^{e_i}$ 子群里解小 DLP，再 CRT 拼起来。复杂度由**最大素因子**决定。
+
+\`\`\`python
+def pohlig_hellman(P, Q, ordP, factors):        # factors: [(q, e), ...]
+    res, mods = [], []
+    for q, e in factors:
+        Qq, Pq = (ordP//q**e)*Q, (ordP//q**e)*P # 落到 q^e 子群
+        x, cur = 0, Pq
+        for i in range(e):
+            tmp = (ordP//q**(i+1)) * (Qq - x*cur)
+            d = next(k for k in range(q) if k*((ordP//q)*cur) == tmp)   # 也可 BSGS
+            x += d*q**i; cur = q*cur
+        res.append(x); mods.append(q**e)
+    d, M = 0, 1
+    for x, mm in zip(res, mods):                # CRT
+        d += (x - d) * pow(M, -1, mm) * M % (M*mm); M *= mm
+    return d % ordP
+\`\`\`
+
+sage 里一行：\`discrete_log(Q, P, ord=P.order(), operation='+')\`。
+
+### 3.5 无效曲线攻击（Invalid Curve Attack）
+
+服务端只校验"点像个点"、不校验 $y^2=x^3+ax+b$ 时：**保持 a 不变、换一个 b**，造一条阶光滑的新曲线，在上面取小阶点 $R_i$ 发过去，用返回的共享密钥算出 $d\\bmod r_i$，最后 CRT 出私钥。要点：$a$ 必须与原曲线相同（点加公式只用到 $a$）；每轮换曲线、取阶为小素数的点。
+
+\`\`\`python
+for r in small_primes:                          # 对每个小素数 r
+    b2 = 1
+    while True:                                 # 找使 r | #E2 的 b'
+        E2 = EllipticCurve(GF(p), [a, b2])
+        if E2.order() % r == 0: break
+        b2 += 1
+    R = (E2.order()//r) * E2.random_point()     # r 阶点
+    S = server_ecdh(R)                          # 服务端返回 d*R
+    # 爆破 k in range(r)：若 k*R == S 则 d ≡ k (mod r)；模数乘积 > 私钥上界时 CRT 出 d
+\`\`\`
+
+只给 x 的协议（部分 Montgomery 实现）走 **twist attack**，不是同一套代码。
+
+### 3.6 ECDSA nonce 重用（最常见、也最容易抄错）
+
+$s=k^{-1}(z+rd)\\bmod n$。两次签名 **r 相同（k 相同）**：$k=\\frac{z_1-z_2}{s_1-s_2}\\bmod n$，$d=\\frac{s_1k-z_1}{r}\\bmod n$。
+
+\`\`\`python
+k = (z1 - z2) * pow(s1 - s2, -1, n) % n     # 这是 k！
+d = (s1 * k - z1) * pow(r, -1, n) % n       # 这才是私钥
+\`\`\`
+
+变体：$k$ 直接泄漏 → $d=(sk-z)r^{-1}$；两个 nonce 有线性关系（$k_2=k_1+c$ 或 $k_2=c\\,k_1$）→ 两式联立直接解；$k$ 由弱 RNG/LCG 产生或只泄漏部分位 → 转 **HNP + LLL**（见 [[密码学-格与LLL]] 5.2）。
+
+## 四、DH 与离散对数
+
+- **光滑阶**：$\\mathbb{F}_p^*$ 的阶是 $p-1$，分解后最大素因子小 → Pohlig-Hellman；不光滑才需要 index calculus（sage \`discrete_log\` 自己会选）。
+- **小群攻击**：服务端只检查 $g^a$ 是不是合法元素、不检查子群时，发送**小阶元素**，从共享密钥反推 $a\\bmod r$，多轮 CRT 出 $a$。与 3.5 是同一思想的两种载体。
+- **已知指数爆破**：$a$ 很小或在小区间 → 直接枚举 / BSGS（$\\sqrt N$ 空间换时间）。工具：sage \`discrete_log(Q, P, ord=n)\`；pari/gp 的 \`znlog(x, g, {o})\`、\`znorder\`。
+
+## 五、工具与环境（ECC 相关，本机现状）
+
+| 能力 | 有没有 | 怎么做 |
+|---|---|---|
+| 曲线阶、DLP、单变量 Coppersmith | ⚠️ WSL pari/gp | \`ellcard\` / \`elllog\` / \`znlog\` / \`zncoppersmith\` / \`qflll\`，**本次未实测**，上机先 \`?函数名\` |
+| 大数、开方、求逆 | ✅ | \`gmpy2\` 2.3.1（\`invert\`/\`iroot\`/\`gcdext\`） |
+| 小规模 ECDLP | ✅ | **纯 Python 手写 BSGS 就够**（493 就这么打的） |
+| \`small_roots\`、Qp（Smart）、配对（MOV）、BKZ | ❌ | **必须 sagemath**（装法见 [[密码学-格与LLL]] 3.2） |
+
+**没有 sage 也能做**：奇异曲线（纯 Python 映射）、Pohlig-Hellman、ECDSA nonce 重用、无效曲线交互、阶的因式分解（sympy \`factorint\`）、小规模 ECDLP（手写 BSGS）。**必须 sage**：Smart（Qp）、MOV 配对、\`small_roots\`、BKZ。自定义曲线实现（题目自带 \`utils.py\` 之类）先读实现再套标准解法。
+
+**API 坑（本机实测）**：\`discrete_log\` 的参数顺序两边正好相反——**sage** 是 \`discrete_log(beta, alpha)\`（目标在前，即求 $\\log_\\alpha\\beta$）；**sympy** 是 \`discrete_log(n, a, b)\` 表示 $\\log_b a$（a 是目标、b 是底），写反会抛 \`Log does not exist\`。
+
+## 六、实战案例：0xGame 493 Ez_ECC
+
+- 用 **BSGS** 解出 \`s = 109516527476\`，回代验证通过（\`ec_mul(s, P) == Q\`）；
+- 密钥约定：\`sha256(str(s))\` 作 AES-ECB 密钥；
+- 解密结果：**前 32 字节明文正常**（flag 开头可读），**后 16 字节乱码** → 乱码 ≠ 失败：可能是数据含二进制 / 曲线实现特殊，按加密方向继续排查（该题悬在"部分解出"）。
+
+## 关键点
+
+- **上机第一步固定四动作**：算 $\\#E$ → 分解 $\\#E$ 与 $\\mathrm{ord}(G)$ → 看判别式、看 $\\#E$ 与 p 的关系 → 看服务端校验逻辑；之后攻击基本唯一。
+- 阶光滑就走 Pohlig-Hellman / BSGS，别硬刚；**解完先验根**再往下走。
+- 题目给的 (p, a, b, 阶, G) 每个都要验——**曲线可能是"不安全参数"**（奇异 / 超奇异 / 异常）。
+- 服务端不校验点 → 无效曲线 / 小群攻击；nonce 复用 → 一行公式解 d。
+- 大参数、复杂曲线以 SageMath 为标配（本机暂缺，替代与现状见 [[本机环境与CTF工具链]]）。
+
+## 关联
+
+- [[密码学-格与LLL]] —— 姊妹页：格的方法论、HNP + LLL（nonce 偏差、LCG 截断的落点）
+- [[0xGame2025-征战记录]] —— Ez_ECC 与 Ez_LLL / Copper!!! / Mid_LLL 的战场记录
+- [[本机环境与CTF工具链]] —— SageMath 缺位与替代方案
+- [[密码学-RSA攻击]] —— 数论攻击族的相邻页（Coppersmith、已知高位分解）
+- [[CTF-常用工具清单]] —— sage / pari-gp / gmpy2 的安装与调用
+- [[密码学-对称加密与哈希]] —— 解出标量之后的 AES / 哈希这一跳
+
+## 存疑 / 矛盾
+
+- **本页由三页合并而来（2026-10-03）**：原「密码学-格与椭圆曲线」+「密码学-格密码与ECC」的 ECC 部分（深版）+ 相关实战，合并为本页；格部分独立成 [[密码学-格与LLL]]。
+- **最常见的抄错**：网上大量笔记写 ECDSA 复用 nonce 时 \`d = (z1-z2)/(s1-s2)\`——**那是 k 的公式**。本机实测确认：$k=(z_1-z_2)(s_1-s_2)^{-1}$、$d=(s_1k-z_1)r^{-1}$。用错公式会得到一个"看着像私钥"的数，然后在解密那步卡死。
+- **奇异曲线的映射依赖曲线形式**：cusp 与 node 的公式都**必须先平移**把奇点搬到原点；node 情形还要求 $\\sqrt{3\\alpha}$ 存在，否则映射落到 $\\mathbb{F}_{p^2}$ 的 norm-1 子群。照抄别的 writeup 极容易差一个平移量。
+- **无效曲线攻击的前提很硬**：服务端真的不校验点、且攻击者知道 $a$。只给 x 的协议走 twist attack，不是同一套代码，别混用。
+- **"解出 s 就赢"不成立**：493 的密钥约定是 \`sha256(str(s))\`，不同题约定不同——先读题再套。
+- **本页 pari/gp 的能力按官方文档写，本次没有实测**：这台机器的 WSL 在沙箱里起不来（\`wsl.exe\` 直接被拒），\`ellcard\`/\`elllog\`/\`znlog\` 的函数名与签名请上机用 \`?函数名\` 复核。
+
+## 来源
+
+- 0xGame2025 实战（2026-06，493 Ez_ECC 等）＋ 糯米内建知识整理 · 2026-10-03
+- 由「密码学-格与椭圆曲线」「密码学-格密码与ECC」「密码学-格与LLL」三页合并（2026-10-03）
+`,r="concept",t="crypto",o={internal:["0xGame2025-征战记录","CTF-常用工具清单","密码学-RSA攻击","密码学-对称加密与哈希","密码学-格与LLL","本机环境与CTF工具链"],unresolvedCount:0},p={name:n,title:$,summary:a,content:e,section:r,group:t,links:o};export{e as content,p as default,t as group,o as links,n as name,r as section,a as summary,$ as title};
