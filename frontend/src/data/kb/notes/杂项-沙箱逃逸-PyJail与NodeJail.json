@@ -12,6 +12,6 @@
    "Web-反序列化漏洞",
    "Web-命令执行与SSTI"
   ],
-  "unresolved": []
+  "unresolvedCount": 0
  }
 }
