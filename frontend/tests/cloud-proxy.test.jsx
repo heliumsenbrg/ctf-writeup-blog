@@ -14,18 +14,28 @@ import worker from '../cloudflare/cloud-proxy-worker.js'
 
 const ALLOWED = 'https://heliumsenbrg.github.io'
 const URL_UNDER_TEST = 'https://proxy.example.workers.dev/.cloud/database/rest/guestbook?select=id'
+const PASS_SECRET = '1x0000000000000000000000000000000AA'
 
 let calls
+let siteverifyOk
 
 beforeEach(() => {
   calls = []
+  siteverifyOk = true
   vi.stubGlobal('fetch', vi.fn(async (url, init) => {
-    calls.push({ url: String(url), headers: new Headers(init.headers || {}), method: init.method })
+    const u = String(url)
+    calls.push({ url: u, headers: new Headers(init.headers || {}), method: init.method })
+    // Turnstile 的校验端点要单独回，否则会被当成数据面
+    if (u.includes('siteverify')) {
+      return new Response(JSON.stringify({ success: siteverifyOk }), { status: 200 })
+    }
     return new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
   }))
 })
 
 afterEach(() => vi.unstubAllGlobals())
+
+const backendCalls = () => calls.filter((c) => !c.url.includes('siteverify'))
 
 test('预检放行自定义头 x-wb-webapp-access-key', async () => {
   const res = await worker.fetch(
@@ -85,4 +95,65 @@ test('POST 的 body 会被缓冲后转发（流式 body 在 Node 下会因缺 du
   }))
   expect(calls).toHaveLength(1)
   expect(calls[0].method).toBe('POST')
+})
+
+// ── Turnstile 人机校验（配了 TURNSTILE_SECRET 才生效）────────────────────────
+
+test('未配 TURNSTILE_SECRET：降级放行，并标 X-Turnstile: disabled', async () => {
+  const res = await worker.fetch(new Request(URL_UNDER_TEST, {
+    method: 'POST',
+    headers: { Origin: ALLOWED, 'x-wb-webapp-access-key': 'k', 'Content-Type': 'application/json' },
+    body: '{}',
+  }), {}, {})
+  expect(res.status).toBe(200)
+  expect(res.headers.get('X-Turnstile')).toBe('disabled')
+  expect(calls.some((c) => c.url.includes('siteverify'))).toBe(false)
+})
+
+test('配了 secret 但没带 token：写操作必须拒', async () => {
+  const res = await worker.fetch(new Request(URL_UNDER_TEST, {
+    method: 'POST',
+    headers: { Origin: ALLOWED, 'x-wb-webapp-access-key': 'k', 'Content-Type': 'application/json' },
+    body: '{}',
+  }), { TURNSTILE_SECRET: PASS_SECRET }, {})
+  expect(res.status).toBe(403)
+  expect(backendCalls()).toHaveLength(0)   // 没校验过就不能碰后端
+})
+
+test('配了 secret 且校验通过：放行，且 token 不转发给后端', async () => {
+  const res = await worker.fetch(new Request(URL_UNDER_TEST, {
+    method: 'POST',
+    headers: {
+      Origin: ALLOWED, 'x-wb-webapp-access-key': 'k',
+      'Content-Type': 'application/json', 'x-turnstile-token': 'TOK',
+    },
+    body: '{}',
+  }), { TURNSTILE_SECRET: PASS_SECRET }, {})
+  expect(res.status).toBe(200)
+  const verify = calls.find((c) => c.url.includes('siteverify'))
+  expect(verify).toBeTruthy()
+  // token 只是浏览器↔Worker 之间的事，后端不需要它
+  expect(backendCalls()[0].headers.get('x-turnstile-token')).toBeNull()
+})
+
+test('校验不通过：403，且不碰后端', async () => {
+  siteverifyOk = false
+  const res = await worker.fetch(new Request(URL_UNDER_TEST, {
+    method: 'POST',
+    headers: {
+      Origin: ALLOWED, 'x-wb-webapp-access-key': 'k',
+      'Content-Type': 'application/json', 'x-turnstile-token': 'TOK',
+    },
+    body: '{}',
+  }), { TURNSTILE_SECRET: PASS_SECRET }, {})
+  expect(res.status).toBe(403)
+  expect(backendCalls()).toHaveLength(0)
+})
+
+test('读请求不受人机校验影响（配了 secret、没带 token 也能读）', async () => {
+  const res = await worker.fetch(new Request(URL_UNDER_TEST, {
+    method: 'GET', headers: { Origin: ALLOWED, 'x-wb-webapp-access-key': 'k' },
+  }), { TURNSTILE_SECRET: PASS_SECRET }, {})
+  expect(res.status).toBe(200)
+  expect(calls.some((c) => c.url.includes('siteverify'))).toBe(false)
 })

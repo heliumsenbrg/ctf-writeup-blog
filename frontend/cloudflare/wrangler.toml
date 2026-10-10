@@ -10,6 +10,23 @@
 #   VITE_CLOUD_ENDPOINT=https://ctf-blog-cloud-proxy.<你的子域>.workers.dev
 #
 # 免费额度：每天 10 万次请求，个人博客绰绰有余。
+#
+# ── 人机校验（Turnstile，可选但强烈建议）────────────────────────────────
+# 在 Cloudflare 控制台 → Turnstile → 添加站点，拿到一对密钥后：
+#
+#   1) secret 放这里（服务器端，不要写进代码）：
+#        wrangler secret put TURNSTILE_SECRET
+#   2) site key 给前端（公开的，构建时传）：
+#        VITE_TURNSTILE_SITE_KEY=<你的 site key>
+#
+# ⚠️ 两边必须**一起配**：
+#      只配前端 → 校验被跳过（不报错，但也不设防）
+#      只配 Worker → 访客拿不到 token，所有写操作 403
+#    没配 secret 时 Worker 会降级放行，并在响应里标 `X-Turnstile: disabled`，
+#    方便你在浏览器 Network 面板一眼看出当前到底有没有在设防。
+#
+# 想先用官方测试密钥试通链路（不会真的拦人）：
+#   site key: 1x00000000000000000000AA     secret: 1x0000000000000000000000000000000AA
 
 name = "ctf-blog-cloud-proxy"
 main = "cloud-proxy-worker.js"
