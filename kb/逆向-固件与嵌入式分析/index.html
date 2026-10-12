@@ -83,10 +83,10 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
     </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-CHOhwyDf.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-M_9QOhvu.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-Ce_fMeXQ.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-Cmjs2ztV.css">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-Dj3jF-fn.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗
@@ -114,5 +114,49 @@
         <p style="margin:0;font-size:12px;opacity:.72">请在浏览器设置里开启 JavaScript 后刷新本页。</p>
       </div>
     </noscript>
+    <!-- 初音看板娘（live2d-widget）—— 纯静态资源在 public/live2d/。
+         加载策略：等首屏 load 完、浏览器空闲时再拉取（~1.3MB），失败静默，绝不拖垮正文；
+         移动端直接不加载（300px 的看板娘在手机上太占地方，CSS 里也有一层 display:none 兜底）。
+         注意：/ctf-writeup-blog/ 由 Vite 构建时替换（GitHub Pages 子路径 / Vercel 根路径都正确）。 -->
+    <script>
+      (function () {
+        if (window.__waifuDone) return
+        window.__waifuDone = 1
+        if (window.innerWidth < 480) return
+        var BASE = '/ctf-writeup-blog/'
+        function load(u, t) {
+          return new Promise(function (res, rej) {
+            var tag
+            if (t === 'css') { tag = document.createElement('link'); tag.rel = 'stylesheet'; tag.href = u }
+            else { tag = document.createElement('script'); tag.type = 'module'; tag.src = u }
+            tag.onload = function () { res(1) }
+            tag.onerror = function () { rej(u) }
+            document.head.appendChild(tag)
+          })
+        }
+        function boot() {
+          // waifu-tips.json 是静态文件、不知道部署 base——先 fetch 下来，
+          // 运行时把模型路径换成带 base 前缀的绝对路径，再用 Blob URL 交给 widget
+          fetch(BASE + 'live2d/waifu-tips.json').then(function (r) { return r.json() }).then(function (cfg) {
+            cfg.models = [{ name: '初音未来', message: '大家好！我是初音未来～今天也请多指教哦♪', paths: [BASE + 'live2d/model-miku/miku.model.json'] }]
+            return Promise.all([load(BASE + 'live2d/waifu.css', 'css'), load(BASE + 'live2d/waifu-tips.js', 'js')]).then(function () {
+              if (window.initWidget) {
+                window.initWidget({
+                  waifuPath: URL.createObjectURL(new Blob([JSON.stringify(cfg)], { type: 'application/json' })),
+                  tools: [], drag: false, logLevel: 'warn',
+                  cubism2Path: BASE + 'live2d/live2d.min.js'
+                })
+              }
+            })
+          }).catch(function () { /* 看板娘是锦上添花，挂了不影响正文 */ })
+        }
+        var idle = function () {
+          if ('requestIdleCallback' in window) requestIdleCallback(boot, { timeout: 3000 })
+          else setTimeout(boot, 2000)
+        }
+        if (document.readyState === 'complete') idle()
+        else window.addEventListener('load', idle)
+      })()
+    </script>
   </body>
 </html>

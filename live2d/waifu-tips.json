@@ -1,0 +1,78 @@
+{
+  "mouseover": [
+    {
+      "selector": ".nav-link",
+      "text": ["想去哪儿？题解、挑战、知识库都在这儿～", "导航栏在手，flag 我有！"]
+    },
+    {
+      "selector": "[aria-label^='搜索']",
+      "text": ["在找什么呢？⌘K 一键直达哦～", "搜 payload 还是搜题解？试试看嘛！"]
+    },
+    {
+      "selector": ".glass-card",
+      "text": ["这篇 writeup 很不错哦，点开看看嘛～", "听说这里藏着一血题的故事！"]
+    },
+    {
+      "selector": "h1.anime-title",
+      "text": ["认真看完这篇文章，你会有收获的！", "标题起得很帅吧？"]
+    },
+    {
+      "selector": "footer",
+      "text": ["别放过任何细节——页脚也是哦～", "到底啦，要回到顶部吗？"]
+    }
+  ],
+  "click": [
+    {
+      "selector": ".glass-card",
+      "text": ["点进去之前，先猜猜考点是什么？", "这篇里有好东西，慢慢看～"]
+    },
+    {
+      "selector": "#waifu",
+      "text": ["戳我干嘛啦，快去刷题！", "再戳一下，flag 也不会掉出来的！"]
+    }
+  ],
+  "seasons": [
+    { "date": "01/01", "text": "<span>元旦</span>快乐！新的一年，新的 flag～" },
+    { "date": "02/14", "text": "今天是<span>情人节</span>，{year} 年也要和 0day 谈恋爱哦～" },
+    { "date": "03/08", "text": "今天是<span>国际妇女节</span>！" },
+    { "date": "04/01", "text": "<span>愚人节</span>快乐！今天你看到的 flag 都是假的吗？" },
+    { "date": "05/01", "text": "<span>劳动节</span>快乐！挖洞也是一种劳动呢～" },
+    { "date": "05/20", "text": "今天是<span>5·20</span>，表白对象：我的 reverse shell～" },
+    { "date": "06/01", "text": "<span>儿童节</span>快乐！保持好奇，保持挖洞的热情～" },
+    { "date": "10/01", "text": "<span>国庆节</span>快乐！假期正是肝比赛的好时候～" },
+    { "date": "10/24", "text": "今天是<span>程序员节</span>！1024 快乐，愿你的 exp 一次打通～" },
+    { "date": "12/25", "text": "<span>圣诞节</span>快乐！袜子里的 flag 找到了吗？" }
+  ],
+  "time": [
+    { "hour": "6-7", "text": "早上好！一日之计在于晨，先从一道简单的签到题开始吧～" },
+    { "hour": "8-11", "text": "上午好！正是头脑清醒的时候，适合啃硬骨头题目！" },
+    { "hour": "12-13", "text": "中午啦，先吃饭再挖洞，饿着肚子可绕不过 WAF～" },
+    { "hour": "14-17", "text": "午后容易犯困，泡杯咖啡继续 fuzzing 吧！" },
+    { "hour": "18-19", "text": "傍晚了，站起来活动一下，眼睛也要休息哦～" },
+    { "hour": "20-21", "text": "晚上好！夜深人静，正是读源码的好时光～" },
+    { "hour": "22-23", "text": ["有点晚了，这道题解不出来就先睡吧～", "深夜肝题记得喝水呀！"] },
+    { "hour": "0-5", "text": "夜猫子模式启动！CTF 人的主场时间到——但也别熬太晚哦！" }
+  ],
+  "message": {
+    "default": ["今天也要元气满满地挖 flag 呀！", "stay hungry, stay foolish～", "别放过任何细节！", "要一起打 CTF 吗？"],
+    "console": "哈哈，你打开了控制台！是想找彩蛋吗？悄悄告诉你：试试访问 /secret-quest 哦～",
+    "copy": "复制了什么好东西？payload 记得注明出处哦～",
+    "visibilitychange": "欢迎回来～继续战斗吧！",
+    "changeSuccess": "我的新衣服好看嘛？",
+    "changeFail": "我还没有其他衣服呢！",
+    "photo": "照好了嘛？记得把我拍帅一点～",
+    "goodbye": "愿你有一天能与重要的 flag 重逢。",
+    "hitokoto": "这句一言来自 <span>「$1」</span>，是 <span>$2</span> 在 hitokoto.cn 投稿的。",
+    "welcome": "欢迎阅读<span>「$1」</span>",
+    "referrer": "Hello！来自 <span>$1</span> 的朋友，欢迎欢迎～",
+    "hoverBody": ["干嘛呢你，快把手拿开～～", "鼠标放错地方了！", "你要干嘛呀？", "再摸就给你弹个 reverse shell 哦！"],
+    "tapBody": ["是…是不小心碰到了吧…", "不要动手动脚的！", "告诉你个秘密：flag 藏在脑袋里！", "今天也要元气满满地搞安全呀！", "别戳啦，快去刷题！", "C4 甩过来了，快接住！", "摸鱼可以，摸我不行！", "嘿嘿，被发现了呢～", "Stay hungry, stay 二次元！", "再戳一下，就一下，我就把你的 payload 吃掉！"]
+  },
+  "models": [
+    {
+      "name": "初音未来",
+      "message": "大家好！我是初音未来～今天也请多指教哦♪",
+      "paths": ["./model-miku/miku.model.json"]
+    }
+  ]
+}
