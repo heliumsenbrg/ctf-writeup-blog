@@ -3,46 +3,56 @@ import { Music, Pause, Volume2, VolumeX } from 'lucide-react'
 import { musicTracks } from '../data/music.js'
 
 /**
- * 背景音乐播放器（全站悬浮，位于**左下角** —— 右下角是 BackToTop、右侧是文章目录）。
+ * 背景音乐播放器（全站悬浮，左下角 —— 右下是看板娘、右侧是文章目录）。
  *
- * 几个刻意的设计：
- *  · **不自动播放**。浏览器本来就会拦截无用户手势的自动播放；更要紧的是，
- *    访客打开博客突然有声音是很冒犯的事（办公室/深夜）。默认关闭，点了才响。
- *  · `preload="none"` —— 不点就不下载那 430 KB，首屏零代价。
- *  · 开/关与音量记在 localStorage，下次来保持；但受上面的自动播放限制，
- *    "上次开着"的访客仍需再点一下才会响（这是浏览器的规矩，不是 bug）。
- *  · 循环播放，且音轨本身做了首尾交叉淡化，听不出接缝。
- *  · 键盘可达：按钮可 Tab 聚焦、Enter/Space 触发；音量条有 aria-label。
+ * ── 播放策略（2026-10-13 按主人要求改）────────────────────────────────────
+ * 之前是"默认静音、点了才响"，主人反馈「怎么没音乐」—— 按钮太不显眼，
+ * 等于没有音乐。现在改成**打开页面就会放**：
+ *
+ *   1) 挂载后**先直接试一次 play()** —— 老访客（浏览器已判定允许）会立刻响；
+ *   2) 被浏览器拦下（新访客必然如此，无手势不许出声）→ 把播放挂到**第一次真实交互**上：
+ *      点击 / 滚动 / 按键 / 触摸任选其一，一有动作就开始放。这是"自动播放"在不被
+ *      浏览器封杀的前提下能做到的最接近效果；
+ *   3) 一旦某个手势成功，其余监听立即全部摘掉，不会重复触发；
+ *   4) **关过一次就记住**（localStorage 'bgm:enabled' = '0'）—— 之后不再自动放，
+ *      尊重使用者的选择，下次来也不会被突然出声打扰。
+ *
+ * ── 其它 ────────────────────────────────────────────────────────────────
+ * · 首次成功播放时弹一次提示气泡，告诉使用者"音乐开着了、按钮在哪、怎么关"，
+ *   只弹一次（localStorage 记）。这是上一版缺的"可发现性"。
+ * · `preload="none"` —— 没开始放之前不下载那 430 KB。
+ * · 音量与开关记 localStorage；键盘可达；循环播放（音轨本身首尾交叉淡化，无缝）。
  */
 
-const LS_ENABLED = 'bgm:enabled'
+const LS_ENABLED = 'bgm:enabled'   // '0' = 使用者明确关掉了；未设置/其它 = 开着
 const LS_VOLUME = 'bgm:volume'
+const LS_HINT = 'bgm:hint-shown'
 const DEFAULT_VOLUME = 0.35
+
+// 能被浏览器认可为"用户手势"的事件。capture + passive：
+// capture 保证比页面其它处理器更早拿到；passive 保证不阻塞页面滚动。
+const GESTURES = ['pointerdown', 'mousedown', 'keydown', 'wheel', 'touchstart', 'scroll']
 
 export default function MusicPlayer() {
   const audioRef = useRef(null)
+
+  // 使用者是否"希望有音乐"。默认希望 —— 「自动放」是主人明确要的。
+  const [wanted, setWanted] = useState(() => {
+    try { return localStorage.getItem(LS_ENABLED) !== '0' } catch { return true }
+  })
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
-  const [open, setOpen] = useState(false)   // 是否展开音量条
+  const [showHint, setShowHint] = useState(false)
+  const [hintDone, setHintDone] = useState(false)
+  const [open, setOpen] = useState(false)      // 是否展开音量条
   const [failed, setFailed] = useState(false)
 
-  // 初始化：读回音量；若上次是开着的，尝试恢复播放（被浏览器拦下就静默停在暂停态）
+  // 音量：读回记忆值
   useEffect(() => {
     try {
       const v = Number(localStorage.getItem(LS_VOLUME))
       if (Number.isFinite(v) && v >= 0 && v <= 1) setVolume(v)
     } catch { /* 隐私模式 */ }
-
-    const el = audioRef.current
-    if (el) el.volume = volume
-
-    let wantOn = false
-    try { wantOn = localStorage.getItem(LS_ENABLED) === '1' } catch { /* 隐私模式 */ }
-    if (wantOn && el) {
-      el.play().then(() => setPlaying(true)).catch(() => { /* 自动播放被拦，保持暂停 */ })
-    }
-    // 只在挂载时跑一次
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -50,22 +60,82 @@ export default function MusicPlayer() {
     try { localStorage.setItem(LS_VOLUME, String(volume)) } catch { /* 隐私模式 */ }
   }, [volume])
 
+  // ── 播放主逻辑：先直接试，被拦就等第一次交互 ──────────────────────────
+  useEffect(() => {
+    const el = audioRef.current
+    if (!el || !wanted) return
+
+    let cancelled = false
+    let starting = false   // 一次交互还没落地时，别被下一个手势重复触发
+    let armed = false
+
+    function onGesture() { attempt() }
+
+    const detach = () => {
+      if (!armed) return
+      armed = false
+      for (const g of GESTURES) window.removeEventListener(g, onGesture, true)
+    }
+
+    function attempt() {
+      if (cancelled || starting) return
+      starting = true
+      el.play()
+        .then(() => {
+          starting = false
+          if (cancelled) return
+          setPlaying(true)
+          detach()          // 成功了就不再需要这些监听
+        })
+        .catch(() => {
+          // 仍被自动播放策略拦着 —— 保持待命、等下一个手势。
+          // 这里**不**置 failed：那不是错误，是浏览器的规矩。
+          starting = false
+        })
+    }
+
+    // ① 先直接试一次（老访客往往已被浏览器放行）
+    el.play()
+      .then(() => { if (!cancelled) setPlaying(true) })
+      .catch(() => {
+        if (cancelled) return
+        // ② 被拦：等第一次真实交互
+        armed = true
+        for (const g of GESTURES) {
+          window.addEventListener(g, onGesture, { capture: true, passive: true })
+        }
+      })
+
+    return () => { cancelled = true; detach() }
+  }, [wanted])
+
+  // ── 首次真正响起来时弹一次提示（只弹一次）────────────────────────────
+  useEffect(() => {
+    if (!playing || hintDone) return
+    let seen = ''
+    try { seen = localStorage.getItem(LS_HINT) || '' } catch { /* 隐私模式 */ }
+    setHintDone(true)
+    if (seen) return
+    setShowHint(true)
+    try { localStorage.setItem(LS_HINT, '1') } catch { /* 隐私模式 */ }
+    const t = setTimeout(() => setShowHint(false), 9000)
+    return () => clearTimeout(t)
+  }, [playing, hintDone])
+
   const toggle = useCallback(() => {
     const el = audioRef.current
     if (!el) return
+    setShowHint(false)
     if (playing) {
       el.pause()
       setPlaying(false)
+      setWanted(false)
       try { localStorage.setItem(LS_ENABLED, '0') } catch { /* 隐私模式 */ }
     } else {
-      // 用户手势里调用，不会被自动播放策略拦
-      el.play()
-        .then(() => {
-          setPlaying(true)
-          setFailed(false)
-          try { localStorage.setItem(LS_ENABLED, '1') } catch { /* 隐私模式 */ }
-        })
-        .catch(() => setFailed(true))
+      try { localStorage.setItem(LS_ENABLED, '1') } catch { /* 隐私模式 */ }
+      setWanted(true)
+      // 显式点击里调用，不会被自动播放策略拦；真失败才是真出问题
+      el.play().then(() => { setPlaying(true); setFailed(false) }).catch(() => setFailed(true))
     }
   }, [playing])
 
@@ -75,7 +145,7 @@ export default function MusicPlayer() {
 
   return (
     <div className="fixed bottom-6 left-6 z-50 print:hidden">
-      {/* 音频元素常驻；preload=none → 不点不下载 */}
+      {/* preload=none → 没开始放之前不下载 */}
       <audio
         ref={audioRef}
         src={track.src}
@@ -86,8 +156,18 @@ export default function MusicPlayer() {
         onError={() => setFailed(true)}
       />
 
+      {/* 一次性提示气泡：首次响起来时出现，告诉使用者这是什么、怎么关 */}
+      {showHint && (
+        <div
+          role="status"
+          className="absolute bottom-12 left-0 whitespace-nowrap rounded-lg border border-cyber-cyan/40 bg-black/80 px-3 py-1.5 text-[11px] font-mono text-cyber-cyan backdrop-blur"
+        >
+          ♪ 背景音乐已开启 · 点左边按钮可关闭
+        </div>
+      )}
+
       <div
-        className="flex items-center gap-2"
+        className="relative flex items-center gap-2"
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
       >
@@ -100,13 +180,13 @@ export default function MusicPlayer() {
           className="group relative flex h-10 w-10 items-center justify-center rounded-full border border-cyber-cyan/50 bg-black/60 text-cyber-cyan backdrop-blur transition-colors hover:bg-cyber-cyan/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyber-cyan/70"
         >
           {playing ? <Pause className="h-4 w-4" /> : <Music className="h-4 w-4" />}
-          {/* 播放时给一圈呼吸光，提示"正在响" */}
+          {/* 播放时一圈呼吸光，提示"正在响" */}
           {playing && (
             <span className="pointer-events-none absolute h-10 w-10 animate-ping rounded-full border border-cyber-cyan/30" />
           )}
         </button>
 
-        {/* 音量条：hover 展开，键盘聚焦时也显示（focus-within）*/}
+        {/* 音量条：hover 展开；键盘聚焦时也显示（focus-within）*/}
         <div
           className={`flex items-center gap-2 rounded-full border border-cyber-grid/25 bg-black/60 px-3 py-1.5 backdrop-blur transition-all duration-200 ${
             open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
