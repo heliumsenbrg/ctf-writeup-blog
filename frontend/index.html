@@ -111,5 +111,49 @@
       </div>
     </noscript>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- 初音看板娘（live2d-widget）—— 纯静态资源在 public/live2d/。
+         加载策略：等首屏 load 完、浏览器空闲时再拉取（~1.3MB），失败静默，绝不拖垮正文；
+         移动端直接不加载（300px 的看板娘在手机上太占地方，CSS 里也有一层 display:none 兜底）。
+         注意：%BASE_URL% 由 Vite 构建时替换（GitHub Pages 子路径 / Vercel 根路径都正确）。 -->
+    <script>
+      (function () {
+        if (window.__waifuDone) return
+        window.__waifuDone = 1
+        if (window.innerWidth < 480) return
+        var BASE = '%BASE_URL%'
+        function load(u, t) {
+          return new Promise(function (res, rej) {
+            var tag
+            if (t === 'css') { tag = document.createElement('link'); tag.rel = 'stylesheet'; tag.href = u }
+            else { tag = document.createElement('script'); tag.type = 'module'; tag.src = u }
+            tag.onload = function () { res(1) }
+            tag.onerror = function () { rej(u) }
+            document.head.appendChild(tag)
+          })
+        }
+        function boot() {
+          // waifu-tips.json 是静态文件、不知道部署 base——先 fetch 下来，
+          // 运行时把模型路径换成带 base 前缀的绝对路径，再用 Blob URL 交给 widget
+          fetch(BASE + 'live2d/waifu-tips.json').then(function (r) { return r.json() }).then(function (cfg) {
+            cfg.models = [{ name: '初音未来', message: '大家好！我是初音未来～今天也请多指教哦♪', paths: [BASE + 'live2d/model-miku/miku.model.json'] }]
+            return Promise.all([load(BASE + 'live2d/waifu.css', 'css'), load(BASE + 'live2d/waifu-tips.js', 'js')]).then(function () {
+              if (window.initWidget) {
+                window.initWidget({
+                  waifuPath: URL.createObjectURL(new Blob([JSON.stringify(cfg)], { type: 'application/json' })),
+                  tools: [], drag: false, logLevel: 'warn',
+                  cubism2Path: BASE + 'live2d/live2d.min.js'
+                })
+              }
+            })
+          }).catch(function () { /* 看板娘是锦上添花，挂了不影响正文 */ })
+        }
+        var idle = function () {
+          if ('requestIdleCallback' in window) requestIdleCallback(boot, { timeout: 3000 })
+          else setTimeout(boot, 2000)
+        }
+        if (document.readyState === 'complete') idle()
+        else window.addEventListener('load', idle)
+      })()
+    </script>
   </body>
 </html>
