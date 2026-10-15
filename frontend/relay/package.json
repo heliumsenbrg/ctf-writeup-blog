@@ -1,0 +1,13 @@
+{
+  "name": "ctf-blog-cloud-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "云数据库同源中转（国内可达版）—— 只转发 /.cloud/，只认博客 Origin",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
