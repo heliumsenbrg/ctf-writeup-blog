@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Music, Pause, Volume2, VolumeX } from 'lucide-react'
+import { Music, Pause, Volume2, VolumeX, SkipBack, SkipForward } from 'lucide-react'
 import { musicTracks } from '../data/music.js'
 
 /**
@@ -159,14 +159,22 @@ export default function MusicPlayer() {
   // 换曲：<audio> 的 src 变了浏览器会重置播放状态，这里重新 load；
   // 原本在播就接着播，否则等用户手势（不依赖 playing，否则每次暂停/播放都会重置音轨）
   const firstTrack = useRef(true)
+  const forcePlay = useRef(false)   // 手动点上一首/下一首时，即使当前是暂停也要开播
   useEffect(() => {
     if (firstTrack.current) { firstTrack.current = false; return }
     const el = audioRef.current
     if (!el) return
-    const wasPlaying = playing
+    const shouldPlay = playing || forcePlay.current
+    forcePlay.current = false
     el.load()
-    if (wasPlaying) el.play().catch(() => { /* 交给下一次手势 */ })
+    if (shouldPlay) el.play().catch(() => { /* 交给下一次手势 */ })
   }, [trackIdx])
+
+  // 手动切歌：±1，两端回绕
+  const skip = useCallback((delta) => {
+    forcePlay.current = true
+    setTrackIdx((i) => (i + delta + musicTracks.length) % musicTracks.length)
+  }, [])
 
   return (
     <div className="fixed bottom-6 left-6 z-50 print:hidden">
@@ -199,7 +207,17 @@ export default function MusicPlayer() {
         </div>
       )}
 
-      <div className="relative flex items-center gap-2">
+      <div className="relative flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => skip(-1)}
+          aria-label="上一首"
+          title="上一首"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-cyber-cyan/30 bg-black/60 text-cyber-grid backdrop-blur transition-colors hover:text-cyber-cyan"
+        >
+          <SkipBack className="h-3.5 w-3.5" />
+        </button>
+
         <button
           type="button"
           onClick={toggle}
@@ -214,6 +232,24 @@ export default function MusicPlayer() {
             <span className="pointer-events-none absolute h-10 w-10 animate-ping rounded-full border border-cyber-cyan/30" />
           )}
         </button>
+
+        <button
+          type="button"
+          onClick={() => skip(1)}
+          aria-label="下一首"
+          title="下一首（一首放完也会自动切）"
+          className="flex h-8 w-8 items-center justify-center rounded-full border border-cyber-cyan/30 bg-black/60 text-cyber-grid backdrop-blur transition-colors hover:text-cyber-cyan"
+        >
+          <SkipForward className="h-3.5 w-3.5" />
+        </button>
+
+        {/* 当前曲名：让人一眼看出这是播放列表（放完会自动接下一首） */}
+        <span
+          className="hidden max-w-[10rem] truncate text-[11px] font-mono text-cyber-grid/75 sm:inline"
+          title={`正在播放：${track.title}`}
+        >
+          {track.title}
+        </span>
 
         {/* 音量条：常驻显示（原来是 hover 才展开 —— 触屏上根本调不出来，
             而且窄到 80px 不好拖。样式见 index.css 的 .vol-range）*/}
