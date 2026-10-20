@@ -28,13 +28,16 @@ beforeEach(() => {
   window.HTMLMediaElement.prototype.pause = pauseMock
 })
 
-test('audio 元素：不预加载、循环、且不依赖浏览器原生 autoplay 属性', () => {
+test('audio 元素：不预加载、多曲目自动连播（不用原生 loop）、且不依赖 autoplay 属性', () => {
   const { container } = render(<MusicPlayer />)
   const audio = container.querySelector('audio')
 
   expect(audio).toBeTruthy()
-  expect(audio.getAttribute('preload')).toBe('none')   // 没开始放之前不下那 430KB
-  expect(audio.loop).toBe(true)
+  expect(audio.getAttribute('preload')).toBe('none')   // 没开始放之前不下那几 MB 的曲子
+  // 2026-10-20 起是播放列表：靠 onEnded 切下一首，所以不能开原生 loop
+  // （开了只会单曲循环，永远停在第一首）
+  expect(audio.loop).toBe(false)
+  expect(musicTracks.length).toBeGreaterThan(1)
   // 靠 JS 在手势里调 play()，不用原生 autoplay（它几乎必被拦）
   expect(audio.hasAttribute('autoplay')).toBe(false)
 })
@@ -121,6 +124,7 @@ test('曲目路径用 BASE_URL 拼，不能写死根路径', () => {
   expect(musicTracks.length).toBeGreaterThan(0)
   for (const t of musicTracks) {
     expect(t.src.startsWith(import.meta.env.BASE_URL)).toBe(true)
-    expect(t.src).toMatch(/music\/.+\.mp3$/)
+    // .mp3 与 .m4a 都在用（原声里有一半只提供 m4a；现代浏览器都支持 AAC）
+    expect(t.src).toMatch(/music\/.+\.(mp3|m4a)$/)
   }
 })
