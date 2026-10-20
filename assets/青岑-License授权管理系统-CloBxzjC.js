@@ -1,4 +1,4 @@
-const n="青岑-License授权管理系统",e="青岑-License授权管理系统",c="主人在 **ctf.qingcen.net** 上做的题：`青岑 · License 授权管理系统`（SRC 类，500 分）。**当前卡点：第二段容器（License 服务）的密钥与数据格式。**",t=`# 青岑-License授权管理系统
+const n="青岑-License授权管理系统",e="青岑-License授权管理系统",t="主人在 **ctf.qingcen.net** 上做的题：`青岑 · License 授权管理系统`（SRC 类，500 分）。**当前卡点：第二段容器（License 服务）的密钥与数据格式。**",c=`# 青岑-License授权管理系统
 
 > 主人在 **ctf.qingcen.net** 上做的题：\`青岑 · License 授权管理系统\`（SRC 类，500 分）。**当前卡点：第二段容器（License 服务）的密钥与数据格式。**
 
@@ -54,6 +54,15 @@ const n="青岑-License授权管理系统",e="青岑-License授权管理系统",
 - [ ] 最终 flag 与完整解题链
 - [ ] 整理成 writeup → 发布到 \`heliumsenbrg/ctf-writeup-blog\`
 
+## 五·补、2026-09-27 进度补充（按教学约定，仍只记"已到达 / 已排除"）
+
+- **已打通**：门户侧的模拟 RCE 已可用（拿到 www 身份的命令执行），License 应用是**独立 root 容器**、共享网络命名空间、监听 8891，指纹是 JDK \`HttpServer\`
+- **已确认的接口面**：\`/license/*\` 回落 index；\`/license/serv/upload\` 处理上传；\`/license/read\` 读输出文件（固定文件）
+- **已排除**：明文 Java 反序列化直传、多组候选密钥的计时爆破、XStream/fastjson/属性文件注入、portal 容器内找源码
+- **卡点性质不变**：密钥与"加密+反序列化"的封装格式仍未确定；\`/flag.txt\` 仅 root 可读
+- 详细排除清单与工具链在原始归档：\`01-原料/收藏/ZCode会话导出/项目记忆-青岑战役/qingcen-871-license-progress.md\`
+- 平台数据订正：该题实际 \`solved_count=0\`、difficulty=4、500 分（"1000 人解出"是模板封顶值）
+
 ## 关联
 
 - [[Docker-Registry与远程API利用]] —— 本题的主战场
@@ -72,4 +81,4 @@ const n="青岑-License授权管理系统",e="青岑-License授权管理系统",
 
 - 本机长期画像 ＋ \`.workbuddy/memory/\` 工作日志 ＋ 本次会话（2026-10-03）
 - 无外部文件；题目原文未入库（若要入库，把题面丢进 \`00-收件箱/\`）
-`,s="project",o="project",i={internal:["CTF-竞赛总览与解题流程","Docker-Registry与远程API利用","Web-SSRF与XXE","Web-源码泄露与信息收集","Web-认证与会话漏洞"],unresolvedCount:1},r={name:n,title:e,summary:c,content:t,section:s,group:o,links:i};export{t as content,r as default,o as group,i as links,n as name,s as section,c as summary,e as title};
+`,s="project",o="project",i={internal:["CTF-竞赛总览与解题流程","Docker-Registry与远程API利用","Web-SSRF与XXE","Web-源码泄露与信息收集","Web-认证与会话漏洞"],unresolvedCount:1},r={name:n,title:e,summary:t,content:c,section:s,group:o,links:i};export{c as content,r as default,o as group,i as links,n as name,s as section,t as summary,e as title};

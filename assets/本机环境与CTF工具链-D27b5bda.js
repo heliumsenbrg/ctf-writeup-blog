@@ -69,6 +69,7 @@ MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- <cmd>
 - [[青岑平台]] / [[CTFShow平台]] —— 平台侧的操作方式
 - [[0xGame2025-征战记录]] —— 多智能体打法的实战记录
 - [[密码学-格与椭圆曲线]] —— WSL 里没有 SageMath，这页第 2 节说明了现状
+- 〖内部笔记〗 —— 除 CTF 家底之外，天天在用的还有笔记软件本身：2026-10-13 装的第一批插件与不装的理由（补于当日，既有内容未动）
 
 ## 存疑 / 矛盾
 
@@ -80,4 +81,4 @@ MSYS_NO_PATHCONV=1 wsl.exe -d Ubuntu -- <cmd>
 
 - 环境搭建会话与 2026-09/10 的验证记录 · 2026-10-03
 - 配置要点同时写在项目根 \`AGENTS.md\`
-`,o="entity",a="entity",i={internal:["0xGame2025-征战记录","CTF-常用工具清单","CTFShow平台","密码学-格与椭圆曲线","青岑平台"],unresolvedCount:1},r={name:n,title:t,summary:e,content:s,section:o,group:a,links:i};export{s as content,r as default,a as group,i as links,n as name,o as section,e as summary,t as title};
+`,o="entity",a="entity",i={internal:["0xGame2025-征战记录","CTF-常用工具清单","CTFShow平台","密码学-格与椭圆曲线","青岑平台"],unresolvedCount:2},r={name:n,title:t,summary:e,content:s,section:o,group:a,links:i};export{s as content,r as default,a as group,i as links,n as name,o as section,e as summary,t as title};
