@@ -522,3 +522,34 @@ textarea:focus-visible {
 
 .hljs-emphasis { font-style: italic; }
 .hljs-strong { font-weight: 700; }
+
+/* ── 音量滑杆（2026-10-20 主人要求"音量改成拖动"）─────────────────────────
+   appearance:none 会把原生滑块藏掉，必须自己画 thumb，否则看着像一条死线、
+   用户不知道能拖。加宽到 112px、thumb 14px + 呼吸光，拖起来才有手感。 */
+.vol-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(0, 245, 255, .55), rgba(167, 139, 250, .35));
+  outline: none;
+}
+.vol-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00f5ff;
+  border: 2px solid #06121a;
+  box-shadow: 0 0 8px rgba(0, 245, 255, .7);
+  cursor: grab;
+  transition: transform .12s ease;
+}
+.vol-range::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.18); }
+.vol-range::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #00f5ff; border: 2px solid #06121a;
+  box-shadow: 0 0 8px rgba(0, 245, 255, .7); cursor: grab;
+}
+.vol-range::-moz-range-track { height: 6px; border-radius: 9999px; background: rgba(0, 245, 255, .35); }
