@@ -176,8 +176,15 @@ export default function MusicPlayer() {
         src={track.src}
         preload="none"
         onPlay={() => setPlaying(true)}
+        onPlaying={() => { setPlaying(true); setFailed(false) }}
         onPause={() => setPlaying(false)}
-        onError={() => setFailed(true)}
+        onError={(e) => {
+          // ⚠️ code 1 = MEDIA_ERR_ABORTED：换曲时主动 load()/换 src 会中断上一次加载，
+          //    浏览器会抛这个 error —— 那不是失败，忽略它（2026-10-20 线上实测踩到：
+          //    切到第二首时界面误报"音频加载失败"）
+          if (e.currentTarget?.error?.code === 1) return
+          setFailed(true)
+        }}
         // 一首放完 → 下一首，放完最后一首回到第一首（替代原来的单曲 loop）
         onEnded={() => setTrackIdx((i) => (i + 1) % musicTracks.length)}
       />
