@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Flag, CheckCircle, Clock, Zap, Filter } from 'lucide-react'
 import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
-import { platformNames, categoryNames } from '../data/constants.js'
+import { platformNames, categoryNames, CATEGORY_ARTICLE } from '../data/constants.js'
 
 const CYBER_COLORS = {
   cyan: '#00f5ff',
@@ -18,6 +18,13 @@ const CYBER_COLORS = {
 
 // 兜底：未知分类不应让整页崩掉
 const catMeta = (cat) => categoryNames[cat] || { name: cat, color: 'cyan' }
+
+/** 分类卡片的外层：优先用记录自带的 articleId；否则回退到分类映射。
+ *  两者都没有就渲染成不可点的 <div>（点了会 404）。 */
+function CategoryCardLink({ cat, articleId, children }) {
+  const id = articleId || CATEGORY_ARTICLE[cat]
+  return id ? <Link to={`/article/${id}`}>{children}</Link> : <div>{children}</div>
+}
 
 // 难度等级 - 基于分数
 function getDifficulty(points) {
@@ -233,7 +240,7 @@ export default function Challenges() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: catIndex * 0.1 + i * 0.05 }}
                 >
-                  <Link to={`/article/${cat}`}>
+                  <CategoryCardLink cat={cat} articleId={challenge.articleId}>
                     <motion.div
                       whileHover={{ x: 5 }}
                       className="cyber-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 group cursor-pointer"
@@ -283,7 +290,7 @@ export default function Challenges() {
                         </span>
                       </div>
                     </motion.div>
-                  </Link>
+                  </CategoryCardLink>
                 </motion.div>
               ))}
             </div>

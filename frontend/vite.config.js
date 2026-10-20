@@ -212,6 +212,9 @@ function buildSearchIndex() {
       sub: c.description || '',
       text: `${c.title || ''} ${c.slug} ${c.description || ''} ${(c.tags || []).join(' ')}`,
       tags: [c.platform, c.category].filter(Boolean),
+      // 一血口径：源数据 challenges.js 里有 firstBlood: true 的 4 条（★一血）。
+      // 此前索引没带这个字段 → 线上一血统计全是 None，和标题/统计页打架（2026-10-20 审计）。
+      firstBlood: Boolean(c.firstBlood),
     })
   }
 
@@ -459,9 +462,11 @@ function seoStaticPlugin() {
         .join('\n')
       writeFileSync(
         abs('rss.xml'),
-        `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0">\n  <channel>\n` +
+        `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">\n  <channel>\n` +
           `    <title>heliumsenbrg's CTF Writeups</title>\n` +
           `    <link>${SITE}/</link>\n` +
+          // atom:link self：RSS 规范建议自带源地址，部分阅读器/校验器没有它会告警（2026-10-20 审计）
+          `    <atom:link rel="self" type="application/rss+xml" href="${SITE}/rss.xml" />\n` +
           `    <description>CTF WriteUp 博客 - Web 安全 / 密码学 / 二进制利用</description>\n` +
           `    <language>zh-CN</language>\n` +
           `    <lastBuildDate>${now}</lastBuildDate>\n` +

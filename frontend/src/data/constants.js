@@ -37,3 +37,25 @@ export const categoryNames = {
   'moectf-emoji': { name: '编码与进制', color: 'cyan' },
   'moectf-zipcrypto': { name: '压缩包密码学', color: 'purple' },
 }
+
+/**
+ * 分类 → 对应题解文章的 id（Challenges 页卡片点进去看的就是它）。
+ * 值为 null = 该分类还没有写成文章 → 卡片不可点。
+ * 不修的话：9 张卡片（web6/reverse2/crypto1）指向不存在的 /article/web 等 → 404
+ *（2026-10-20 审计实测）。⚠️ 加新文章/新分类后记得同步 —— check-data.mjs 会校验
+ * 这里的值必须是真实文章 id，指歪了 CI 直接红。
+ */
+export const CATEGORY_ARTICLE = {
+  infoleak: 'infoleak',
+  php: 'php',
+  cmd: 'cmd',
+  pwn: 'pwn',
+  stego: 'stego',
+  misc: 'misc',
+  tools: 'tools',
+  'moectf-emoji': 'moectf-emoji',
+  'moectf-zipcrypto': 'moectf-zipcrypto',
+  web: null,
+  reverse: null,
+  crypto: null,
+}

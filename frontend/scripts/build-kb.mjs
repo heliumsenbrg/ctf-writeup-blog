@@ -34,7 +34,20 @@ const fail = (msg) => { console.error('✗ ' + msg); process.exit(1) }
 if (!fs.existsSync(VAULT)) fail(`vault 路径不存在: ${VAULT}`)
 
 // ---------- 读取并解析（先全部进内存，校验后再写） ----------
+// 不发布清单：同目录 kb-unpublished.txt（一行一个笔记名，# 开头为注释）。
+// 文件缺失时视为空清单 —— 其它机器/CI 上没有它也不会报错。
+const UNPUBLISHED_FILE = path.join(HERE, 'kb-unpublished.txt')
+const UNPUBLISHED = fs.existsSync(UNPUBLISHED_FILE)
+  ? new Set(
+      fs.readFileSync(UNPUBLISHED_FILE, 'utf8')
+        .split('\n')
+        .map((s) => s.trim())
+        .filter((s) => s && !s.startsWith('#'))
+    )
+  : new Set()
+
 const notes = new Map()
+const skipped = []
 for (const sec of SECTIONS) {
   const dir = path.join(VAULT, sec.dir)
   if (!fs.existsSync(dir)) fail(`目录不存在: ${dir}`)
@@ -43,6 +56,7 @@ for (const sec of SECTIONS) {
     .sort((a, b) => a.localeCompare(b, 'zh'))
   for (const file of files) {
     const name = file.slice(0, -3)
+    if (UNPUBLISHED.has(name)) { skipped.push(name); continue }
     if (notes.has(name)) fail(`重名笔记: ${name}`)
     const content = fs.readFileSync(path.join(dir, file), 'utf8')
     if (!content.trim()) fail(`空笔记: ${sec.dir}/${file}`)
@@ -117,6 +131,7 @@ for (const sec of index.sections) {
   console.log(`  ${sec.title}: ${sec.groups.reduce((a, g) => a + g.notes.length, 0)} 篇`)
 }
 console.log(`  未解析双链 ${unresolvedAll.length} 条（已在快照中屏蔽 ${maskedCount} 处）`)
+if (skipped.length) console.log(`  不发布清单跳过 ${skipped.length} 篇（见 scripts/kb-unpublished.txt）`)
 // 私人页标题不打印到日志：公开仓库的 Actions 日志人人可看。
 // 本地排查需要看名字时：KB_SHOW_UNRESOLVED=1 node scripts/build-kb.mjs
 if (process.env.KB_SHOW_UNRESOLVED) console.log(`  未解析目标: ${unresolvedAll.join(', ')}`)
