@@ -236,6 +236,21 @@ function seoStaticPlugin() {
   return {
     name: 'seo-static',
     apply: 'build',
+    /**
+     * index.html 里的描述文字把「53 条挑战 / 24 篇题解 / 78 篇笔记」写死过 ——
+     * 而实际是 53 / 24 / **69**（笔记数随 vault 变），三处口径对不上（2026-10-21 审计）。
+     * 改成构建期占位符替换：只要数据变了，描述自动跟着变，不会再飘。
+     */
+    transformIndexHtml(html) {
+      const noteCount = kb.sections.reduce(
+        (n, s) => n + s.groups.reduce((m, g) => m + g.notes.length, 0),
+        0
+      )
+      return html
+        .replace(/__CHALLENGES__/g, String(allChallenges.length))
+        .replace(/__ARTICLES__/g, String(Object.keys(articles).length))
+        .replace(/__NOTES__/g, String(noteCount))
+    },
     configResolved(cfg) {
       outDir = cfg.build.outDir
     },
@@ -387,6 +402,13 @@ function seoStaticPlugin() {
           // 用函数式替换，避免内容里的 $ 被当成捕获组引用
           .replace(/(<meta property="og:type"[^>]*>)/, (tag) =>
             pub ? `${tag}\n    <meta property="article:published_time" content="${pub}T09:00:00Z" />` : tag
+          )
+          // 彩蛋页：它已经不在 sitemap 里了，但页面本身没有 noindex ——
+          // "隐藏关卡"对搜索引擎其实完全可见（2026-10-21 审计）。这里补上。
+          .replace(/<\/head>/, () =>
+            route === '/secret-quest'
+              ? '    <meta name="robots" content="noindex, follow" />\n  </head>'
+              : '</head>'
           )
       }
 
