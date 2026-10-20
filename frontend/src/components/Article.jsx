@@ -65,7 +65,28 @@ export default function Article() {
     strong({ children }) {
       return <strong className="text-cyber-cyan font-bold">{children}</strong>
     },
-    a({ href, children }) {
+    a({ href = '', children }) {
+      // 手写目录里的锚点经常只写到编号（#basic-177），而正文 id 是完整 slug
+      // （#basic-177-html-注释泄露）。按链接文字重算一次完整 id，并留在当前页滚动。
+      if (href.startsWith('#')) {
+        const id = headingSlug(toPlainText(children))
+        return (
+          <a
+            href={'#' + id}
+            onClick={(e) => {
+              e.preventDefault()
+              const el = document.getElementById(id)
+              if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                history.replaceState(null, '', '#' + id)
+              }
+            }}
+            className="text-cyber-purple hover:text-cyber-cyan underline"
+          >
+            {children}
+          </a>
+        )
+      }
       return <a href={href} className="text-cyber-purple hover:text-cyber-cyan underline" target="_blank" rel="noopener noreferrer">{children}</a>
     },
     table({ children }) {

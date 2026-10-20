@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { MotionConfig, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import Layout from './components/Layout'
 import Home from './components/Home'
@@ -212,8 +213,16 @@ function GlitchText({ text, className = '', as: Tag = 'span' }) {
 function TypewriterText({ text, speed = 40, className = '', onDone }) {
   const [displayed, setDisplayed] = useState('')
   const [done, setDone] = useState(false)
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
+    // 系统开启「减少动态效果」时直接显示全文，不逐字动画
+    if (reduceMotion) {
+      setDisplayed(text)
+      setDone(true)
+      onDone?.()
+      return
+    }
     let i = 0
     const interval = setInterval(() => {
       setDisplayed(text.slice(0, i + 1))
@@ -225,7 +234,7 @@ function TypewriterText({ text, speed = 40, className = '', onDone }) {
       }
     }, speed)
     return () => clearInterval(interval)
-  }, [text, speed, onDone])
+  }, [text, speed, onDone, reduceMotion])
 
   return (
     <span className={className}>
@@ -253,14 +262,15 @@ function useIsMobile(breakpoint = 640) {
 function AppInner() {
   const [booted, setBooted] = useState(!shouldShowBoot())
   const isMobile = useIsMobile()
+  const reduceMotion = useReducedMotion()
 
   const handleBootDone = useCallback(() => {
     setBooted(true)
   }, [])
 
   return (
-    <>
-      {!isMobile && <CursorTrail />}
+    <MotionConfig reducedMotion="user">
+      {!isMobile && !reduceMotion && <CursorTrail />}
       {!booted && <BootScreen onDone={handleBootDone} />}
       <BrowserRouter basename="/ctf-writeup-blog">
         <Routes>
@@ -278,7 +288,7 @@ function AppInner() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </>
+    </MotionConfig>
   )
 }
 

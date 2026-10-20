@@ -103,8 +103,8 @@ export default function Navbar() {
         </div>
 
         {/* Mobile menu */}
-        <div className={`sm:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-          mobileOpen ? 'max-h-80 mt-3' : 'max-h-0'
+        <div className={`sm:hidden overflow-y-auto overscroll-contain transition-all duration-300 ease-in-out ${
+          mobileOpen ? 'max-h-[70vh] mt-3' : 'max-h-0'
         }`}>
           <div className="flex flex-col gap-1 pb-2">
             <Link

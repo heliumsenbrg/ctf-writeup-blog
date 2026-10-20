@@ -8,7 +8,10 @@ import MusicPlayer from './MusicPlayer'
 
 export default function Layout() {
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
+    // 注意：不能用 overflow-hidden —— 它会让任意祖先变成滚动容器，
+    // 导致 Navbar 的 sticky 完全失效（滚动后导航整条消失）。
+    // overflow-x-clip 只裁剪横向溢出，不创建滚动容器，sticky 仍相对视口生效。
+    <div className="min-h-screen flex flex-col relative overflow-x-clip">
       {/* Background effects */}
       <div className="fixed inset-0 pointer-events-none hidden sm:block">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyber-cyan/5 rounded-full blur-3xl animate-float" />

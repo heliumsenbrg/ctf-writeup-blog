@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import Spoiler from './Spoiler'
 import { Link } from 'react-router-dom'
 import { Flag, Terminal, Shield, Code, Zap, ArrowRight, ChevronDown, Filter, Library } from 'lucide-react'
@@ -7,9 +7,14 @@ import { allChallenges } from '../data/challenges.js'
 import { platformKey, PLATFORM_BADGE } from '../utils/platform.js'
 import { platformNames } from '../data/constants.js'
 
-// 懒加载粒子库 - 减少首屏加载时间
+// 粒子库延迟到组件挂载后再按需加载（原来在模块顶层 import('tsparticles')，
+// Home 又被 App 静态导入 → 每个页面启动都会拉 133KB 粒子引擎）。
 const Particles = lazy(() => import('@tsparticles/react'))
-const tsparticles = import('tsparticles').then(m => m.loadFull)
+let enginePromise = null
+function loadParticleEngine() {
+  if (!enginePromise) enginePromise = import('tsparticles').then((m) => m.loadFull)
+  return enginePromise
+}
 
 // Sakura petal colors (soft pink tones)
 const SAKURA_COLORS = [
@@ -66,27 +71,25 @@ const CYBER_COLORS = {
   purple: '#a78bfa',
   pink: '#f472b6',
   red: '#f87171',
+  yellow: '#facc15',
+  green: '#4ade80',
+  orange: '#fb923c',
 }
 
+// 首页卡片与 check-data.mjs 共用同一份 categories.js —— 以前 Home 里有一份内联副本，
+// CI 校验的却是没人使用的那份，结果 northbridge/qc747/yaml 三篇有数据的文章没有入口。
+import categoriesData from '../data/categories.js'
+import kb from '../data/kb/index.js'
+
+const CATEGORY_ICONS = { Code, Shield, Flag, Zap, Terminal }
+
 const categories = [
-  { id: 'moectf-emoji', title: 'MoeCTF ez_base_revenge9', subtitle: 'Emoji 编码 (Base100)', icon: Code, desc: 'Base100 → Base64 → Base58 → Base32 四层链式剥离', color: 'cyan' },
-  { id: 'moectf-zipcrypto', title: 'ZIP 已知明文攻击 (bkcrack)', subtitle: 'ZipCrypto 已知明文', icon: Shield, desc: '提示语即明文 + CRC32 验证 + bkcrack 恢复内部密钥', color: 'purple' },
-  { id: 'gift', title: 'Gift — Tcache Double-Free', subtitle: 'UAF + Tcache Poisoning', icon: Flag, desc: 'Hidden gift 函数 UAF、double-free、unsorted bin 泄漏、__free_hook 覆写', color: 'red' },
-  { id: '0xgame2025', title: '0xGame2025 CTF', subtitle: '2026-06-16 | 16/28 题', icon: Flag, desc: '反序列化/竞态条件/LFI/变量覆盖/MD5 SQLi', color: 'pink' },
-  { id: 'qingcen-web-2026-06-10', title: '青岑 CTF Web 入门', subtitle: '2026-06-10 | 17/20 题', icon: Flag, desc: 'HTML注释/Base64/隐藏字段/响应头/robots.txt/PHP弱类型', color: 'cyan' },
-  { id: 'may-2026', title: 'CTF Writeup - May 2026', subtitle: 'ISCC/青岑/CTFShow', icon: Flag, desc: 'ISCC JWT伪造 + 青岑120题全通关 + CTFShow基础', color: 'cyan' },
-  { id: 'tools', title: 'CTF Tools', subtitle: '工具使用指南', icon: Zap, desc: 'IDA, Burp Suite, GDB, Pwntools 等工具教程', color: 'purple' },
-  { id: 'infoleak', title: 'Information Leakage', subtitle: '信息收集', icon: Shield, desc: 'HTML注释/响应头/备份文件/Cookie/JWT', color: 'cyan' },
-  { id: 'php', title: 'PHP Weak Typing', subtitle: '弱类型绕过', icon: Code, desc: 'Array bypass, 0e MD5, array_search', color: 'purple' },
-  { id: 'cmd', title: 'Command Injection', subtitle: '命令注入RCE', icon: Terminal, desc: 'IFS bypass, 无字母RCE, 字符串拼接', color: 'pink' },
-  { id: 'pwn', title: 'PWN & Reverse', subtitle: '二进制利用', icon: Flag, desc: 'XOR解密, 逆向, Shellcode编写', color: 'blue' },
-  { id: 'stego', title: 'Steganography', subtitle: '隐写术', icon: Code, desc: '零宽字符, EXIF隐写, ZIP密码破解', color: 'purple' },
-  { id: 'misc', title: 'Miscellaneous', subtitle: '杂项综合', icon: Shield, desc: 'LFI, SSRF, 变量覆盖, CTFHub彩蛋', color: 'cyan' },
-  { id: 'kb', title: '知识库 · 第二大脑', subtitle: '69 篇 CTF 笔记', icon: Library, desc: 'Web / 逆向 / 密码学 / Pwn / 杂项 / 云容器…', color: 'purple' }
+  ...categoriesData.map((c) => ({ ...c, icon: CATEGORY_ICONS[c.icon] || Code })),
+  { id: 'kb', title: '知识库 · 第二大脑', subtitle: `${kb.total} 篇 CTF 笔记`, icon: Library, desc: 'Web / 逆向 / 密码学 / Pwn / 杂项 / 云容器…', color: 'purple' },
 ]
 
 const particlesInit = async (engine) => {
-  const loadFull = await tsparticles
+  const loadFull = await loadParticleEngine()
   await loadFull(engine)
 }
 
@@ -195,44 +198,74 @@ function MouseTrail() {
 
 
 export default function Home({ GlitchText, TypewriterText }) {
+  const reduceMotion = useReducedMotion()
   const [typedDone, setTypedDone] = useState(false)
   const [loopKey, setLoopKey] = useState(0)
   const [platform, setPlatform] = useState('all')
+  // 粒子背景按需加载：小屏 / 减少动态效果 / 首屏空闲前都不加载
+  const [particlesReady, setParticlesReady] = useState(false)
+
+  useEffect(() => {
+    if (reduceMotion || window.innerWidth < 640) {
+      setParticlesReady(false)
+      return
+    }
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    let cancelled = false
+    const start = () => {
+      loadParticleEngine()
+        .then(() => { if (!cancelled) setParticlesReady(true) })
+        .catch(() => { /* 粒子是装饰，失败静默 */ })
+    }
+    const idle = window.requestIdleCallback
+      ? window.requestIdleCallback(start, { timeout: 2500 })
+      : setTimeout(start, 1200)
+    return () => {
+      cancelled = true
+      if (window.cancelIdleCallback && typeof idle === 'number') window.cancelIdleCallback(idle)
+      else clearTimeout(idle)
+    }
+  }, [reduceMotion])
   
   const filtered = platform === 'all' ? allChallenges : allChallenges.filter(c => platformKey(c.platform) === platform)
-  const solved = filtered.filter(c => c.solved).length
-  const firstBloods = filtered.filter(c => c.firstBlood).length
-  const totalPts = filtered.reduce((s, c) => s + c.points, 0)
+  // id=0 是「文章占位记录」，不是真实挑战：计入统计会让首页虚报 8 题 / 800 分。
+  // 总分只算已解，避免把未解的第 505 题也算成"得分"。
+  const real = filtered.filter(c => c.id !== 0)
+  const solved = real.filter(c => c.solved).length
+  const firstBloods = real.filter(c => c.firstBlood).length
+  const totalPts = real.filter(c => c.solved).reduce((s, c) => s + (c.points || 0), 0)
   const platformName = platform === 'all' ? '' : (platformNames[platform]?.name || platform)
   const subtitle = `{ ${solved} challenges solved, ${totalPts}pts }${platformName ? ' [' + platformName + ']' : ''}`
 
   // When typewriter finishes, wait 3s then loop
   useEffect(() => {
-    if (!typedDone) return
+    if (!typedDone || reduceMotion) return
     const t = setTimeout(() => {
       setTypedDone(false)
       setLoopKey(k => k + 1)
     }, 3000)
     return () => clearTimeout(t)
-  }, [typedDone])
+  }, [typedDone, reduceMotion])
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Mouse Trail */}
-      <MouseTrail />
+      {!reduceMotion && <MouseTrail />}
 
-      {/* Particle Background - 懒加载 */}
-      <Suspense fallback={null}>
-        <Particles
-          id="tsparticles"
-          init={particlesInit}
-          options={particlesConfig}
-          className="absolute inset-0 z-0"
-        />
-      </Suspense>
+      {/* Particle Background - 空闲时按需加载 */}
+      {particlesReady && (
+        <Suspense fallback={null}>
+          <Particles
+            id="tsparticles"
+            init={particlesInit}
+            options={particlesConfig}
+            className="absolute inset-0 z-0"
+          />
+        </Suspense>
+      )}
 
       {/* Sakura Petals */}
-      <Sakura />
+      {!reduceMotion && <Sakura />}
 
       {/* Circuit Pattern Overlay */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">

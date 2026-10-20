@@ -117,6 +117,26 @@ const markdownComponents = {
     if (isExternal(href)) {
       return <a href={href} target="_blank" rel="noreferrer" className="text-cyber-purple hover:text-cyber-cyan underline">{children}</a>
     }
+    // 页内锚点：按链接文字重算完整 heading id，留在当前页滚动（不新开标签）
+    if (href.startsWith('#')) {
+      const id = headingSlug(toPlainText(children))
+      return (
+        <a
+          href={'#' + id}
+          onClick={(e) => {
+            e.preventDefault()
+            const el = document.getElementById(id)
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              history.replaceState(null, '', '#' + id)
+            }
+          }}
+          className="text-cyber-purple hover:text-cyber-cyan underline"
+        >
+          {children}
+        </a>
+      )
+    }
     return <span className="text-cyber-grid/70">{children}</span>
   },
   code: MarkdownCode,

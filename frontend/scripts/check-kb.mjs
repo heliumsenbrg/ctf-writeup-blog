@@ -2,8 +2,9 @@
 /**
  * 知识库快照校验（数据/仓库级，不依赖 Vite）：
  *   node scripts/check-kb.mjs   —— 任何断言失败 exit 1
- * 校验项：篇数 69 / 每篇 title 非空 / 与 vault 源文件字节级一致 /
- *         internal 链接闭包 / 无重名 / notes/ 无多余文件。
+ * 校验项：索引条目数 = notes/ 文件数（不写死篇数，避免新增笔记时漏改）/
+ *        每篇 title 非空 / 与 vault 源文件字节级一致 /
+ *        internal 链接闭包 / 无重名 / notes/ 无多余文件。
  */
 import fs from 'node:fs'
 import path from 'node:path'
@@ -23,7 +24,8 @@ const check = (ok, msg) => { if (!ok) problems.push(msg) }
 
 const flat = kbIndex.sections.flatMap(s => s.groups.flatMap(g => g.notes))
 check(kbIndex.total === flat.length, `index.total(${kbIndex.total}) ≠ 实际条目数(${flat.length})`)
-check(flat.length === 69, `篇数应为 69，实际 ${flat.length}`)
+// 不再硬断言 69：build-kb 会同时重建 index 与 notes，下面「索引 ↔ 文件」互相对账即可；
+// 写死篇数只会让每加一篇笔记都要改这里。
 
 // 第一遍：收集全量 name 集（链接闭包校验必须对全集判断），顺带重名检测
 const names = new Set()

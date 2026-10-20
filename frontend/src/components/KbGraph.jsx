@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router-dom'
 // 一组够用又互相区分的配色（按 section 顺序分配）
 const PALETTE = ['#00f5ff', '#a78bfa', '#f472b6', '#34d399', '#fbbf24', '#60a5fa', '#fb7185', '#c084fc']
 
-/** 简易力导向布局：斥力 + 弹簧 + 向心，跑固定轮数后定格（69 个节点很快） */
+/** 简易力导向布局：斥力 + 弹簧 + 向心，跑固定轮数后定格（几十个节点很快） */
 function layout(nodes, edges, { iterations, width, height }) {
   const idx = new Map(nodes.map((n, i) => [n.id, i]))
   const N = nodes.length
