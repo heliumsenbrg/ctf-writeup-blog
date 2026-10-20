@@ -45,7 +45,6 @@ export default function MusicPlayer() {
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
   const [showHint, setShowHint] = useState(false)
   const [hintDone, setHintDone] = useState(false)
-  const [open, setOpen] = useState(false)      // 是否展开音量条
   const [failed, setFailed] = useState(false)
 
   // 音量：读回记忆值
@@ -179,11 +178,7 @@ export default function MusicPlayer() {
         </div>
       )}
 
-      <div
-        className="relative flex items-center gap-2"
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
-      >
+      <div className="relative flex items-center gap-2">
         <button
           type="button"
           onClick={toggle}
@@ -199,12 +194,9 @@ export default function MusicPlayer() {
           )}
         </button>
 
-        {/* 音量条：hover 展开；键盘聚焦时也显示（focus-within）*/}
-        <div
-          className={`flex items-center gap-2 rounded-full border border-cyber-grid/25 bg-black/60 px-3 py-1.5 backdrop-blur transition-all duration-200 ${
-            open ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-          } focus-within:pointer-events-auto focus-within:opacity-100`}
-        >
+        {/* 音量条：常驻显示（原来是 hover 才展开 —— 触屏上根本调不出来，
+            而且窄到 80px 不好拖。样式见 index.css 的 .vol-range）*/}
+        <div className="flex items-center gap-2 rounded-full border border-cyber-grid/25 bg-black/60 px-3 py-1.5 backdrop-blur">
           <button
             type="button"
             onClick={() => setVolume((v) => (v > 0 ? 0 : DEFAULT_VOLUME))}
@@ -221,9 +213,10 @@ export default function MusicPlayer() {
             value={volume}
             onChange={(e) => setVolume(Number(e.target.value))}
             aria-label="音量"
-            className="h-1 w-20 cursor-pointer appearance-none rounded-full bg-cyber-grid/30 accent-cyber-cyan"
+            title={`拖动调节音量：${Math.round(volume * 100)}%`}
+            className="vol-range w-24 cursor-pointer sm:w-28"
           />
-          <span className="w-8 shrink-0 text-right text-[10px] font-mono text-cyber-grid/70">
+          <span className="w-8 shrink-0 text-right text-[10px] font-mono tabular-nums text-cyber-grid/70">
             {Math.round(volume * 100)}
           </span>
         </div>
