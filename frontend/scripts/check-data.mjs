@@ -18,7 +18,7 @@ import kb from '../src/data/kb/index.js'
 import { allChallenges } from '../src/data/challenges.js'
 import { friendLinks } from '../src/data/friendLinks.js'
 import FLAGS from '../src/config/flags.js'
-import { platformNames, categoryNames } from '../src/data/constants.js'
+import { platformNames, categoryNames, CATEGORY_ARTICLE } from '../src/data/constants.js'
 import { platformKey } from '../src/utils/platform.js'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -35,6 +35,22 @@ for (const id of catIds) check(artKeys.includes(id), `首页卡片 id="${id}" �
 check(new Set(catIds).size === catIds.length, '首页卡片存在重复 id')
 const notFeatured = artKeys.filter((k) => !catIds.includes(k))
 if (notFeatured.length) info.push(`未上首页的文章 ${notFeatured.length} 篇（可能是有意为之）：${notFeatured.join(', ')}`)
+
+/* ---------- 2. Challenges 卡片 ↔ 文章（CATEGORY_ARTICLE） ----------
+ * 这张表指歪了，挑战卡片就 404 —— 2026-10-20 审计实测 9 张（web6/reverse2/crypto1）。
+ * 这里把它固化成断言：值必须是真实文章 id；挑战里出现的分类必须都在表里。 */
+for (const [cat, artId] of Object.entries(CATEGORY_ARTICLE)) {
+  if (artId) check(artKeys.includes(artId), `CATEGORY_ARTICLE["${cat}"] = "${artId}" 在 articles.js 里不存在（挑战卡片点进去会 404）`)
+  else info.push(`分类 "${cat}" 尚无对应题解文章，Challenges 卡片不可点`)
+}
+for (const c of allChallenges) {
+  check(CATEGORY_ARTICLE[c.category] !== undefined,
+    `挑战 "${c.title || c.slug}" 的分类 "${c.category}" 不在 CATEGORY_ARTICLE 表里（新增分类漏配 → 卡片行为未定义）`)
+  if (c.articleId) {
+    check(artKeys.includes(c.articleId),
+      `挑战 "${c.title || c.slug}" 的 articleId "${c.articleId}" 在 articles.js 里不存在（卡片会 404）`)
+  }
+}
 
 /* ---------- 2. 知识库：索引 ↔ 文件 ---------- */
 const files = fs.readdirSync(NOTES_DIR).filter((f) => f.endsWith('.json'))
