@@ -553,3 +553,30 @@ textarea:focus-visible {
   box-shadow: 0 0 8px rgba(0, 245, 255, .7); cursor: grab;
 }
 .vol-range::-moz-range-track { height: 6px; border-radius: 9999px; background: rgba(0, 245, 255, .35); }
+
+/* ── JetBrains Mono 自托管（2026-10-21）─────────────────────────────────
+   原来引 fonts.googleapis.com，国内基本被墙 —— 访客的 JetBrains Mono
+   永远加载不出来，一直吃回退字体（运行时审计实测 ERR_CONNECTION_TIMED_OUT）。
+   现在把 latin 子集（3 个字重，共 65KB）放进仓库，跟着站点一起发。
+   中文本来就不在这个字体里，照旧走系统字体栈，无影响。 */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./assets/fonts/jetbrains-mono-700.woff2') format('woff2');
+}
