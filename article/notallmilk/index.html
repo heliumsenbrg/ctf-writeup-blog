@@ -80,10 +80,10 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-CIqCCU84.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-C2jnU_Ft.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-Ce_fMeXQ.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-DcACBAVS.css">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-BN4yaKrj.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗
@@ -131,6 +131,12 @@
             document.head.appendChild(tag)
           })
         }
+        // 音乐状态 → 看板娘摇摆：MusicPlayer 会派发 `bgm:state`，
+        // 这里给画布加/去 class（样式见 waifu.css 的 #live2d.waifu-dancing）
+        window.addEventListener('bgm:state', function (e) {
+          var c = document.getElementById('live2d')
+          if (c) c.classList.toggle('waifu-dancing', !!(e.detail && e.detail.playing))
+        })
         function boot() {
           // waifu-tips.json 是静态文件、不知道部署 base——先 fetch 下来，
           // 运行时把模型路径换成带 base 前缀的绝对路径，再用 Blob URL 交给 widget
@@ -140,7 +146,7 @@
               if (window.initWidget) {
                 window.initWidget({
                   waifuPath: URL.createObjectURL(new Blob([JSON.stringify(cfg)], { type: 'application/json' })),
-                  tools: [], drag: false, logLevel: 'warn',
+                  tools: [], drag: true, logLevel: 'warn',
                   cubism2Path: BASE + 'live2d/live2d.min.js'
                 })
               }
