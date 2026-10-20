@@ -20,8 +20,8 @@ import { musicTracks } from '../data/music.js'
  * ── 其它 ────────────────────────────────────────────────────────────────
  * · 首次成功播放时弹一次提示气泡，告诉使用者"音乐开着了、按钮在哪、怎么关"，
  *   只弹一次（localStorage 记）。这是上一版缺的"可发现性"。
- * · `preload="none"` —— 没开始放之前不下载那 430 KB。
- * · 音量与开关记 localStorage；键盘可达；循环播放（音轨本身首尾交叉淡化，无缝）。
+ * · `preload="none"` —— 没开始放之前不下载（每首约 0.3–3.6 MB，10 首全下会很重）。
+ * · 音量与开关记 localStorage；键盘可达；多曲目自动连播（放完一首接下一首，末尾回到第一首）。
  */
 
 const LS_ENABLED = 'bgm:enabled'   // '0' = 使用者明确关掉了；未设置/其它 = 开着
@@ -43,6 +43,7 @@ export default function MusicPlayer() {
   })
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(DEFAULT_VOLUME)
+  const [trackIdx, setTrackIdx] = useState(0)   // 播放列表里的第几首
   const [showHint, setShowHint] = useState(false)
   const [hintDone, setHintDone] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -153,7 +154,19 @@ export default function MusicPlayer() {
 
   if (!musicTracks.length) return null
 
-  const track = musicTracks[0]
+  const track = musicTracks[trackIdx]
+
+  // 换曲：<audio> 的 src 变了浏览器会重置播放状态，这里重新 load；
+  // 原本在播就接着播，否则等用户手势（不依赖 playing，否则每次暂停/播放都会重置音轨）
+  const firstTrack = useRef(true)
+  useEffect(() => {
+    if (firstTrack.current) { firstTrack.current = false; return }
+    const el = audioRef.current
+    if (!el) return
+    const wasPlaying = playing
+    el.load()
+    if (wasPlaying) el.play().catch(() => { /* 交给下一次手势 */ })
+  }, [trackIdx])
 
   return (
     <div className="fixed bottom-6 left-6 z-50 print:hidden">
@@ -161,11 +174,12 @@ export default function MusicPlayer() {
       <audio
         ref={audioRef}
         src={track.src}
-        loop
         preload="none"
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onError={() => setFailed(true)}
+        // 一首放完 → 下一首，放完最后一首回到第一首（替代原来的单曲 loop）
+        onEnded={() => setTrackIdx((i) => (i + 1) % musicTracks.length)}
       />
 
       {/* 一次性提示气泡：首次响起来时出现，告诉使用者这是什么、怎么关 */}
