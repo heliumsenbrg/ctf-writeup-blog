@@ -69,20 +69,14 @@
     <!-- 主题色 -->
     <meta name="theme-color" content="#080818" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- 字体改成**非阻塞**加载：原先 rel=stylesheet 放在 head 会阻塞首屏渲染，
-         而 fonts.googleapis.com 在国内时通时不通 —— 一旦慢/被墙，整页就一直白屏。
-         现在用 media=print 先降级成"不阻塞"，加载完再切回 all；JS 关闭时用 noscript 兜底。 -->
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap"
-          rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript>
-      <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
-    </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-4DjPDH02.js"></script>
+    <!-- 字体已改为**自托管**（见 src/index.css 的 @font-face）。
+         原来引 fonts.googleapis.com：国内基本被墙，实测访客那边
+         永远 ERR_CONNECTION_TIMED_OUT，JetBrains Mono 从来没生效过
+         （2026-10-21 运行时审计）。现在跟着站点一起发，不依赖任何外网。 -->
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-DCGgB1g2.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CTIw3hrd.css">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-D9o31bUB.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗
