@@ -205,6 +205,10 @@ function buildSearchIndex() {
   }
 
   for (const c of allChallenges) {
+    // id === 0 的 8 条是「题解文章」的占位行（writeup-infoleak 等），不是挑战。
+    // 它们已经作为 writeup 进了索引，再当 challenge 进一遍等于搜索里出现两份、
+    // 且让"53 条挑战"这种口径虚高 8（2026-10-21 审计）。这里直接跳过。
+    if (!c.id) continue
     items.push({
       type: 'challenge',
       path: '/challenges',
@@ -247,7 +251,7 @@ function seoStaticPlugin() {
         0
       )
       return html
-        .replace(/__CHALLENGES__/g, String(allChallenges.length))
+        .replace(/__CHALLENGES__/g, String(allChallenges.filter((c) => c.id !== 0).length))
         .replace(/__ARTICLES__/g, String(Object.keys(articles).length))
         .replace(/__NOTES__/g, String(noteCount))
     },
