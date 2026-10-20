@@ -117,7 +117,50 @@ function shouldShowBoot() {
   return true
 }
 
-function BootScreen({ onDone }) {
+/**
+ * 「页面真的可以看了」的信号。
+ *
+ * 之前开场只按行数计时（12 行 × 160ms ≈ 2.7s），跟资源到没到无关 —— 网慢的时候
+ * 它淡出了，页面还是半残（字体没到、首屏资源还在路上），用户看到的就是
+ * "这个没有、那个卡"（2026-10-21 主人反馈）。现在等三件事：
+ *   ① window.load          首屏的样式/图片都到齐
+ *   ② document.fonts.ready  字体（字体换掉会引起整页重排，最像"卡一下"）
+ *   ③ 两次 rAF              首帧真的画完了
+ * 但**必须有下限和上限**：下限 1.2s（开场别一闪而过），上限 4.5s（再慢也别卡在开场）。
+ */
+function useReadySignal(minMs = 1200, maxMs = 4500) {
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    const start = performance.now()
+
+    const waitLoad = new Promise((resolve) => {
+      if (document.readyState === 'complete') resolve()
+      else window.addEventListener('load', () => resolve(), { once: true })
+    })
+    const waitFonts =
+      document.fonts && document.fonts.ready ? document.fonts.ready.catch(() => {}) : Promise.resolve()
+    const waitPaint = new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+
+    const trulyReady = Promise.all([waitLoad, waitFonts, waitPaint]).then(() => {
+      const left = Math.max(0, minMs - (performance.now() - start))
+      return new Promise((resolve) => setTimeout(resolve, left))
+    })
+    const cap = new Promise((resolve) => setTimeout(resolve, maxMs))
+
+    Promise.race([trulyReady, cap]).then(() => {
+      if (alive) setReady(true)
+    })
+    return () => {
+      alive = false
+    }
+  }, [minMs, maxMs])
+
+  return ready
+}
+
+function BootScreen({ onDone, ready }) {
   const [visibleLines, setVisibleLines] = useState(0)
   const [progress, setProgress] = useState(0)
   const [done, setDone] = useState(false)
@@ -129,17 +172,26 @@ function BootScreen({ onDone }) {
     if (visibleLines < BOOT_LINES.length) {
       const t = setTimeout(() => setVisibleLines(v => v + 1), 160)
       return () => clearTimeout(t)
-    } else if (!done) {
-      setDone(true)
-      setTimeout(onDone, 800)
     }
-  }, [visibleLines, done, onDone])
+  }, [visibleLines])
+
+  // 退场条件：日志打完 **且** 页面真的就绪（不再只是"打完就走"）
+  const linesDone = visibleLines >= BOOT_LINES.length
+  useEffect(() => {
+    if (!linesDone || !ready || done) return
+    const t = setTimeout(() => {
+      setDone(true)
+      setTimeout(onDone, 400)
+    }, 220)
+    return () => clearTimeout(t)
+  }, [linesDone, ready, done, onDone])
 
   useEffect(() => {
     const total = BOOT_LINES.length
-    const pct = Math.min(100, (visibleLines / total) * 100)
-    setProgress(pct)
-  }, [visibleLines])
+    const base = Math.min(100, (visibleLines / total) * 100)
+    // 日志打完后如果还在等资源，停在 96% 抖动一下，别假装 100%
+    setProgress(visibleLines >= total ? (ready ? 100 : 96) : base)
+  }, [visibleLines, ready])
 
   // 跳过按钮
   const handleSkip = useCallback(() => {
@@ -168,6 +220,15 @@ function BootScreen({ onDone }) {
             {line || ' '}
           </div>
         ))}
+        {/* 日志打完了但资源还没齐 —— 明确告诉用户在等什么，别让人以为卡死 */}
+        {linesDone && !ready && (
+          <div
+            className="boot-line"
+            style={{ color: '#fbbf24', fontSize: '12px', lineHeight: '1.7' }}
+          >
+            &gt; 等待字体与首屏资源…
+          </div>
+        )}
         <div className="boot-progress-bar">
           <div className="boot-progress-fill" style={{ width: `${progress}%` }} />
         </div>
@@ -262,6 +323,8 @@ function useIsMobile(breakpoint = 640) {
 function AppInner() {
   const [booted, setBooted] = useState(!shouldShowBoot())
   const isMobile = useIsMobile()
+  // 只有要放开场时才需要等资源信号（省掉无谓的监听）
+  const ready = useReadySignal()
   const reduceMotion = useReducedMotion()
 
   const handleBootDone = useCallback(() => {
@@ -271,7 +334,7 @@ function AppInner() {
   return (
     <MotionConfig reducedMotion="user">
       {!isMobile && !reduceMotion && <CursorTrail />}
-      {!booted && <BootScreen onDone={handleBootDone} />}
+      {!booted && <BootScreen onDone={handleBootDone} ready={ready} />}
       <BrowserRouter basename="/ctf-writeup-blog">
         <Routes>
           <Route path="/" element={<Layout />}>
