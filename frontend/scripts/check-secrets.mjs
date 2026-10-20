@@ -23,9 +23,13 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+// 仓库根（frontend 的上一级）—— data.json / .github / db 不在前端目录里，
+// 但它们在公开仓库中同样会被分发，必须纳入扫描范围。
+const REPO_ROOT = path.join(ROOT, '..')
 const SCAN_DIST = process.argv.includes('--dist')
-const SCAN_DIRS = ['src', 'public', 'scripts']
-const SCAN_FILES = ['index.html', 'vite.config.js', 'package.json']
+const SCAN_DIRS = ['src', 'public', 'scripts', 'relay', 'cloudflare']
+const SCAN_FILES = ['index.html', 'vite.config.js', 'package.json', '.env.production']
+const REPO_FILES = ['data.json', '.github/workflows/deploy.yml', 'db/moderation.sql']
 
 // 硬规则：命中即失败
 const HARD = [
@@ -36,11 +40,19 @@ const HARD = [
   [/\bAKIA[0-9A-Z]{16}\b/, 'AWS Access Key ID'],
   [/\bxox[baprs]-[A-Za-z0-9-]{10,}/, 'Slack Token'],
   [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, 'JWT'],
-  // 明文密码赋值：password = "xxxxxx"（长度 ≥6，且不是明显占位）
-  [/\b(?:pass(?:word|wd)?|secret|token|api[_-]?key)\s*[:=]\s*['"][^'"\s]{6,}['"]/i, '明文凭据赋值'],
+  // 明文密码赋值：password = "xxxxxx"（长度 ≥6，且不是明显占位）。
+  // 排除以 / 或 http(s): 开头的值：压缩后的 SDK 里有 `token:"/v1/token"` 这类 API 路径，
+  // 不是凭据，扩到 dist/assets 后会造成误报（2026-10-20 实测）。
+  [/\b(?:pass(?:word|wd)?|secret|token|api[_-]?key)\s*[:=]\s*['"](?!\/|https?:)[^'"\s]{6,}['"]/i, '明文凭据赋值'],
   // 【新增】自由文本形式的「邮箱 + 口令」：`账号: someone@x.com / （已清理）`
   // 这是事故①的真实形态 —— 不依赖任何关键字，只看"邮箱后面跟一个 ASCII 口令"。
   [/[\w.+-]+@[\w-]+\.[A-Za-z]{2,}\s*[\/|｜]\s*[A-Za-z0-9!@#$%^&*._+-]{6,}/, '邮箱+口令组合（明文凭据）'],
+  // 【新增】硬编码密钥常量：SOME_PREFIX_KEY_xxx / SOME_SECRET_xxx
+  // 事故②之外的另一类：形如 `ISCC_*_JWT_DEBUG_KEY_*`、`ISCC_SERVER_SECRET_*` 的密钥常量
+  // （真实值已从公开仓库脱敏，这里只描述形态，不写回明文）。
+  // 只匹配「常量名以 KEY/SECRET 结尾并继续跟一个后缀」的形态，避免误伤
+  // VITE_TURNSTILE_SITE_KEY、TURNSTILE_SECRET 这类环境变量名。
+  [/\b[A-Z][A-Z0-9_]{4,}(?:KEY|SECRET)[A-Z0-9_]*[_-][A-Za-z0-9_#]{4,}\b/, '硬编码密钥常量'],
   // 占位 flag：真的 flag 会打码保留（见 .spoiler-flag），但占位符必须拦掉
   [/flag\{\s*(?:test|xxx+|example|placeholder|your[_-]?flag|todo|fixme|123+|abc+|改变我|占位)[^}]*\}/i, '占位 flag'],
   // 【新增】事故②的形态：`**Flag**: `flag{...}``
@@ -68,7 +80,8 @@ function collect(dir, acc = []) {
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, e.name)
     if (e.isDirectory()) {
-      if (['node_modules', '.git', 'assets'].includes(e.name)) continue
+      // 注意：不要跳过 assets —— dist/assets 下才是拆包后的文章正文与懒加载块。
+      if (['node_modules', '.git'].includes(e.name)) continue
       collect(p, acc)
     } else if (/\.(js|jsx|ts|tsx|json|html|css|md|mjs|txt|yml|yaml|xml|webmanifest)$/.test(e.name)) {
       acc.push(p)
@@ -85,6 +98,7 @@ const files = [
     return fs.existsSync(p) ? collect(p) : []
   }),
   ...SCAN_FILES.map((f) => path.join(ROOT, f)).filter((f) => fs.existsSync(f)),
+  ...REPO_FILES.map((f) => path.join(REPO_ROOT, f)).filter((f) => fs.existsSync(f)),
 ]
 
 // dist 里没有子目录层级问题：assets/ 也要扫（懒加载块就在那里）
