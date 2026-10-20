@@ -470,6 +470,7 @@ export default function HiddenQuest() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
+              maxLength={200}
               placeholder="flag{...}"
               className="flex-1 bg-black/50 border border-cyber-grid/30 rounded-lg px-4 py-3 font-mono text-sm text-cyber-cyan focus:outline-none focus:border-cyber-cyan/50 transition-colors"
             />

@@ -464,7 +464,16 @@ function seoStaticPlugin() {
 
       // ③ rss（pubDate 用 src/data/articleDates.js 里的真实发布日期）
       const now = new Date().toUTCString()
-      const items = Object.entries(articles)
+      // 严格按发布日期**倒序**（新的在前）。原先直接按 articles 的对象顺序输出，
+      // 结果 7 月的 NewStar 排在 6 月条目后面 —— 订阅器按顺序展示就乱了
+      //（2026-10-21 运行时审计）。没有日期的排最后，保持相对稳定。
+      const rssEntries = Object.entries(articles).sort((a, b) => {
+        const da = dateOf(a[0]) || ''
+        const db = dateOf(b[0]) || ''
+        if (da === db) return 0
+        return db.localeCompare(da)
+      })
+      const items = rssEntries
         .map(([id, a]) => {
           // 用规范 URL（带尾斜杠）：原来是无斜杠形态，24 条每条都要被 301 一次
           const link = urlOf(`/article/${id}`)
