@@ -26,11 +26,21 @@ function CategoryCardLink({ cat, articleId, children }) {
   return id ? <Link to={`/article/${id}`}>{children}</Link> : <div>{children}</div>
 }
 
-// 难度等级 - 基于分数
+// 难度等级 - 统一以数据里的 difficulty 字段为准（筛选/战绩页也用它）。
+// 旧实现按积分算徽章，导致 35/53 条与筛选结果互相矛盾。
+const DIFF_STYLES = {
+  Easy: { label: 'Easy', color: 'green', bg: 'bg-green-900/40', text: 'text-green-400' },
+  Medium: { label: 'Medium', color: 'yellow', bg: 'bg-yellow-900/40', text: 'text-yellow-400' },
+  Hard: { label: 'Hard', color: 'red', bg: 'bg-red-900/40', text: 'text-red-400' },
+}
+// 数据缺 difficulty 时的兜底（老记录/新增记录）
 function getDifficulty(points) {
-  if (points < 100) return { label: 'Easy', color: 'green', bg: 'bg-green-900/40', text: 'text-green-400' }
-  if (points <= 200) return { label: 'Medium', color: 'yellow', bg: 'bg-yellow-900/40', text: 'text-yellow-400' }
-  return { label: 'Hard', color: 'red', bg: 'bg-red-900/40', text: 'text-red-400' }
+  if (points < 100) return DIFF_STYLES.Easy
+  if (points <= 200) return DIFF_STYLES.Medium
+  return DIFF_STYLES.Hard
+}
+function difficultyOf(c) {
+  return DIFF_STYLES[c.difficulty] || getDifficulty(c.points)
 }
 
 export default function Challenges() {
@@ -99,9 +109,9 @@ export default function Challenges() {
             题目列表
           </h1>
           <p className="text-cyber-grid mt-4 font-mono">
-            共 <span className="text-cyber-cyan">{filtered.length}</span> 题 | 
-            已解 <span className="text-cyber-cyan">{filtered.filter(c => c.solved).length}</span> 题 |
-            总分 <span className="text-cyber-cyan">{filtered.reduce((sum, c) => sum + c.points, 0)}</span> pts
+            共 <span className="text-cyber-cyan">{filtered.filter(c => c.id !== 0).length}</span> 题 |
+            已解 <span className="text-cyber-cyan">{filtered.filter(c => c.id !== 0 && c.solved).length}</span> 题 |
+            已得 <span className="text-cyber-cyan">{filtered.filter(c => c.id !== 0 && c.solved).reduce((sum, c) => sum + (c.points || 0), 0)}</span> pts
           </p>
         </motion.div>
 
@@ -228,7 +238,7 @@ export default function Challenges() {
                 {catMeta(cat).name}
               </h2>
               <span className="text-sm text-cyber-grid font-mono">
-                {items.length}题 | {items.reduce((sum, c) => sum + c.points, 0)}pts
+                {items.filter(c => c.id !== 0).length}题 | {items.filter(c => c.id !== 0 && c.solved).reduce((sum, c) => sum + (c.points || 0), 0)}pts
               </span>
             </div>
             
@@ -270,12 +280,19 @@ export default function Challenges() {
                             <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${PLATFORM_BADGE[platformKey(challenge.platform)].className}`}>
                               {PLATFORM_BADGE[platformKey(challenge.platform)].label || challenge.platform}
                             </span>
-                            <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${getDifficulty(challenge.points).bg} ${getDifficulty(challenge.points).text}`}>
-                              {getDifficulty(challenge.points).label}
-                            </span>
+                            {challenge.id !== 0 && (
+                              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono ${difficultyOf(challenge).bg} ${difficultyOf(challenge).text}`}>
+                                {difficultyOf(challenge).label}
+                              </span>
+                            )}
+                            {challenge.id === 0 && (
+                              <span className="px-1.5 py-0.5 text-[10px] rounded font-mono bg-cyber-purple/15 text-cyber-purple">
+                                题解文章
+                              </span>
+                            )}
                           </div>
                           <span className="text-xs text-cyber-grid font-mono">
-                            ID: {challenge.id}
+                            {challenge.id === 0 ? challenge.slug : `ID: ${challenge.id}`}
                           </span>
                         </div>
                       </div>
@@ -284,10 +301,16 @@ export default function Challenges() {
                         <span className="text-xs sm:text-sm text-cyber-grid">
                           {challenge.method || challenge.description}
                         </span>
-                        <span className="text-base sm:text-lg font-bold text-cyber-cyan">
-                          {challenge.points}
-                          <span className="text-xs text-cyber-grid ml-1">pts</span>
-                        </span>
+                        {challenge.id === 0 ? (
+                          <span className="text-base sm:text-lg font-bold text-cyber-purple">
+                            文章
+                          </span>
+                        ) : (
+                          <span className="text-base sm:text-lg font-bold text-cyber-cyan">
+                            {challenge.points}
+                            <span className="text-xs text-cyber-grid ml-1">pts</span>
+                          </span>
+                        )}
                       </div>
                     </motion.div>
                   </CategoryCardLink>

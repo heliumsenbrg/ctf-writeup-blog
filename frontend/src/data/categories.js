@@ -35,6 +35,14 @@ const categories = [
     desc: '反序列化/竞态条件/LFI/变量覆盖/MD5 SQLi',
   },
   {
+    id: 'qingcen-web-2026-06-10',
+    title: '青岑 CTF Web 入门',
+    subtitle: '2026-06-10 | 17/20 题',
+    icon: 'Flag',
+    color: 'cyan',
+    desc: 'HTML注释/Base64/隐藏字段/响应头/robots.txt/PHP弱类型',
+  },
+  {
     id: 'may-2026',
     title: 'CTF Writeup - May 2026',
     subtitle: 'ISCC/青岑/CTFShow',

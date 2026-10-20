@@ -37,8 +37,18 @@ export function parseHeadings(content, maxLevel = 3) {
     if (!m) continue
     const level = m[1].length
     if (level > maxLevel) continue
-    // 去掉行内标记后再取 slug，保证与正文渲染（渲染时标记已消失）一致
-    const text = m[2].replace(/[`*_~]+/g, '').trim()
+    // 去掉行内标记后再取 slug，保证与正文渲染（渲染时标记已消失）一致。
+    // ⚠️ 不能无差别删除下划线：Markdown 不会把词内的 `basic_1`、`one_gadget`
+    // 当成强调，渲染后的标题里下划线仍在；删掉就会让目录 id 与正文 id 对不上
+    //（2026-10-20 审计实测 39 条目录项点不动，全部是这个原因）。
+    const text = m[2]
+      .replace(/`([^`]*)`/g, '$1')                    // 行内代码
+      .replace(/(\*\*|__)(.+?)\1/g, '$2')             // 粗体
+      .replace(/(^|[\s(])_([^_]+)_(?=[\s).,，。！？、]|$)/g, '$1$2') // 斜体（仅词边界）
+      .replace(/(^|[\s(])\*([^*]+)\*(?=[\s).,，。！？、]|$)/g, '$1$2') // 斜体星号
+      .replace(/~~(.+?)~~/g, '$1')                    // 删除线
+      .replace(/[`*~]+/g, '')                         // 残留标记
+      .trim()
     const id = headingSlug(text)
     if (text && id) out.push({ id, text, level })
   }

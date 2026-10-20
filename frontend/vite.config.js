@@ -333,7 +333,7 @@ function seoStaticPlugin() {
         const mKb = route.match(/^\/kb\/(.+)$/)
         if (mKb) {
           const n = kbMeta.get(decodeURIComponent(mKb[1]))
-          if (n) return { title: n.title + ' | 知识库 | ' + SITE_TITLE, desc: String(n.summary || n.title).slice(0, 160) }
+          if (n) return { title: n.title + ' | 知识库 | ' + SITE_TITLE, desc: mdExcerpt(String(n.summary || n.title), 160) || n.title }
         }
         const STATIC_META = {
           '/challenges': ['全部挑战', '按平台与分类浏览全部 CTF 挑战记录。'],

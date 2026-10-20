@@ -10,30 +10,34 @@ import { categoryNames } from '../data/constants.js'
  * 不引任何图表库（柱状、累计曲线、标签云都是手写 CSS/SVG）。
  */
 export default function Stats() {
+  // id=0 是「文章占位记录」，不是真实挑战 —— 全部统计都应排除，
+  // 否则会把 8 篇文章算成 8 题 / 800 分（2026-10-20 审计）。
+  const records = useMemo(() => allChallenges.filter((c) => c.id !== 0), [])
   const s = useMemo(() => {
     const byMonth = {}
-    for (const c of allChallenges) {
+    for (const c of records) {
       const m = (c.date || '').slice(0, 7)
       if (m) byMonth[m] = (byMonth[m] || 0) + 1
     }
     const months = Object.keys(byMonth).sort()
 
     const by = (fn) =>
-      Object.entries(allChallenges.reduce((a, c) => { const k = fn(c); if (k) a[k] = (a[k] || 0) + 1; return a }, {}))
+      Object.entries(records.reduce((a, c) => { const k = fn(c); if (k) a[k] = (a[k] || 0) + 1; return a }, {}))
         .sort((x, y) => y[1] - x[1])
 
     const tags = Object.entries(
-      allChallenges.reduce((a, c) => { for (const t of c.tags || []) a[t] = (a[t] || 0) + 1; return a }, {})
+      records.reduce((a, c) => { for (const t of c.tags || []) a[t] = (a[t] || 0) + 1; return a }, {})
     ).sort((x, y) => y[1] - x[1])
 
-    const totalPoints = allChallenges.reduce((a, c) => a + (c.points || 0), 0)
-    const solved = allChallenges.filter((c) => c.solved).length
+    // 只算已解挑战的得分，避免把未解的第 505 题算进"总积分"
+    const totalPoints = records.filter((c) => c.solved).reduce((a, c) => a + (c.points || 0), 0)
+    const solved = records.filter((c) => c.solved).length
 
     // 累计曲线坐标
     let run = 0
     const cum = months.map((m) => (run += byMonth[m]))
-    return { months, byMonth, cum, platforms: by((c) => c.platform), cats: by((c) => c.category), diffs: by((c) => c.difficulty), tags, totalPoints, solved }
-  }, [])
+    return { months, byMonth, cum, platforms: by((c) => c.platform), cats: by((c) => c.category), diffs: by((c) => c.difficulty), tags, totalPoints, solved, total: records.length }
+  }, [records])
 
   const maxMonth = Math.max(...s.months.map((m) => s.byMonth[m]), 1)
   const maxTag = Math.max(...s.tags.map(([, n]) => n), 1)
@@ -57,9 +61,9 @@ export default function Stats() {
         {/* 汇总 */}
         <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            [<Target key="a" className="h-4 w-4" />, allChallenges.length, '条挑战记录'],
-            [<Trophy key="b" className="h-4 w-4" />, s.totalPoints, '总积分'],
-            [<Flame key="c" className="h-4 w-4" />, `${s.solved}/${allChallenges.length}`, '已解'],
+            [<Target key="a" className="h-4 w-4" />, s.total, '条挑战记录'],
+            [<Trophy key="b" className="h-4 w-4" />, s.totalPoints, '已得积分'],
+            [<Flame key="c" className="h-4 w-4" />, `${s.solved}/${s.total}`, '已解'],
             [<CalendarDays key="d" className="h-4 w-4" />, `${s.months.length} 个月`, '有记录'],
           ].map(([icon, val, label], i) => (
             <div key={i} className="glass-card p-4 text-center">
