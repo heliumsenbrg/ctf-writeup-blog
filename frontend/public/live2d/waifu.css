@@ -56,7 +56,11 @@
 	box-shadow: 0 3px 15px 2px rgba(0, 245, 255, .18);
 	font-size: 14px;
 	line-height: 24px;
-	margin: -30px 20px;
+	/* 贴在整只看板娘【上方】10px —— 原来用 margin:-30px 会让气泡压住画布顶部 43px，
+	   正好盖住头部（2026-10-20 实测：canvas top 625 / tips bottom 668）。
+	   用 bottom:calc(100% + 10px) 而不是负 margin：气泡换行变高时也不会再往下扎。 */
+	bottom: calc(100% + 10px);
+	margin: 0 20px;
 	min-height: 70px;
 	opacity: 0;
 	overflow: hidden;
@@ -276,4 +280,25 @@
 	#waifu-toggle {
 		display: none !important;
 	}
+}
+
+/* ── 放音乐时轻轻摇摆（2026-10-20 主人要求）────────────────────────────
+   MusicPlayer 会派发 window 事件 `bgm:state`，index.html 里的监听给 #live2d
+   加/去 `waifu-dancing` 这个类。只动 canvas 的 transform，不碰模型本身，
+   所以和 widget 自己的动作（眨眼、呼吸）互不冲突。 */
+#live2d.waifu-dancing {
+	animation: waifu-dance 2.4s ease-in-out infinite;
+	transform-origin: 50% 92%;
+	will-change: transform;
+}
+
+@keyframes waifu-dance {
+	0%, 100% { transform: translateY(0) rotate(0deg); }
+	25%      { transform: translateY(-3px) rotate(-1.8deg); }
+	50%      { transform: translateY(0) rotate(0deg); }
+	75%      { transform: translateY(-3px) rotate(1.8deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	#live2d.waifu-dancing { animation: none; }
 }

@@ -25,7 +25,8 @@ import { musicTracks } from '../data/music.js'
  */
 
 const LS_ENABLED = 'bgm:enabled'   // '0' = 使用者明确关掉了；未设置/其它 = 开着
-const LS_VOLUME = 'bgm:volume'
+// v2：第一版这个 key 存过一批被 bug 写坏的 0（见下面读回处的注释），换个 key 让脏值失效
+const LS_VOLUME = 'bgm:volume:v2'
 const LS_HINT = 'bgm:hint-shown'
 const DEFAULT_VOLUME = 0.35
 
@@ -48,9 +49,14 @@ export default function MusicPlayer() {
   const [failed, setFailed] = useState(false)
 
   // 音量：读回记忆值
+  // ⚠️ 必须判 `raw !== null` —— 之前直接 Number(getItem(...))，
+  //    首次访问 getItem 返回 null、Number(null) === 0，于是音量被设成 0 并存回去，
+  //    表现就是「按钮点了、图标也变了，但一点声都没有」（2026-10-20 实测抓到）
   useEffect(() => {
     try {
-      const v = Number(localStorage.getItem(LS_VOLUME))
+      const raw = localStorage.getItem(LS_VOLUME)
+      if (raw === null) return
+      const v = Number(raw)
       if (Number.isFinite(v) && v >= 0 && v <= 1) setVolume(v)
     } catch { /* 隐私模式 */ }
   }, [])
@@ -59,6 +65,13 @@ export default function MusicPlayer() {
     if (audioRef.current) audioRef.current.volume = volume
     try { localStorage.setItem(LS_VOLUME, String(volume)) } catch { /* 隐私模式 */ }
   }, [volume])
+
+  // 把播放状态广播出去 —— index.html 里的看板娘监听它，放音乐时轻轻摇摆
+  useEffect(() => {
+    try {
+      window.dispatchEvent(new CustomEvent('bgm:state', { detail: { playing } }))
+    } catch { /* 老浏览器 */ }
+  }, [playing])
 
   // ── 播放主逻辑：先直接试，被拦就等第一次交互 ──────────────────────────
   useEffect(() => {
