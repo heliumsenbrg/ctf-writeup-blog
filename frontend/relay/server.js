@@ -38,7 +38,15 @@ for (const k of ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_
   delete process.env[k]
 }
 
-const BACKEND = process.env.BACKEND || 'https://ctf-writeup-blog.app.workbuddy.host'
+// ── 数据面地址（兜底链）────────────────────────────────────────────────
+// 2026-10-20 实测：平台是**按 `x-wb-webapp-access-key` 路由**到云服务的，**与域名无关** ——
+// 在任意 WorkBuddy 应用域名上打 `/.cloud/`，只要带对 key 就能拿到数据（不带 key 才 401）。
+// 所以这里给一串候选：主域名（博客应用）不可用时自动退化到中转自己的域名。
+// 这样即使博客的旧镜像被下线，留言板也不会跟着死。
+const BACKENDS = (process.env.BACKENDS || [
+  'https://ctf-writeup-blog.app.workbuddy.host',
+  'https://cloud-relay.app.workbuddy.host',
+].join(',')).split(',').map((s) => s.trim()).filter(Boolean)
 
 /** 允许调用这个中转的站点（Origin 必须精确匹配：带协议、不带尾斜杠） */
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || [
@@ -85,6 +93,37 @@ const SITEVERIFY = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
 const ALLOW_METHODS = 'GET, POST, PATCH, PUT, DELETE, OPTIONS'
 
+// 只放行博客实际使用的三张表。原实现放行整个 /.cloud/，
+// 等于把云应用的 OpenAPI、LLM 等端点也交给任何拿到公开 key 的人。
+const ALLOWED_REST = /^\/\.cloud\/database\/rest\/(?:guestbook|comments|quest_board)(?:\/|$)/
+
+// 请求体上限：防止超大 POST 把中转进程内存打满
+const MAX_BODY = Number(process.env.MAX_BODY_BYTES || 64 * 1024)
+// 写接口每 IP 每分钟上限（粗粒度，真正的反垃圾仍在数据库触发器里）
+const WRITE_LIMIT = Number(process.env.WRITE_LIMIT_PER_MIN || 20)
+const writeBuckets = new Map()
+
+function clientIp(req) {
+  const xff = req.headers['x-forwarded-for']
+  const first = (Array.isArray(xff) ? xff[0] : String(xff || '')).split(',')[0].trim()
+  return first || req.socket.remoteAddress || 'unknown'
+}
+
+function writeRateLimited(ip) {
+  const now = Date.now()
+  const b = writeBuckets.get(ip)
+  if (!b || now - b.start > 60_000) {
+    writeBuckets.set(ip, { start: now, count: 1 })
+    // 顺手清理过期桶，避免 Map 无限增长
+    if (writeBuckets.size > 5000) {
+      for (const [k, v] of writeBuckets) if (now - v.start > 120_000) writeBuckets.delete(k)
+    }
+    return false
+  }
+  b.count++
+  return b.count > WRITE_LIMIT
+}
+
 /** 仅当来源在白名单内才回 CORS 头；不在则不给 —— 浏览器侧读不到内容 */
 function corsHeaders(origin) {
   if (!origin || !ALLOWED_ORIGINS.includes(origin)) return {}
@@ -118,8 +157,23 @@ async function verifyHuman(req) {
 function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = []
-    req.on('data', (c) => chunks.push(c))
-    req.on('end', () => resolve(Buffer.concat(chunks)))
+    let size = 0
+    let done = false
+    req.on('data', (c) => {
+      if (done) return
+      size += c.length
+      if (size > MAX_BODY) {
+        done = true
+        const err = new Error('body_too_large')
+        err.code = 'BODY_TOO_LARGE'
+        reject(err)
+        // 不 destroy：否则响应 socket 也会被关掉，客户端收到的是连接重置而不是 413。
+        // 继续消费（丢弃）剩余数据即可。
+        return
+      }
+      chunks.push(c)
+    })
+    req.on('end', () => { if (!done) resolve(Buffer.concat(chunks)) })
     req.on('error', reject)
   })
 }
@@ -132,9 +186,9 @@ function readBody(req) {
  * 仍是一个不在白名单里的 Origin → 403 access_denied，白中转一场。
  * 用 https.request 自己发原始请求，Origin / Referer 由我们说了算（= 根本不发）。
  */
-function upstreamRequest(pathWithQuery, method, headers, body) {
+function upstreamRequest(base, pathWithQuery, method, headers, body) {
   return new Promise((resolve, reject) => {
-    const u = new URL(BACKEND + pathWithQuery)
+    const u = new URL(base + pathWithQuery)
     const req2 = https.request(
       {
         hostname: u.hostname,
@@ -184,13 +238,13 @@ const server = http.createServer(async (req, res) => {
     // ③ 用**生产同款**通道探一次后端（https.request，不带 Origin）
     try {
       const h1 = req.headers['x-wb-webapp-access-key'] ? { 'x-wb-webapp-access-key': req.headers['x-wb-webapp-access-key'] } : {}
-      const r1 = await upstreamRequest('/.cloud/database/rest/guestbook', 'GET', h1, null)
+      const r1 = await upstreamRequest(BACKENDS[0], '/.cloud/database/rest/guestbook', 'GET', h1, null)
       probe.backend = { status: r1.status, body: r1.body.toString('utf8').slice(0, 200), via: 'https.request' }
     } catch (e) { probe.backend = { error: String(e && e.message).slice(0, 160) } }
     // ③b 对照：fetch 通道（历史上被沙箱注入 Origin 的那条路）
     try {
       const h2 = req.headers['x-wb-webapp-access-key'] ? { 'x-wb-webapp-access-key': req.headers['x-wb-webapp-access-key'] } : {}
-      const r2 = await fetch(BACKEND + '/.cloud/database/rest/guestbook', { headers: h2 })
+      const r2 = await fetch(BACKENDS[0] + '/.cloud/database/rest/guestbook', { headers: h2 })
       probe.backendViaFetch = { status: r2.status, body: (await r2.text()).slice(0, 160) }
     } catch (e) { probe.backendViaFetch = { error: String(e && e.message).slice(0, 160) } }
     probe.clientHadOrigin = Boolean(req.headers.origin)
@@ -213,6 +267,16 @@ const server = http.createServer(async (req, res) => {
     return send(res, 404, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
       JSON.stringify({ error: 'not_found', hint: `这个中转只转发 ${PATH_PREFIX}/.cloud/ 下的云数据面请求` }))
   }
+  if (!ALLOWED_REST.test(cloudPath)) {
+    return send(res, 404, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+      JSON.stringify({ error: 'not_found', hint: '只允许 guestbook / comments / quest_board 三张表' }))
+  }
+
+  // 写接口按 IP 限流：超限直接 429，不打到后端
+  if (WRITE_METHODS.has(req.method) && writeRateLimited(clientIp(req))) {
+    return send(res, 429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '60', ...cors },
+      JSON.stringify({ error: 'rate_limited', retry_after: 60 }))
+  }
 
   // 人机校验（只对写方法生效）
   const human = await verifyHuman(req)
@@ -226,15 +290,32 @@ const server = http.createServer(async (req, res) => {
   for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
 
   let body
-  if (req.method !== 'GET' && req.method !== 'HEAD') body = await readBody(req)
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    try {
+      body = await readBody(req)
+    } catch (e) {
+      if (e && e.code === 'BODY_TOO_LARGE') {
+        return send(res, 413, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+          JSON.stringify({ error: 'body_too_large', max_bytes: MAX_BODY }))
+      }
+      return send(res, 400, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+        JSON.stringify({ error: 'bad_request' }))
+    }
+  }
 
   try {
-    const upstream = await upstreamRequest(
-      cloudPath + url.search,
-      req.method,
-      out,
-      body
-    )
+    let lastErr = null
+    let upstream = null
+    for (const base of BACKENDS) {
+      try {
+        upstream = await upstreamRequest(base, cloudPath + url.search, req.method, out, body)
+        break
+      } catch (e) {
+        lastErr = e
+        // 换下一个候选；全部失败才 502
+      }
+    }
+    if (!upstream) throw lastErr || new Error('no backend available')
     const respHeaders = { ...cors, 'X-Relay': 'wb' }
     for (const h of ['content-type', 'content-range', 'content-location', 'x-total-count', 'cache-control']) {
       const v = upstream.headers[h]
@@ -251,7 +332,7 @@ const server = http.createServer(async (req, res) => {
 const PORT = Number(process.env.PORT || 3000)
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[relay] listening on 0.0.0.0:${PORT}`)
-  console.log(`[relay] backend = ${BACKEND}`)
+  console.log(`[relay] backends = ${BACKENDS.join(" → ")}`)
   console.log(`[relay] allowed origins = ${ALLOWED_ORIGINS.join(', ')}`)
   console.log(`[relay] turnstile = ${process.env.TURNSTILE_SECRET ? 'on' : 'off (降级放行)'}`)
 })
