@@ -923,7 +923,7 @@ if ($key === "secret_value") { ... }
 
 ## 一、ISCC CTF Web (解出 \ud83d\udd25)
 
-**题目**: \`http://203.0.113.10:49106\`
+**题目**: \`http://<靶机地址>:49106\`
 **FLAG**: \`ISCC{K6FRFyHAMaMmPZNmXXpA}\`
 
 ### 攻击链
@@ -931,7 +931,7 @@ if ($key === "secret_value") { ... }
 #### 1. \`.git\` 源码泄露
 \`\`\`bash
 # 用 git_dumper 克隆仓库
-python git_dumper.py http://203.0.113.10:49106/.git/ ./iscc_git/
+python git_dumper.py http://<靶机地址>:49106/.git/ ./iscc_git/
 
 # 查看 git 历史，找到旧版本
 git log --all --oneline
@@ -1285,7 +1285,7 @@ flag{It3_D3bugG_T11me!_le3_play}
     content: `
 # 喵喵宠物医院 -- YAML 反序列化 RCE
 
-**靶场**: 203.0.113.11:10001
+**靶场**: <靶机地址>:10001
 **类型**: Misc / Insecure Deserialization
 **难度**: Medium
 
