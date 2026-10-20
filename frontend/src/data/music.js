@@ -31,5 +31,5 @@ export const musicTracks = [
   { title: 'ワールドイズマイン（世界第一公主殿下）', src: `${base}music/world-is-mine.m4a` },
   { title: '妄想感傷代償連盟 (0.9x)', src: `${base}music/mansou-sensou-09x.m4a` },
   { title: '视奸（术力口版）', src: `${base}music/shijian.m4a` },
-  { title: "I Can't Wait", src: `${base}music/i-cant-wait.m4a` },
+  { title: "I Can't Wait（60 秒片段）", src: `${base}music/i-cant-wait.m4a` },
 ]
