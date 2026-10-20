@@ -25,7 +25,7 @@
     <title>逆向-动态调试与模拟执行 | 知识库 | heliumsenbrg's CTF Writeups</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按**&quot;要解决什么问题 → 用哪个工具&quot;**组织：gdb/pwndbg、ltrace/strace、Frida、LD_PRELOAD、Unicorn、QEMU user-mode、angr，最后是**内存 dump 直接" />
+    <meta name="description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按&quot;要解决什么问题 → 用哪个工具&quot;组织：gdb/pwndbg、ltrace/strace、Frida、LDPRELOAD、Unicorn、QEMU user-mode、angr，最后是内存 dump 直接捞 flag …" />
     <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow" />
     <meta name="author" content="heliumsenbrg" />
 
@@ -33,7 +33,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E9%80%86%E5%90%91-%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95%E4%B8%8E%E6%A8%A1%E6%8B%9F%E6%89%A7%E8%A1%8C/" />
     <meta property="og:title" content="逆向-动态调试与模拟执行 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta property="og:description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按**&quot;要解决什么问题 → 用哪个工具&quot;**组织：gdb/pwndbg、ltrace/strace、Frida、LD_PRELOAD、Unicorn、QEMU user-mode、angr，最后是**内存 dump 直接" />
+    <meta property="og:description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按&quot;要解决什么问题 → 用哪个工具&quot;组织：gdb/pwndbg、ltrace/strace、Frida、LDPRELOAD、Unicorn、QEMU user-mode、angr，最后是内存 dump 直接捞 flag …" />
     <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -45,7 +45,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E9%80%86%E5%90%91-%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95%E4%B8%8E%E6%A8%A1%E6%8B%9F%E6%89%A7%E8%A1%8C/" />
     <meta name="twitter:title" content="逆向-动态调试与模拟执行 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta name="twitter:description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按**&quot;要解决什么问题 → 用哪个工具&quot;**组织：gdb/pwndbg、ltrace/strace、Frida、LD_PRELOAD、Unicorn、QEMU user-mode、angr，最后是**内存 dump 直接" />
+    <meta name="twitter:description" content="静态看不清（反调试 / SMC / 自校验 / 运行时解密 / 跨架构）时，就&quot;让它跑起来看&quot;。这页按&quot;要解决什么问题 → 用哪个工具&quot;组织：gdb/pwndbg、ltrace/strace、Frida、LDPRELOAD、Unicorn、QEMU user-mode、angr，最后是内存 dump 直接捞 flag …" />
     <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
 
@@ -79,10 +79,10 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BuTBmUJp.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BaLrzrkj.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
-    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-Ce_fMeXQ.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-BYMtOd9x.css">
+    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CTIw3hrd.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗

@@ -25,7 +25,7 @@
     <title>密码学-ZKP与约束求解 | 知识库 | heliumsenbrg's CTF Writeups</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;**把检查逻辑抄成约束，让求解器把答案吐出来**&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的**选择判据**、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
+    <meta name="description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;把检查逻辑抄成约束，让求解器把答案吐出来&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的选择判据、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
     <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow" />
     <meta name="author" content="heliumsenbrg" />
 
@@ -33,7 +33,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E5%AF%86%E7%A0%81%E5%AD%A6-ZKP%E4%B8%8E%E7%BA%A6%E6%9D%9F%E6%B1%82%E8%A7%A3/" />
     <meta property="og:title" content="密码学-ZKP与约束求解 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta property="og:description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;**把检查逻辑抄成约束，让求解器把答案吐出来**&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的**选择判据**、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
+    <meta property="og:description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;把检查逻辑抄成约束，让求解器把答案吐出来&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的选择判据、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
     <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -45,7 +45,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E5%AF%86%E7%A0%81%E5%AD%A6-ZKP%E4%B8%8E%E7%BA%A6%E6%9D%9F%E6%B1%82%E8%A7%A3/" />
     <meta name="twitter:title" content="密码学-ZKP与约束求解 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta name="twitter:description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;**把检查逻辑抄成约束，让求解器把答案吐出来**&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的**选择判据**、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
+    <meta name="twitter:description" content="一类题的本质不是&quot;破密码&quot;，而是&quot;把检查逻辑抄成约束，让求解器把答案吐出来&quot;。这一页给三样东西：z3 / GF(2) / 集合交集的选择判据、建模范式与可跑骨架，以及零知识证明与 SPN 里&quot;从协议缺陷而非算法强度下手&quot;的打法。" />
     <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
 
@@ -79,10 +79,10 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BuTBmUJp.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BaLrzrkj.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
-    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-Ce_fMeXQ.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-BYMtOd9x.css">
+    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CTIw3hrd.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗

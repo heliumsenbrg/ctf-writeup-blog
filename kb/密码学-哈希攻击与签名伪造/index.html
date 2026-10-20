@@ -25,7 +25,7 @@
     <title>密码学-哈希攻击与签名伪造 | 知识库 | heliumsenbrg's CTF Writeups</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在**认出这个构造属于哪一类**：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
+    <meta name="description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在认出这个构造属于哪一类：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
     <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow" />
     <meta name="author" content="heliumsenbrg" />
 
@@ -33,7 +33,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E5%AF%86%E7%A0%81%E5%AD%A6-%E5%93%88%E5%B8%8C%E6%94%BB%E5%87%BB%E4%B8%8E%E7%AD%BE%E5%90%8D%E4%BC%AA%E9%80%A0/" />
     <meta property="og:title" content="密码学-哈希攻击与签名伪造 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta property="og:description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在**认出这个构造属于哪一类**：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
+    <meta property="og:description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在认出这个构造属于哪一类：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
     <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -45,7 +45,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E5%AF%86%E7%A0%81%E5%AD%A6-%E5%93%88%E5%B8%8C%E6%94%BB%E5%87%BB%E4%B8%8E%E7%AD%BE%E5%90%8D%E4%BC%AA%E9%80%A0/" />
     <meta name="twitter:title" content="密码学-哈希攻击与签名伪造 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta name="twitter:description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在**认出这个构造属于哪一类**：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
+    <meta name="twitter:description" content="哈希与签名的题，胜负往往不在&quot;能不能破&quot;，而在认出这个构造属于哪一类：是 Merkle-Damgård 的长度扩展、是 CRC 的线性、是 RSA 的同态、还是 padding 预言机。这一页给的是&quot;看到什么条件 → 选哪种攻击&quot;的判据表，外加可跑骨架。" />
     <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
 
@@ -79,10 +79,10 @@
     <noscript>
       <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
     </noscript>
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BuTBmUJp.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BaLrzrkj.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
-    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-Ce_fMeXQ.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-BYMtOd9x.css">
+    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CTIw3hrd.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗

@@ -1,0 +1,1 @@
+function a(s){const t=String(s??"").trim();return t&&/^https?:\/\//i.test(t)?t:null}function c(s,t=40){const r=a(s);if(!r)return"";try{const n=new URL(r),e=n.hostname+(n.port?":"+n.port:""),o=n.pathname==="/"?"":n.pathname;return(e+o).slice(0,t)}catch{return""}}export{c as d,a as s};
