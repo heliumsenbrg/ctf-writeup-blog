@@ -48,10 +48,27 @@ export default function Guestbook() {
       setList(arr.slice(0, PAGE_SIZE))
       setPage(targetPage)
 
-      // 总数单独轻量取（只取 id 列，上限 1000）
+      // 总数：分页数到底。
+      // 原来的 `select('id').limit(1000)` 拿数组长度当总数 —— 超过 1000 条就永远显示 1000
+      // （2026-10-21 审计指出）。
+      // 本来想用 PostgREST 的 count=exact（总数在 Content-Range 里），实测**经过中转后
+      // 这个响应头会丢**（直连上游有；沙箱代理吃掉了），所以改用最笨但最可靠的办法：
+      // 每页 1000 个 id 往后翻，直到不足一页为止。留言量级下通常就一次请求。
       try {
-        const ids = await unwrap(getCloud().database.from(TABLE).select('id').limit(1000))
-        setTotal(Array.isArray(ids) ? ids.length : 0)
+        let total = 0
+        for (let from = 0; from < 100000; from += 1000) {
+          const ids = await unwrap(
+            getCloud()
+              .database.from(TABLE)
+              .select('id')
+              .order('id', { ascending: true })
+              .range(from, from + 999)
+          )
+          const n = Array.isArray(ids) ? ids.length : 0
+          total += n
+          if (n < 1000) break
+        }
+        setTotal(total)
       } catch {
         setTotal(0)
       }
