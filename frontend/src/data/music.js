@@ -26,9 +26,10 @@ export const musicTracks = [
   { title: '希望有羽毛和翅膀', src: `${base}music/hope-wings.mp3` },
   { title: '昔涟', src: `${base}music/xilian.m4a` },
   { title: '睡觉小猴', src: `${base}music/sleepy-monkey.m4a` },
-  // 桌面那几个下载文件没有标题标签，先按序号放着；想改名直接改 title
-  { title: '未命名曲目 ①', src: `${base}music/unnamed-1.m4a` },
-  { title: '未命名曲目 ②', src: `${base}music/unnamed-2.m4a` },
-  { title: '未命名曲目 ③', src: `${base}music/unnamed-3.m4a` },
-  { title: '未命名曲目 ④', src: `${base}music/unnamed-4.m4a` },
+  // 下面 4 首原本是桌面上的「下载.m4a」等无名文件。曲名是比对浏览器下载记录得出的：
+  // 先按下载字节数把事件精确对上文件，再看同一时刻访问的汽水音乐曲目页标题。
+  { title: 'ワールドイズマイン（世界第一公主殿下）', src: `${base}music/world-is-mine.m4a` },
+  { title: '妄想感傷代償連盟 (0.9x)', src: `${base}music/mansou-sensou-09x.m4a` },
+  { title: '视奸（术力口版）', src: `${base}music/shijian.m4a` },
+  { title: "I Can't Wait", src: `${base}music/i-cant-wait.m4a` },
 ]
