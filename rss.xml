@@ -6,7 +6,7 @@
     <atom:link rel="self" type="application/rss+xml" href="https://heliumsenbrg.github.io/ctf-writeup-blog/rss.xml" />
     <description>CTF WriteUp 博客 - Web 安全 / 密码学 / 二进制利用</description>
     <language>zh-CN</language>
-    <lastBuildDate>Tue, 20 Oct 2026 10:30:39 GMT</lastBuildDate>
+    <lastBuildDate>Tue, 20 Oct 2026 10:49:46 GMT</lastBuildDate>
     <item>
       <title>CTF 工具使用指南</title>
       <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/tools/</link>
@@ -61,7 +61,7 @@
       <link>https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026/</link>
       <guid isPermaLink="true">https://heliumsenbrg.github.io/ctf-writeup-blog/article/may-2026/</guid>
       <pubDate>Wed, 06 May 2026 09:00:00 GMT</pubDate>
-      <description>从 .git/objects 中还原了旧版 legacyprobestub.py，获取两个关键密钥： JWT 密钥: ISCC2026JWTDEBUGKEY#9527 旧版 HMAC 密钥: ISCCSERVERSECRETREAL （…</description>
+      <description>从 .git/objects 中还原了旧版 legacyprobestub.py，获取两个关键密钥： JWT 密钥: ISCC2026JWTDEBUGKEY[REDACTED] 旧版 HMAC 密钥: ISCCSERVERSECRET[…</description>
     </item>
     <item>
       <title>Northbridge -- SSRF Bypass</title>

