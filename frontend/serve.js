@@ -5,6 +5,20 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, 'dist');
+const ROOT_DIR = path.resolve(dist);
+
+/**
+ * 把 URL 路径解析到 dist 内的真实文件；越界（../、%2e%2e、NUL）一律返回 null。
+ * 原实现直接用 path.join(dist, urlPath)，在监听 0.0.0.0 时同网段可读任意文件。
+ */
+function safePath(urlPath) {
+  let decoded;
+  try { decoded = decodeURIComponent(urlPath); } catch { return null; }
+  if (decoded.includes('\0')) return null;
+  const full = path.resolve(ROOT_DIR, '.' + decoded);
+  if (full !== ROOT_DIR && !full.startsWith(ROOT_DIR + path.sep)) return null;
+  return full;
+}
 const mime = {
   'html': 'text/html; charset=utf-8',
   'js': 'application/javascript',
@@ -41,7 +55,12 @@ const server = http.createServer((req, res) => {
   }
 
   let filePath = urlPath === '/' ? '/index.html' : urlPath;
-  const fullPath = path.join(dist, filePath);
+  const fullPath = safePath(filePath);
+  if (!fullPath) {
+    res.writeHead(403, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Forbidden');
+    return;
+  }
 
   fs.access(fullPath, fs.constants.F_OK, (err) => {
     if (err) {

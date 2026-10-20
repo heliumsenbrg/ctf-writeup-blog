@@ -41,7 +41,8 @@ const uniq = (a) => [...new Set(a)]
 const rows = []
 
 for (const [id, a] of Object.entries(articles)) {
-  const c = a.content || ''
+  // 已经手工脱敏为 [REDACTED] 的行不再计入（否则会把 "ISCC_..._KEY_" 前缀当明文密钥）
+  const c = (a.content || '').split('\n').filter((line) => !/\[REDACTED/i.test(line)).join('\n')
   const flags = uniq([...c.matchAll(FLAG_RE)].map((m) => m[0]))
   const secrets = uniq([...c.matchAll(SECRET_RE)].map((m) => m[1]))
   const ips = uniq([...c.matchAll(IP_RE)].map((m) => m[0]))

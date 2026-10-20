@@ -13,9 +13,21 @@ export function safeHref(url) {
   return /^https?:\/\//i.test(s) ? s : null
 }
 
-/** 展示用的短域名（去掉协议与末尾斜杠，超长截断） */
+/** 展示用的短域名（去掉协议与末尾斜杠，超长截断）
+ *
+ * 用 URL 解析出真正的 hostname，而不是对原字符串做截断：
+ * `https://heliumsenbrg.github.io@evil.example/` 的 hostname 是 evil.example，
+ * 直接截断会把 `heliumsenbrg.github.io` 显示成"看起来可信"的前缀。
+ */
 export function displayHost(url, max = 40) {
   const s = safeHref(url)
   if (!s) return ''
-  return s.replace(/^https?:\/\//i, '').replace(/\/+$/, '').slice(0, max)
+  try {
+    const u = new URL(s)
+    const host = u.hostname + (u.port ? ':' + u.port : '')
+    const rest = u.pathname === '/' ? '' : u.pathname
+    return (host + rest).slice(0, max)
+  } catch {
+    return ''
+  }
 }
