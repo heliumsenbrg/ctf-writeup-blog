@@ -13,4 +13,5 @@ export const friendLinks = [
   { name: '累了', url: 'https://cd835.github.io/ZS/' },
   { name: '懒羊羊大佬', url: 'https://yangleduo0629-cloud.github.io/-/#/' },
   { name: 'ss0t-HACKED', url: 'https://blog.ss0t-hacked.top' },
+  { name: '凝核 Nucleus', url: 'https://poachedegg.cn/' },
 ]
