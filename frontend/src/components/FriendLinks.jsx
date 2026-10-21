@@ -41,7 +41,11 @@ export function FriendAvatar({ name = '', url = '', avatar = '', size = 'md' }) 
   const grad = AVATAR_COLORS[hashOf(name) % AVATAR_COLORS.length]
 
   // ① 自带头像（仓库里托管）→ ② 猜对方 /favicon.ico → ③ 首字渐变圆
-  const src = avatar || (host ? `https://${host}/favicon.ico` : '')
+  // avatar 是相对路径（如 'friends/x.png'）→ 拼部署 base；已是绝对 URL 就原样用
+  const avatarSrc = avatar
+    ? (/^https?:/i.test(avatar) ? avatar : import.meta.env.BASE_URL + String(avatar).replace(/^\//, ''))
+    : ''
+  const src = avatarSrc || (host ? `https://${host}/favicon.ico` : '')
   if (!broken && src) {
     return (
       <img
