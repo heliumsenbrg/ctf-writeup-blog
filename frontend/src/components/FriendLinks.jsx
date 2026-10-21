@@ -30,7 +30,7 @@ const hashOf = (s) => {
   return h
 }
 
-export function FriendAvatar({ name = '', url = '', size = 'md' }) {
+export function FriendAvatar({ name = '', url = '', avatar = '', size = 'md' }) {
   const [broken, setBroken] = useState(false)
   const host = useMemo(() => {
     try { return new URL(url).host } catch { return '' }
@@ -40,11 +40,12 @@ export function FriendAvatar({ name = '', url = '', size = 'md' }) {
   const initial = (name.trim()[0] || '?').toUpperCase()
   const grad = AVATAR_COLORS[hashOf(name) % AVATAR_COLORS.length]
 
-  // favicon 优先；失败（或没有 host）→ 首字渐变圆
-  if (!broken && host) {
+  // ① 自带头像（仓库里托管）→ ② 猜对方 /favicon.ico → ③ 首字渐变圆
+  const src = avatar || (host ? `https://${host}/favicon.ico` : '')
+  if (!broken && src) {
     return (
       <img
-        src={`https://${host}/favicon.ico`}
+        src={src}
         alt=""
         width={size === 'sm' ? 20 : 32}
         height={size === 'sm' ? 20 : 32}
@@ -83,7 +84,7 @@ export default function FriendLinks({ variant = 'footer' }) {
             rel="noreferrer"
             className="group inline-flex items-center gap-2 text-xs text-cyber-cyan transition-colors hover:text-white"
           >
-            <FriendAvatar name={f.name} url={f.url} size="sm" />
+            <FriendAvatar name={f.name} url={f.url} avatar={f.avatar} size="sm" />
             {f.name}
           </a>
         ))}
@@ -104,7 +105,7 @@ export default function FriendLinks({ variant = 'footer' }) {
             rel="noreferrer"
             className="group flex items-center gap-3 rounded-lg border border-cyber-grid/20 p-3 transition-colors hover:border-cyber-cyan/50 hover:bg-cyber-cyan/5"
           >
-            <FriendAvatar name={f.name} url={f.url} />
+            <FriendAvatar name={f.name} url={f.url} avatar={f.avatar} />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm text-cyber-cyan transition-colors group-hover:text-white">
                 {f.name}
