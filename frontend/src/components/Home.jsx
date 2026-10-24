@@ -509,10 +509,10 @@ export default function Home({ GlitchText, TypewriterText }) {
                       </span>
                     </div>
                     <h3 className="text-lg font-bold text-cyber-cyan group-hover:text-white transition-colors mb-2">
-                      {challenge.name}
+                      {challenge.title}
                     </h3>
                     <p className="text-sm text-cyber-grid mb-3">
-                      {challenge.method}
+                      {challenge.description}
                     </p>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-cyber-purple/70 font-mono">

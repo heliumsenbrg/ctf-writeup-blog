@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { MotionConfig, useReducedMotion } from 'framer-motion'
 import { useEffect, useRef, useState, useCallback, lazy, Suspense } from 'react'
 import Layout from './components/Layout'
@@ -17,6 +17,99 @@ const AboutLazy = lazy(() => import('./components/About'))
 const GuestbookLazy = lazy(() => import('./components/Guestbook'))
 const StatsLazy = lazy(() => import('./components/Stats'))
 const KbNoteLazy = lazy(() => import('./components/KbNote'))
+
+let routeMetadataRequest
+
+function setMeta(attribute, name, value) {
+  const selector = `meta[${attribute}="${name}"]`
+  let element = document.head.querySelector(selector)
+  if (!value) {
+    element?.remove()
+    return
+  }
+  if (!element) {
+    element = document.createElement('meta')
+    element.setAttribute(attribute, name)
+    document.head.appendChild(element)
+  }
+  element.setAttribute('content', value)
+}
+
+function setCanonical(value) {
+  let element = document.head.querySelector('link[rel="canonical"]')
+  if (!value) {
+    element?.remove()
+    return
+  }
+  if (!element) {
+    element = document.createElement('link')
+    element.setAttribute('rel', 'canonical')
+    document.head.appendChild(element)
+  }
+  element.setAttribute('href', value)
+}
+
+function decodeHtml(value) {
+  const textArea = document.createElement('textarea')
+  textArea.innerHTML = value || ''
+  return textArea.value
+}
+
+function RouteMetadata() {
+  const { pathname } = useLocation()
+
+  useEffect(() => {
+    let active = true
+    if (!routeMetadataRequest) {
+      routeMetadataRequest = fetch(`${import.meta.env.BASE_URL}route-meta.json`)
+        .then((response) => (response.ok ? response.json() : null))
+        .catch(() => null)
+    }
+
+    let route = pathname.replace(/\/+$/, '') || '/'
+    try {
+      route = decodeURIComponent(route)
+    } catch {
+    }
+
+    routeMetadataRequest.then((routes) => {
+      if (!active) return
+      const meta = routes?.[route]
+      if (!meta) {
+        document.title = '页面未找到 | heliumsenbrg 的 CTF Writeups'
+        setMeta('name', 'description', '请求的页面不存在。')
+        setMeta('name', 'robots', 'noindex, follow')
+        setMeta('property', 'og:type', 'website')
+        setMeta('property', 'og:title', document.title)
+        setMeta('property', 'og:description', '请求的页面不存在。')
+        setMeta('property', 'og:url', window.location.href.split(/[?#]/, 1)[0])
+        setMeta('name', 'twitter:title', document.title)
+        setMeta('name', 'twitter:description', '请求的页面不存在。')
+        setMeta('name', 'twitter:url', window.location.href.split(/[?#]/, 1)[0])
+        setCanonical(null)
+        setMeta('property', 'article:published_time', null)
+        return
+      }
+
+      document.title = decodeHtml(meta.title)
+      setMeta('name', 'description', decodeHtml(meta.description))
+      setCanonical(meta.canonical)
+      setMeta('property', 'og:type', decodeHtml(meta.ogType))
+      setMeta('property', 'og:title', decodeHtml(meta.ogTitle))
+      setMeta('property', 'og:description', decodeHtml(meta.ogDescription))
+      setMeta('property', 'og:url', meta.ogUrl)
+      setMeta('name', 'twitter:title', decodeHtml(meta.twitterTitle))
+      setMeta('name', 'twitter:description', decodeHtml(meta.twitterDescription))
+      setMeta('name', 'twitter:url', meta.twitterUrl)
+      setMeta('name', 'robots', decodeHtml(meta.robots))
+      setMeta('property', 'article:published_time', meta.publishedTime)
+    })
+
+    return () => { active = false }
+  }, [pathname])
+
+  return null
+}
 
 // ===== Cursor Trail =====
 function CursorTrail() {
@@ -335,7 +428,8 @@ function AppInner() {
     <MotionConfig reducedMotion="user">
       {!isMobile && !reduceMotion && <CursorTrail />}
       {!booted && <BootScreen onDone={handleBootDone} ready={ready} />}
-      <BrowserRouter basename="/ctf-writeup-blog">
+      <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '') || '/'}>
+        <RouteMetadata />
         <Routes>
           <Route path="/" element={<Layout />}>
             <Route index element={<Home GlitchText={GlitchText} TypewriterText={TypewriterText} />} />

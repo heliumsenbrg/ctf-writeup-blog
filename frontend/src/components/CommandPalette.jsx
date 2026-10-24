@@ -9,12 +9,24 @@ const TYPE_META = {
 }
 const ORDER = ['writeup', 'note', 'challenge']
 
-/** 极简打分：标题命中权重最高；空格分词，要求每个词都命中 */
-function scoreOf(item, q) {
-  const title = (item.title || '').toLowerCase()
-  const sub = (item.sub || '').toLowerCase()
-  const all = `${item.text || ''} ${(item.tags || []).join(' ')}`.toLowerCase()
-  const terms = q.toLowerCase().split(/\s+/).filter(Boolean)
+function normalize(value) {
+  return String(value || '').normalize('NFKC').toLowerCase()
+}
+
+function gramsOf(value) {
+  const grams = new Set()
+  for (const token of normalize(value).match(/[\u3400-\u9fff]+|[a-z0-9_]+/g) || []) {
+    for (const character of token) grams.add(character)
+    for (let i = 0; i + 1 < token.length; i++) grams.add(token.slice(i, i + 2))
+  }
+  return [...grams]
+}
+
+function scoreOf(item, id, postings, q) {
+  const title = normalize(item.title)
+  const sub = normalize(item.sub)
+  const tags = normalize((item.tags || []).join(' '))
+  const terms = q.split(/\s+/).flatMap((part) => normalize(part).match(/[\u3400-\u9fff]+|[a-z0-9_]+/g) || [])
   if (!terms.length) return 0
 
   let total = 0
@@ -24,7 +36,8 @@ function scoreOf(item, q) {
     else if (title.startsWith(term)) s = 80
     else if (title.includes(term)) s = 55
     else if (sub.includes(term)) s = 25
-    else if (all.includes(term)) s = 10
+    else if (tags.includes(term)) s = 10
+    else if (gramsOf(term).every((gram) => postings[gram]?.includes(id))) s = 10
     if (!s) return 0
     total += s
   }
@@ -49,10 +62,12 @@ function Highlight({ text, query }) {
 
 export default function CommandPalette() {
   const [open, setOpen] = useState(false)
-  const [items, setItems] = useState(null)
+  const [index, setIndex] = useState(null)
   const [q, setQ] = useState('')
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef(null)
+  const dialogRef = useRef(null)
+  const restoreFocusRef = useRef(null)
   const navigate = useNavigate()
 
   // 打开方式：⌘K / Ctrl+K，或任意处 dispatchEvent(new Event('open-command-palette'))
@@ -74,37 +89,43 @@ export default function CommandPalette() {
     }
   }, [])
 
-  // 首次打开时才去取索引（28KB，不拖累首屏）
+  // 首次打开时才取轻量元数据与正文 gram 倒排表，不拖累首屏。
   useEffect(() => {
-    if (!open || items) return
+    if (!open || index) return
     let alive = true
     fetch(`${import.meta.env.BASE_URL}search-index.json`)
-      .then((r) => (r.ok ? r.json() : { items: [] }))
-      .then((d) => alive && setItems(d.items || []))
-      .catch(() => alive && setItems([]))
+      .then((r) => (r.ok ? r.json() : { items: [], terms: {} }))
+      .then((data) => alive && setIndex({ items: data.items || [], terms: data.terms || {} }))
+      .catch(() => alive && setIndex({ items: [], terms: {} }))
     return () => { alive = false }
-  }, [open, items])
+  }, [open, index])
 
   useEffect(() => {
     if (open) {
+      restoreFocusRef.current = document.activeElement
       setQ('')
       setCursor(0)
-      setTimeout(() => inputRef.current?.focus(), 30)
+      const timer = window.setTimeout(() => inputRef.current?.focus(), 30)
+      return () => window.clearTimeout(timer)
     }
+
+    restoreFocusRef.current?.focus?.()
+    restoreFocusRef.current = null
   }, [open])
 
   const groups = useMemo(() => {
-    if (!items) return []
+    if (!index) return []
+    const items = index.items
     const query = q.trim()
     const scored = query
-      ? items.map((i) => ({ i, s: scoreOf(i, query) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s)
+      ? items.map((item, id) => ({ i: item, s: scoreOf(item, id, index.terms, query) })).filter((x) => x.s > 0).sort((a, b) => b.s - a.s)
       : items.slice(0, 24).map((i) => ({ i, s: 0 }))
     const byType = ORDER.map((t) => ({
       type: t,
       rows: scored.filter((x) => x.i.type === t).slice(0, 6).map((x) => x.i),
     })).filter((g) => g.rows.length)
     return byType
-  }, [items, q])
+  }, [index, q])
 
   const flat = useMemo(() => groups.flatMap((g) => g.rows), [groups])
 
@@ -130,13 +151,37 @@ export default function CommandPalette() {
     }
   }
 
+  const trapDialogFocus = (e) => {
+    if (e.key !== 'Tab') return
+    const focusable = dialogRef.current?.querySelectorAll(
+      'input:not([disabled]), button:not([disabled]), a[href], select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    if (!focusable?.length) {
+      e.preventDefault()
+      inputRef.current?.focus()
+      return
+    }
+
+    const first = focusable[0]
+    const last = focusable[focusable.length - 1]
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault()
+      first.focus()
+    }
+  }
+
   if (!open) return null
 
   let idx = -1
   return (
     <div
+      ref={dialogRef}
       className="fixed inset-0 z-[100] flex items-start justify-center bg-black/70 px-4 pt-[12vh] backdrop-blur-sm"
       onClick={() => setOpen(false)}
+      onKeyDown={trapDialogFocus}
       role="dialog"
       aria-modal="true"
       aria-label="全站搜索"
@@ -149,6 +194,12 @@ export default function CommandPalette() {
           <Search className="h-4 w-4 shrink-0 text-cyber-cyan" />
           <input
             ref={inputRef}
+            aria-label="搜索题解、知识库和挑战"
+            aria-controls="command-palette-results"
+            aria-expanded={index !== null}
+            aria-activedescendant={flat[cursor] ? `command-palette-option-${cursor}` : undefined}
+            aria-autocomplete="list"
+            role="combobox"
             value={q}
             onChange={(e) => { setQ(e.target.value); setCursor(0) }}
             onKeyDown={onKeyDown}
@@ -161,56 +212,61 @@ export default function CommandPalette() {
         </div>
 
         <div className="max-h-[52vh] overflow-y-auto py-2">
-          {items === null && <div className="px-4 py-6 text-center text-xs font-mono text-cyber-grid/60">加载索引…</div>}
-          {items && !flat.length && (
-            <div className="px-4 py-6 text-center text-xs font-mono text-cyber-grid/60">
+          {index === null && <div role="status" className="px-4 py-6 text-center text-xs font-mono text-cyber-grid/60">加载索引…</div>}
+          {index && !flat.length && (
+            <div role="status" className="px-4 py-6 text-center text-xs font-mono text-cyber-grid/60">
               {q ? `没有匹配「${q}」的内容` : '输入关键词开始搜索'}
             </div>
           )}
-          {groups.map((g) => {
-            const meta = TYPE_META[g.type]
-            return (
-              <div key={g.type} className="mb-1">
-                <div className="px-4 py-1 text-[10px] font-mono uppercase tracking-widest text-cyber-grid/45">
-                  {meta.label} · {g.rows.length}
-                </div>
-                {g.rows.map((item) => {
-                  idx += 1
-                  const active = idx === cursor
-                  return (
-                    <button
-                      key={item.path + item.title}
-                      onMouseEnter={() => setCursor(flat.indexOf(item))}
-                      onClick={() => go(item)}
-                      className={`flex w-full items-start gap-3 px-4 py-2 text-left transition-colors ${
-                        active ? 'bg-cyber-cyan/10' : 'hover:bg-cyber-cyan/5'
-                      }`}
-                    >
-                      <meta.Icon className={`mt-0.5 h-4 w-4 shrink-0 ${meta.tone}`} />
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm text-cyber-grid">
-                          <Highlight text={item.title} query={q} />
-                        </span>
-                        {item.sub && (
-                          <span className="mt-0.5 block truncate text-xs text-cyber-grid/55">
-                            <Highlight text={item.sub} query={q} />
+          <div id="command-palette-results" role="listbox" aria-label="搜索结果">
+            {groups.map((g) => {
+              const meta = TYPE_META[g.type]
+              return (
+                <div key={g.type} role="group" aria-label={`${meta.label} · ${g.rows.length}`} className="mb-1">
+                  <div aria-hidden="true" className="px-4 py-1 text-[10px] font-mono uppercase tracking-widest text-cyber-grid/45">
+                    {meta.label} · {g.rows.length}
+                  </div>
+                  {g.rows.map((item) => {
+                    idx += 1
+                    const active = idx === cursor
+                    return (
+                      <button
+                        key={item.path + item.title}
+                        id={`command-palette-option-${idx}`}
+                        role="option"
+                        aria-selected={active}
+                        onMouseEnter={() => setCursor(flat.indexOf(item))}
+                        onClick={() => go(item)}
+                        className={`flex w-full items-start gap-3 px-4 py-2 text-left transition-colors ${
+                          active ? 'bg-cyber-cyan/10' : 'hover:bg-cyber-cyan/5'
+                        }`}
+                      >
+                        <meta.Icon className={`mt-0.5 h-4 w-4 shrink-0 ${meta.tone}`} />
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm text-cyber-grid">
+                            <Highlight text={item.title} query={q} />
                           </span>
-                        )}
-                      </span>
-                      {active && <CornerDownLeft className="ml-auto mt-1 h-3.5 w-3.5 shrink-0 text-cyber-cyan/60" />}
-                    </button>
-                  )
-                })}
-              </div>
-            )
-          })}
+                          {item.sub && (
+                            <span className="mt-0.5 block truncate text-xs text-cyber-grid/55">
+                              <Highlight text={item.sub} query={q} />
+                            </span>
+                          )}
+                        </span>
+                        {active && <CornerDownLeft className="ml-auto mt-1 h-3.5 w-3.5 shrink-0 text-cyber-cyan/60" />}
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="flex items-center gap-4 border-t border-cyber-grid/20 px-4 py-2 text-[10px] font-mono text-cyber-grid/45">
           <span>↑↓ 选择</span>
           <span>↵ 打开</span>
           <span>⌘K 开关</span>
-          <span className="ml-auto">{items ? `${items.length} 条索引` : ''}</span>
+          <span className="ml-auto">{index ? `${index.items.length} 条索引` : ''}</span>
         </div>
       </div>
     </div>

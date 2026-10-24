@@ -161,23 +161,44 @@ function buildRelated() {
 }
 
 /**
- * 全站搜索索引（构建时生成，避免把几十万字的正文塞进主包）：
- *   题解 24 + 知识库笔记 69 + 挑战 53 —— 只收标题/摘要/标签这类轻量字段。
- * 产物：dist/search-index.json，前端按需 fetch（⌘K 打开时）。
+ * 摘要转纯文本：vault 笔记的「一句话摘要」里常带 **加粗** / `代码` / [[双链]] / [文字](链接)。
+ * 原样塞进搜索索引，⌘K 结果里就会露出原始符号（2026-10-24 审计指出 8 条）。
+ * 只去标记、保留文字；不要动 `|`（「日期 | 战绩」是有意的显示分隔）。
  */
+const plainText = (v) =>
+  String(v || '')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) => label || target)
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_`~]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
 function buildSearchIndex() {
   const items = []
+  const postings = Object.create(null)
+
+  const addItem = (item, searchableText) => {
+    const id = items.length
+    items.push(item)
+    const grams = new Set()
+    for (const token of String(searchableText || '').normalize('NFKC').toLowerCase().match(/[\u3400-\u9fff]+|[a-z0-9_]+/g) || []) {
+      for (const character of token) grams.add(character)
+      for (let i = 0; i + 1 < token.length; i++) grams.add(token.slice(i, i + 2))
+    }
+    for (const gram of grams) (postings[gram] ||= []).push(id)
+  }
 
   for (const [id, a] of Object.entries(articles)) {
-    items.push({
+    const title = a.title || id
+    const sub = a.subtitle || ''
+    addItem({
       type: 'writeup',
       path: `/article/${id}`,
-      title: a.title || id,
-      sub: a.subtitle || '',
-      // 正文也进索引：写解题思路里常搜的是 payload/函数名，光看标题搜不到
-      text: `${a.title || ''} ${a.subtitle || ''} ${a.content || ''}`,
+      title,
+      sub,
       tags: [],
-    })
+    }, `${title} ${sub} ${a.content || ''}`)
   }
 
   const NOTES_DIR = path.join(fileURLToPath(new URL('.', import.meta.url)), 'src', 'data', 'kb', 'notes')
@@ -192,14 +213,16 @@ function buildSearchIndex() {
   for (const s of kb.sections) {
     for (const g of s.groups) {
       for (const n of g.notes) {
-        items.push({
+        const title = plainText(n.title || n.name)
+        const sub = plainText(n.summary || '')
+        const tags = [s.title, g.title].filter(Boolean)
+        addItem({
           type: 'note',
           path: `/kb/${n.name}`,
-          title: n.title || n.name,
-          sub: n.summary || '',
-          text: `${n.title || ''} ${n.name} ${n.summary || ''} ${readNoteBody(n.name)}`,
-          tags: [s.title, g.title].filter(Boolean),
-        })
+          title,
+          sub,
+          tags,
+        }, `${title} ${n.name} ${sub} ${tags.join(' ')} ${readNoteBody(n.name)}`)
       }
     }
   }
@@ -209,20 +232,108 @@ function buildSearchIndex() {
     // 它们已经作为 writeup 进了索引，再当 challenge 进一遍等于搜索里出现两份、
     // 且让"53 条挑战"这种口径虚高 8（2026-10-21 审计）。这里直接跳过。
     if (!c.id) continue
-    items.push({
+    const title = c.title || c.slug
+    const sub = c.description || ''
+    const tags = [c.platform, c.category].filter(Boolean)
+    addItem({
       type: 'challenge',
       path: '/challenges',
-      title: c.title || c.slug,
-      sub: c.description || '',
-      text: `${c.title || ''} ${c.slug} ${c.description || ''} ${(c.tags || []).join(' ')}`,
-      tags: [c.platform, c.category].filter(Boolean),
+      title,
+      sub,
+      tags,
       // 一血口径：源数据 challenges.js 里有 firstBlood: true 的 4 条（★一血）。
       // 此前索引没带这个字段 → 线上一血统计全是 None，和标题/统计页打架（2026-10-20 审计）。
       firstBlood: Boolean(c.firstBlood),
+    }, `${title} ${c.slug} ${sub} ${(c.tags || []).join(' ')} ${tags.join(' ')}`)
+  }
+
+  return { generatedAt: new Date().toISOString(), items, terms: postings }
+}
+
+function buildDevRouteMetadata() {
+  const siteTitle = "heliumsenbrg's CTF Writeups"
+  const routeUrl = (route) => {
+    const encoded = route.split('/').map((part, i) => (i === 0 ? '' : encodeURIComponent(part))).join('/')
+    return SITE + (encoded.endsWith('/') ? encoded : encoded + '/')
+  }
+  const makeMeta = (route, title, description, options = {}) => {
+    const url = routeUrl(route)
+    return {
+      title,
+      description,
+      canonical: url,
+      ogType: options.article ? 'article' : 'website',
+      ogTitle: title,
+      ogDescription: description,
+      ogUrl: url,
+      twitterTitle: title,
+      twitterDescription: description,
+      twitterUrl: url,
+      robots: options.robots || '',
+      publishedTime: options.publishedTime || '',
+    }
+  }
+  const metadata = Object.create(null)
+  const noteCount = kb.sections.reduce((sum, section) => sum + section.groups.reduce((count, group) => count + group.notes.length, 0), 0)
+  const articleCount = Object.keys(articles).length
+  const challengeCount = allChallenges.filter((challenge) => challenge.id !== 0).length
+  const homeTitle = "heliumsenbrg's CTF Writeups - Web/Crypto/Pwn 安全研究"
+  const homeDescription = `CTF WriteUp 博客 - 记录 Web 安全、密码学、二进制利用的学习历程。包含 ${challengeCount} 条挑战记录与 ${articleCount} 篇题解，另有 ${noteCount} 篇知识库笔记。`
+  metadata['/'] = makeMeta('/', homeTitle, homeDescription)
+
+  for (const [id, article] of Object.entries(articles)) {
+    const title = `${article.title || id} | ${siteTitle}`
+    const excerpt = String(article.content || article.subtitle || article.title || '')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/[#*_`>\[\]()]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+    metadata[`/article/${id}`] = makeMeta(`/article/${id}`, title, excerpt.slice(0, 118), {
+      article: true,
+      publishedTime: dateOf(id) ? `${dateOf(id)}T09:00:00Z` : '',
     })
   }
 
-  return { generatedAt: new Date().toISOString(), items }
+  for (const section of kb.sections) for (const group of section.groups) for (const note of group.notes) {
+    const title = `${note.title || note.name} | 知识库 | ${siteTitle}`
+    metadata[`/kb/${note.name}`] = makeMeta(`/kb/${note.name}`, title, note.summary || note.title || note.name)
+  }
+
+  const staticPages = {
+    '/challenges': ['全部挑战', '按平台与分类浏览全部 CTF 挑战记录。'],
+    '/kb': ['知识库', '第二大脑：CTF 概念、项目与解题记录，支持双链与关系图。'],
+    '/guestbook': ['留言板', '无需注册，直接留言。'],
+    '/about': ['关于', '关于本站、技能方向与友情链接。'],
+    '/stats': ['战绩', 'CTF 战绩一览：解题时间线、平台与方向分布、技能标签云。'],
+    '/secret-quest': ['隐藏关卡', '彩蛋页。'],
+  }
+  for (const [route, [title, description]] of Object.entries(staticPages)) {
+    metadata[route] = makeMeta(route, `${title} | ${siteTitle}`, description, {
+      robots: route === '/secret-quest' ? 'noindex, follow' : '',
+    })
+  }
+  return metadata
+}
+
+function devDataPlugin() {
+  return {
+    name: 'dev-data',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url || ''
+        const send = (data) => {
+          res.setHeader('Content-Type', 'application/json; charset=utf-8')
+          res.end(JSON.stringify(data))
+        }
+        if (url.includes('search-index.json')) return send(buildSearchIndex())
+        if (url.includes('route-meta.json')) return send(buildDevRouteMetadata())
+        if (url.includes('kb-graph.json')) return send(buildKbGraph())
+        if (url.includes('related.json')) return send(buildRelated())
+        next()
+      })
+    },
+  }
 }
 
 /**
@@ -232,7 +343,7 @@ function buildSearchIndex() {
  *  ② sitemap.xml —— 主路由 + 全部文章 + 全部知识库笔记（**不含隐藏彩蛋 /secret-quest**）。
  *  ③ rss.xml —— index.html 里 <link rel="alternate"> 指向它，此前一直是 404。
  *  ④ 404.html 兜底 + .nojekyll（原 spa-fallback 插件的职责，保留）。
- *  ⑤ search-index.json —— 全站搜索用（轻量：标题/摘要/标签）。
+ *  ⑤ search-index.json —— 全站搜索用（元数据 + 正文倒排索引）。
  * 用 configResolved 取真实 outDir，别再硬编码 'dist'。
  */
 function seoStaticPlugin() {
@@ -257,20 +368,6 @@ function seoStaticPlugin() {
     },
     configResolved(cfg) {
       outDir = cfg.build.outDir
-    },
-    // dev 下也让搜索/图谱能用（不写盘，现算现给）
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const url = req.url || ''
-        const send = (obj) => {
-          res.setHeader('Content-Type', 'application/json; charset=utf-8')
-          res.end(JSON.stringify(obj))
-        }
-        if (url.includes('search-index.json')) return send(buildSearchIndex())
-        if (url.includes('kb-graph.json')) return send(buildKbGraph())
-        if (url.includes('related.json')) return send(buildRelated())
-        next()
-      })
     },
     closeBundle() {
       const abs = (p) => join(outDir, p)
@@ -330,6 +427,10 @@ function seoStaticPlugin() {
           .replace(/^\s*\*\*(?:日期|时间|平台|靶场|战绩|分值|难度|类型|题目|赛事|积分|来源|环境|附件|提示|Flag|账号|Platform|Type|Difficulty|Points?|Category|Tags?)\*\*\s*[:：].*$/gim, ' ')
           .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
           .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+          // Wiki 链接摘要只保留显示名，避免搜索结果/社交预览暴露 [[双链]] 语法。
+          .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, label) =>
+            label || target.split('/').pop().replace(/[-_]/g, ' ')
+          )
           .replace(/^\s*[-*+]\s+/gm, ' ')
           .replace(/[*_`~]/g, '')
           .replace(/\\/g, '')
@@ -416,6 +517,27 @@ function seoStaticPlugin() {
           )
       }
 
+      const getAttribute = (tag, name) =>
+        tag?.match(new RegExp(`\\b${name}="([^"]*)"`))?.[1] || ''
+      const getMeta = (html, attribute, name) => {
+        const tag = html.match(new RegExp(`<meta\\s+${attribute}="${name}"[^>]*>`))?.[0]
+        return getAttribute(tag, 'content')
+      }
+      const extractRouteMeta = (html) => ({
+        title: html.match(/<title>([\s\S]*?)<\/title>/i)?.[1] || '',
+        description: getMeta(html, 'name', 'description'),
+        canonical: html.match(/<link rel="canonical" href="([^"]+)"/i)?.[1] || '',
+        ogType: getMeta(html, 'property', 'og:type'),
+        ogTitle: getMeta(html, 'property', 'og:title'),
+        ogDescription: getMeta(html, 'property', 'og:description'),
+        ogUrl: getMeta(html, 'property', 'og:url'),
+        twitterTitle: getMeta(html, 'name', 'twitter:title'),
+        twitterDescription: getMeta(html, 'name', 'twitter:description'),
+        twitterUrl: getMeta(html, 'name', 'twitter:url'),
+        robots: getMeta(html, 'name', 'robots'),
+        publishedTime: getMeta(html, 'property', 'article:published_time'),
+      })
+
       // ① 每条路由预生成 index.html（深链返回 200）
       // 先断言：routes 里的每条静态路由都必须在 STATIC_META 里有条目。
       // 漏一条不会"没有 meta"，而是**整页继承首页 meta**（title/canonical/og:url 全错），
@@ -434,18 +556,25 @@ function seoStaticPlugin() {
       }
 
       let made = 0
+      const routeMetadata = Object.create(null)
       for (const r of routes) {
-        if (r === '/') continue
+        if (r === '/') {
+          routeMetadata[r] = extractRouteMeta(indexHtml)
+          continue
+        }
         try {
           const dir = abs(r.slice(1))
           mkdirSync(dir, { recursive: true })
           const pageMeta = metaOf(r)
-          writeFileSync(join(dir, 'index.html'), pageMeta ? withMeta(indexHtml, r, pageMeta) : indexHtml)
+          const pageHtml = pageMeta ? withMeta(indexHtml, r, pageMeta) : indexHtml
+          writeFileSync(join(dir, 'index.html'), pageHtml)
+          routeMetadata[r] = extractRouteMeta(pageHtml)
           made++
         } catch (e) {
           console.warn(`[seo-static] 跳过 ${r}：${e.message}`)
         }
       }
+      writeFileSync(abs('route-meta.json'), JSON.stringify(routeMetadata))
 
       // ② sitemap（urlOf 已在前面定义：末尾统一带斜杠）
       // 隐藏彩蛋不进 sitemap —— 注释里一直这么写，但代码直接把 routes 全量写进去了，
@@ -534,7 +663,7 @@ export default defineConfig({
   // 用环境变量而不是命令行 --base=/ 有个额外好处：MSYS/Git-Bash 会把以 / 开头的
   // 命令行参数当路径转换，环境变量不受影响。
   base: process.env.VITE_BASE || (process.env.VERCEL ? '/' : '/ctf-writeup-blog/'),
-  plugins: [react(), seoStaticPlugin()],
+  plugins: [react(), devDataPlugin(), seoStaticPlugin()],
   server: {
     host: '0.0.0.0',
     port: 3000,

@@ -164,14 +164,18 @@ export default function Guestbook() {
         >
           <form onSubmit={submit} className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-3">
+              <label htmlFor="guestbook-nickname" className="sr-only">昵称（最多 20 字）</label>
               <input
+                id="guestbook-nickname"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 maxLength={20}
                 placeholder="昵称（最多 20 字）"
                 className="flex-1 bg-cyber-darker/60 border border-cyber-grid/30 rounded-lg px-3 py-2 text-sm text-cyber-cyan placeholder:text-cyber-grid/50 outline-none focus:border-cyber-cyan/50"
               />
+              <label htmlFor="guestbook-site" className="sr-only">你的站点（选填）</label>
               <input
+                id="guestbook-site"
                 value={site}
                 onChange={(e) => setSite(e.target.value)}
                 maxLength={100}
@@ -190,7 +194,9 @@ export default function Guestbook() {
               className="hidden"
             />
 
+            <label htmlFor="guestbook-content" className="sr-only">留言内容（最多 500 字）</label>
             <textarea
+              id="guestbook-content"
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={500}
@@ -218,6 +224,9 @@ export default function Guestbook() {
 
             {msg && (
               <div
+                role={msg.type === 'ok' ? 'status' : 'alert'}
+                aria-live={msg.type === 'ok' ? 'polite' : 'assertive'}
+                aria-atomic="true"
                 className={`flex items-start gap-2 rounded-lg border px-3 py-2 text-xs font-mono ${
                   msg.type === 'ok'
                     ? 'border-emerald-400/30 bg-emerald-400/5 text-emerald-300'
