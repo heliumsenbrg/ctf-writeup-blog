@@ -677,6 +677,12 @@ export default defineConfig({
     allowedHosts: true,
   },
   build: {
+    // 文章页那条 Markdown 渲染链（KaTeX + react-markdown + remark/rehype）约 545KB，
+    // Vite 默认在 >500KB 时报体积警告。**试过 manualChunks 拆包，但拆出来的块会被
+    // 当成入口图的一部分预加载** → 首屏从 135KB 涨到 264.8KB，被 postbuild 的
+    // check-size 预算拦下（CI 红过一次，2026-10-25）。这条链本来就是文章页懒加载、
+    // 不占首屏，所以调高阈值 + 写明理由，比为了消警告去牺牲首屏划算。
+    chunkSizeWarningLimit: 600,
     // 默认 target 偏新，老设备（尤其旧 iOS Safari）可能直接语法报错 → 整个 SPA 黑屏。
     // 压到 iOS 13 / Chrome 79 一代，代价是包略大，换取老手机也能打开。
     target: ['es2020', 'safari14', 'chrome87', 'firefox78', 'edge88'],
@@ -687,11 +693,6 @@ export default defineConfig({
           // tsparticles 不在这里声明：声明后 Vite 会把它当成入口图的一部分**预加载**，
           // 而它其实只在首页懒加载用 → 不声明它就自然成为懒加载 chunk（省 183KB 首屏）。
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // 2026-10-25：文章页那条 Markdown 渲染链原来全挤在一个 545KB 的 chunk 里
-          // （chunk 名还叫 TableOfContents，因为它恰好是第一个模块），Vite 报 >500KB 警告。
-          // 拆成 katex 与 markdown-vendor 两块：都能并行下载，浏览器缓存也能分开失效。
-          katex: ['katex'],
-          'markdown-vendor': ['react-markdown', 'remark-gfm', 'remark-math', 'rehype-katex'],
         },
       },
     },
