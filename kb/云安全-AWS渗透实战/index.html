@@ -25,7 +25,7 @@
     <title>云安全-AWS渗透实战 | 知识库 | heliumsenbrg's CTF Writeups</title>
 
     <!-- SEO Meta Tags -->
-    <meta name="description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 [[云安全-常见攻击面]] 的&quot;后半程&quot;展开。" />
+    <meta name="description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 云安全 常见攻击面 的&quot;后半程&quot;展开。" />
     <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow" />
     <meta name="author" content="heliumsenbrg" />
 
@@ -33,7 +33,7 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E4%BA%91%E5%AE%89%E5%85%A8-AWS%E6%B8%97%E9%80%8F%E5%AE%9E%E6%88%98/" />
     <meta property="og:title" content="云安全-AWS渗透实战 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta property="og:description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 [[云安全-常见攻击面]] 的&quot;后半程&quot;展开。" />
+    <meta property="og:description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 云安全 常见攻击面 的&quot;后半程&quot;展开。" />
     <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
@@ -45,7 +45,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/%E4%BA%91%E5%AE%89%E5%85%A8-AWS%E6%B8%97%E9%80%8F%E5%AE%9E%E6%88%98/" />
     <meta name="twitter:title" content="云安全-AWS渗透实战 | 知识库 | heliumsenbrg's CTF Writeups" />
-    <meta name="twitter:description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 [[云安全-常见攻击面]] 的&quot;后半程&quot;展开。" />
+    <meta name="twitter:description" content="已经拿到一组 AWS 凭据（长期 AK/SK，或 SSRF 打到 IMDS 换来的临时 ASIA 凭据）之后怎么横向：先问&quot;我是谁、我能干什么&quot;，再按权限逐条试提权路径，最后落到 S3 / Secrets / Lambda / SSM 里读数据。本页是 云安全 常见攻击面 的&quot;后半程&quot;展开。" />
     <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
     <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
 
@@ -73,10 +73,10 @@
          原来引 fonts.googleapis.com：国内基本被墙，实测访客那边
          永远 ERR_CONNECTION_TIMED_OUT，JetBrains Mono 从来没生效过
          （2026-10-21 运行时审计）。现在跟着站点一起发，不依赖任何外网。 -->
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BtlwzvAf.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BSo_VNiA.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
-    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-D9o31bUB.css">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CqEXVJWt.css">
   </head>
   <!-- 
 ███████╗███████╗ ██████╗██████╗ ███████╗████████╗

