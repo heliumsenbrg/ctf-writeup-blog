@@ -226,6 +226,15 @@ const server = http.createServer(async (req, res) => {
     return send(res, 204, cors, '')
   }
 
+  // 非预检请求也要校验来源：只回 CORS 头只能挡住"跨站读取"，挡不住"跨站写入"——
+  // 别的站点可以直接 POST 过来，拿不到响应也照样触发写入（2026-10-24 审计）。
+  // ⚠️ Origin 是客户端自我声明，改不了脚本请求，所以这里是**提高门槛**不是鉴权；
+  //    真正的护栏仍是 IP 限流 + 数据面 RLS。
+  if (origin && !ALLOWED_ORIGINS.includes(origin)) {
+    return send(res, 403, { 'Content-Type': 'application/json; charset=utf-8' },
+      JSON.stringify({ error: 'origin_not_allowed' }))
+  }
+
   // 诊断路由：排查"本地通、线上不通"这类环境差异（**默认关闭**，只在 ENABLE_DIAG=1 时开）
   if (url.pathname === '/__diag' && process.env.ENABLE_DIAG === '1') {
     const probe = {}

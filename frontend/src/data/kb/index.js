@@ -1,7 +1,7 @@
 export default {
- "generatedAt": "2026-10-20T06:51:04.304Z",
+ "generatedAt": "2026-10-24T14:10:10.092Z",
  "vault": "C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记",
- "total": 69,
+ "total": 72,
  "sections": [
   {
    "id": "concept",
@@ -344,6 +344,16 @@ export default {
        "summary": "主平台之外的所有实战：LitCTF/Cyclens、ISCC、MoeCTF、NepCTF，以及逆向/固件/隐写专项。**每题一行，完整 writeup 在 `~/CTF/writeups/` 与博客。**"
       },
       {
+       "name": "青岑-001-water-query",
+       "title": "青岑-001-water-query",
+       "summary": "PS87 / 863「AA 自来水在线查询」：`/server.py` 源码直接暴露，admin/admin 弱口令，`/found.do` 带 token 返回 FLAG 行。2026-10-23 解出，285 分。"
+      },
+      {
+       "name": "青岑-003-zhgy",
+       "title": "青岑-003-zhgy",
+       "summary": "PS87 / 864「003-zhgy（智慧果园后台管理系统）」：`/server.py` 源码泄露 + Spring Boot Actuator heapdump 未授权，直接读 secrets 还原 flag。2026-10-23 解出，285 分。"
+      },
+      {
        "name": "青岑-License授权管理系统",
        "title": "青岑-License授权管理系统",
        "summary": "主人在 **ctf.qingcen.net** 上做的题：`青岑 · License 授权管理系统`（SRC 类，500 分）。**当前卡点：第二段容器（License 服务）的密钥与数据格式。**"
@@ -379,6 +389,11 @@ export default {
        "name": "协作附录-非CTF事项与存档导览",
        "title": "协作附录-非CTF事项与存档导览",
        "summary": "两件在别处没收录的事：**① 我们除了 CTF 还一起做过什么；② 全部协作产物存在哪。** 规则与偏好见 〖内部笔记〗；逐会话历史见 〖内部笔记〗。"
+      },
+      {
+       "name": "CTF-成长路线-2026年10月",
+       "title": "CTF-成长路线-2026年10月",
+       "summary": "依据库内证据（不是感觉）定的四周训练路线：先清 7 篇待学，再补三块短板，边清欠账，最后打硬仗。"
       },
       {
        "name": "CTF-知识体系速查手册",
