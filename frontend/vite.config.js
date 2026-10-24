@@ -687,6 +687,11 @@ export default defineConfig({
           // tsparticles 不在这里声明：声明后 Vite 会把它当成入口图的一部分**预加载**，
           // 而它其实只在首页懒加载用 → 不声明它就自然成为懒加载 chunk（省 183KB 首屏）。
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+          // 2026-10-25：文章页那条 Markdown 渲染链原来全挤在一个 545KB 的 chunk 里
+          // （chunk 名还叫 TableOfContents，因为它恰好是第一个模块），Vite 报 >500KB 警告。
+          // 拆成 katex 与 markdown-vendor 两块：都能并行下载，浏览器缓存也能分开失效。
+          katex: ['katex'],
+          'markdown-vendor': ['react-markdown', 'remark-gfm', 'remark-math', 'rehype-katex'],
         },
       },
     },

@@ -1,5 +1,5 @@
 export default {
- "generatedAt": "2026-10-24T14:10:10.092Z",
+ "generatedAt": "2026-10-24T18:17:06.634Z",
  "vault": "C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记",
  "total": 72,
  "sections": [
@@ -403,7 +403,7 @@ export default {
       {
        "name": "CTF-知识与对话总索引",
        "title": "CTF 知识与对话总索引",
-       "summary": "把历年会话档案、原始材料、题解案例和分类知识页连成一个入口；先按题型定位，再进入专题页或原始记录。"
+       "summary": "辅助导航：从唯一入口 [[index]] 进入后，按题型查专题、案例和会话原料；本页不替代总目录。"
       }
      ]
     }
