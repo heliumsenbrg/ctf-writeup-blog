@@ -219,9 +219,12 @@ function shouldShowBoot() {
  *   ① window.load          首屏的样式/图片都到齐
  *   ② document.fonts.ready  字体（字体换掉会引起整页重排，最像"卡一下"）
  *   ③ 两次 rAF              首帧真的画完了
- * 但**必须有下限和上限**：下限 1.2s（开场别一闪而过），上限 4.5s（再慢也别卡在开场）。
+ * 但**必须有下限和上限**：下限 1.2s（开场别一闪而过），上限 12s。
+ * 上限原来是 4.5s —— 2026-10-25 实测打脸：本机主包 3.5s、字体首次要 5s 才到，
+ * 4.5s 的上限正好在字体到位前退场，看起来就是「没加载完就进来了」。
+ * 12s 只在慢机器上生效（快的照样 1.2s 就走），真正的目的就是等字体。
  */
-function useReadySignal(minMs = 1200, maxMs = 4500) {
+function useReadySignal(minMs = 1200, maxMs = 12000) {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
@@ -270,6 +273,14 @@ function BootScreen({ onDone, ready }) {
 
   // 退场条件：日志打完 **且** 页面真的就绪（不再只是"打完就走"）
   const linesDone = visibleLines >= BOOT_LINES.length
+
+  // 等待期间给个秒数，避免「一直卡在同一行」的错觉
+  const [waited, setWaited] = useState(0)
+  useEffect(() => {
+    if (!linesDone || ready) return undefined
+    const t = setInterval(() => setWaited((v) => v + 1), 1000)
+    return () => clearInterval(t)
+  }, [linesDone, ready])
   useEffect(() => {
     if (!linesDone || !ready || done) return
     const t = setTimeout(() => {
@@ -319,7 +330,7 @@ function BootScreen({ onDone, ready }) {
             className="boot-line"
             style={{ color: '#fbbf24', fontSize: '12px', lineHeight: '1.7' }}
           >
-            &gt; 等待字体与首屏资源…
+            &gt; 等待字体与首屏资源… {waited}s
           </div>
         )}
         <div className="boot-progress-bar">
