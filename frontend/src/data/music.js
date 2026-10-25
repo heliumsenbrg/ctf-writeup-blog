@@ -17,13 +17,17 @@
 //    `{ title: 'Ambient #1 · 赛博夜色', src: `${base}music/ambient-1.mp3` }` 即可。
 //
 // 想加曲子：把文件丢进 public/music/，在数组里追加一项。
+// 2026-10-25：全部曲目转成 **64kbps AAC**（原来 128k，26MB→14MB）。
+// 原因：主人在国内链路上只有 ~10-14 KB/s，128kbps 的歌每秒要吃 16KB ——
+// 下的没放得快，缓冲区一空就「播一下卡一下」，首次加载要等 1-2 分钟。
+// 64kbps = 8KB/s，低于链路下限，边下边放才不断流。
 const base = import.meta.env.BASE_URL
 
 export const musicTracks = [
   { title: '不眠之夜', src: `${base}music/sleepless-night.m4a` },
-  { title: '使一颗心免于哀伤', src: `${base}music/heart-free-from-grief.mp3` },
-  { title: '在银河中孤独摇摆', src: `${base}music/galaxy-sway.mp3` },
-  { title: '希望有羽毛和翅膀', src: `${base}music/hope-wings.mp3` },
+  { title: '使一颗心免于哀伤', src: `${base}music/heart-free-from-grief.m4a` },
+  { title: '在银河中孤独摇摆', src: `${base}music/galaxy-sway.m4a` },
+  { title: '希望有羽毛和翅膀', src: `${base}music/hope-wings.m4a` },
   { title: '昔涟', src: `${base}music/xilian.m4a` },
   { title: '睡觉小猴', src: `${base}music/sleepy-monkey.m4a` },
   // 下面 4 首原本是桌面上的「下载.m4a」等无名文件。曲名是比对浏览器下载记录得出的：
