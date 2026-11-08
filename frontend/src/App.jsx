@@ -17,6 +17,7 @@ const AboutLazy = lazy(() => import('./components/About'))
 const GuestbookLazy = lazy(() => import('./components/Guestbook'))
 const StatsLazy = lazy(() => import('./components/Stats'))
 const KbNoteLazy = lazy(() => import('./components/KbNote'))
+const LoginLazy = lazy(() => import('./components/Login'))
 
 let routeMetadataRequest
 
@@ -451,6 +452,7 @@ function AppInner() {
             <Route path="about" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><AboutLazy /></Suspense>} />
             <Route path="guestbook" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><GuestbookLazy /></Suspense>} />
             <Route path="stats" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><StatsLazy /></Suspense>} />
+            <Route path="login" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><LoginLazy /></Suspense>} />
             <Route path="secret-quest" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><HiddenQuestLazy /></Suspense>} />
             <Route path="*" element={<Suspense fallback={<div className="min-h-screen py-20 text-center text-cyber-grid font-mono text-sm">加载中…</div>}><NotFoundLazy /></Suspense>} />
           </Route>
