@@ -62,6 +62,41 @@ export function getCloud() {
   return client
 }
 
+/**
+ * 登录页专用 client。
+ *
+ * 为什么不能复用 getCloud()：Auth 的发送验证码请求需要带上 Turnstile token，
+ * 让中转在转发给云服务前先做服务端校验。SDK 没有暴露“每次请求设置头”的公开 API，
+ * 但 createWorkBuddyCloud 支持注入 fetch；这里只给 `/.cloud/auth/**` 的请求补
+ * `x-turnstile-token`，数据库请求仍然走原来的 client，互不影响。
+ */
+let authClient = null
+let turnstileToken = ''
+
+export function setTurnstileToken(token) {
+  turnstileToken = token || ''
+}
+
+function authFetch(input, init) {
+  const headers = new Headers(init?.headers)
+  const url = typeof input === 'string' ? input : input?.url || ''
+  if (turnstileToken && /\/\.cloud\/auth\//.test(url)) {
+    headers.set('x-turnstile-token', turnstileToken)
+  }
+  return fetch(input, { ...init, headers })
+}
+
+export function getAuthCloud() {
+  if (!authClient) {
+    authClient = createWorkBuddyCloud({
+      endpoint: cloudConfig.endpoint,
+      publishableKey: cloudConfig.publishableKey,
+      fetch: authFetch,
+    })
+  }
+  return authClient
+}
+
 /** 把 { data, error } 信封拍平成"要么拿数据、要么抛错"，让调用处干净一点 */
 export async function unwrap(promise) {
   const { data, error } = await promise

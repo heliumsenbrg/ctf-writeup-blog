@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search, MessageSquare, BarChart3 } from 'lucide-react'
+import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search, MessageSquare, BarChart3, LogIn } from 'lucide-react'
 
 const GARGANTUA_URL = `${import.meta.env.BASE_URL}gargantua/index.html`
 
@@ -60,15 +60,19 @@ export default function Navbar() {
               <BarChart3 className="w-4 h-4 mr-2" />
               战绩
             </NavLink>
+            <NavLink to="/login" active={location.pathname === '/login'}>
+              <LogIn className="w-4 h-4 mr-2" />
+              登录
+            </NavLink>
             <button
               onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
               title="搜索（⌘K）"
               aria-label="搜索（⌘K）"
-              className="nav-link flex items-center gap-1.5 text-cyber-grid hover:text-cyber-cyan transition-colors"
+              className="nav-link flex shrink-0 items-center gap-1.5 whitespace-nowrap text-cyber-grid hover:text-cyber-cyan transition-colors"
             >
               <Search className="w-4 h-4" />
               搜索
-              <kbd className="rounded border border-cyber-grid/30 px-1 py-px text-[10px] font-mono leading-none">
+              <kbd className="whitespace-nowrap rounded border border-cyber-grid/30 px-1 py-px text-[10px] font-mono leading-none">
                 ⌘K
               </kbd>
             </button>
@@ -179,6 +183,18 @@ export default function Navbar() {
               <BarChart3 className="w-4 h-4" />
               战绩
             </Link>
+            <Link
+              to="/login"
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono transition-all ${
+                location.pathname === '/login'
+                  ? 'text-cyber-cyan bg-cyber-cyan/10'
+                  : 'text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5'
+              }`}
+            >
+              <LogIn className="w-4 h-4" />
+              登录
+            </Link>
             <button
               onClick={() => { setMobileOpen(false); window.dispatchEvent(new Event('open-command-palette')) }}
               className="flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5 transition-all text-left"
@@ -228,7 +244,7 @@ function NavLink({ to, active, children }) {
           className="absolute -inset-x-2 -inset-y-1.5 rounded-lg bg-cyber-cyan/12 border border-cyber-cyan/30"
         />
       )}
-      <span className="relative flex items-center">{children}</span>
+      <span className="relative flex items-center whitespace-nowrap">{children}</span>
     </Link>
   )
 }

@@ -27,7 +27,19 @@
 
 const http = require('node:http')
 const https = require('node:https')
+const fs = require('node:fs')
+const path = require('node:path')
 const { URL } = require('node:url')
+
+// 本地/部署环境的 .env（只放 TURNSTILE_SECRET 等运行态秘密，不提交仓库）。
+// 平台发布不会自动注入环境变量，因此这里做最小加载器；已在环境里的值优先。
+try {
+  const lines = fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split(/\r?\n/)
+  for (const line of lines) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/)
+    if (m && process.env[m[1]] === undefined) process.env[m[1]] = m[2]
+  }
+} catch { /* 没有 .env 时保持进程环境原样 */ }
 
 // ── 主动清掉代理环境变量 ────────────────────────────────────────────────
 // 实测教训（2026-10-16）：本机跑时中转进程继承了沙箱的 http(s)_proxy，
@@ -95,7 +107,7 @@ const ALLOW_METHODS = 'GET, POST, PATCH, PUT, DELETE, OPTIONS'
 
 // 只放行博客实际使用的三张表。原实现放行整个 /.cloud/，
 // 等于把云应用的 OpenAPI、LLM 等端点也交给任何拿到公开 key 的人。
-const ALLOWED_REST = /^\/\.cloud\/database\/rest\/(?:guestbook|comments|quest_board)(?:\/|$)/
+const ALLOWED_REST = /^\/\.cloud\/(?:(?:database\/rest\/(?:guestbook|comments|quest_board))|(?:auth\/(?:v1|v2)))(?:\/|$)/
 
 // 请求体上限：防止超大 POST 把中转进程内存打满
 const MAX_BODY = Number(process.env.MAX_BODY_BYTES || 64 * 1024)
@@ -138,10 +150,20 @@ function corsHeaders(origin) {
 }
 
 /** 人机校验：配了密钥就强制；没配/连不上校验端点则降级放行（数据面还有服务端反垃圾兜底） */
-async function verifyHuman(req) {
+async function verifyHuman(req, cloudPath) {
   const secret = process.env.TURNSTILE_SECRET
-  if (!secret) return { ok: true, skipped: true }
+  const isAuthVerify = cloudPath.startsWith('/.cloud/auth/') && /\/v1\/verification$/.test(cloudPath)
+  if (!secret) {
+    // 登录的发码接口必须 fail-closed：没配 secret 就明确拒绝，不能静默放行。
+    if (isAuthVerify) return { ok: false, reason: 'turnstile_not_configured' }
+    return { ok: true, skipped: true }
+  }
   if (!WRITE_METHODS.has(req.method)) return { ok: true, skipped: true }
+  // 认证接口只在「发送验证码」时要求 Turnstile；后续验证/登录不再重复校验，
+  // 因为 Turnstile token 是一次性的，重复用必然失败。
+  if (cloudPath.startsWith('/.cloud/auth/') && !isAuthVerify) {
+    return { ok: true, skipped: true }
+  }
   const token = req.headers[TURNSTILE_HEADER] || ''
   if (!token) return { ok: false, reason: 'missing_token' }
   try {
@@ -278,7 +300,7 @@ const server = http.createServer(async (req, res) => {
   }
   if (!ALLOWED_REST.test(cloudPath)) {
     return send(res, 404, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
-      JSON.stringify({ error: 'not_found', hint: '只允许 guestbook / comments / quest_board 三张表' }))
+      JSON.stringify({ error: 'not_found', hint: '只允许 guestbook / comments / quest_board 三张表与 auth 接口' }))
   }
 
   // 写接口按 IP 限流：超限直接 429，不打到后端
@@ -287,8 +309,8 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({ error: 'rate_limited', retry_after: 60 }))
   }
 
-  // 人机校验（只对写方法生效）
-  const human = await verifyHuman(req)
+  // 人机校验（只对数据库写接口和认证的发送验证码生效）
+  const human = await verifyHuman(req, cloudPath)
   if (!human.ok) {
     return send(res, 403, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
       JSON.stringify({ error: 'turnstile_failed', reason: human.reason }))
@@ -297,6 +319,11 @@ const server = http.createServer(async (req, res) => {
   // 拼转发头（Origin / Referer / Cookie 等一律不带）
   const out = {}
   for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
+  // Auth 必须带用户的 Bearer token（登录后 refresh/getUser 要用）；其他数据面请求不转发，
+  // 避免把平台边缘注入的 Authorization 带给云服务造成 invalid_grant。
+  if (cloudPath.startsWith('/.cloud/auth/') && req.headers.authorization) {
+    out.authorization = req.headers.authorization
+  }
 
   let body
   if (req.method !== 'GET' && req.method !== 'HEAD') {
