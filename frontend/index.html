@@ -17,6 +17,15 @@
       @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
     </style>
     <meta charset="UTF-8" />
+    <!-- GitHub Pages 无法设置响应头；CSP 暂不启用：实测会拦截 Turnstile 初始化。
+         这里保留点击劫持兜底，真正的 CSP/XFO 需要在自定义域名/CDN 层做。 -->
+    <script>
+      try {
+        if (window.top !== window.self) window.top.location = window.self.location
+      } catch (e) {
+        document.documentElement.style.display = 'none'
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/ctf-writeup-blog/favicon.ico" sizes="any" />
     <link rel="manifest" href="/ctf-writeup-blog/manifest.webmanifest" />

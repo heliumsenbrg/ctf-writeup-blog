@@ -179,6 +179,9 @@ export default function Guestbook() {
                 id="guestbook-nickname"
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
+                readOnly
+                aria-readonly="true"
+                title="使用账号显示名"
                 maxLength={20}
                 placeholder="昵称（最多 20 字）"
                 className="flex-1 bg-cyber-darker/60 border border-cyber-grid/30 rounded-lg px-3 py-2 text-sm text-cyber-cyan placeholder:text-cyber-grid/50 outline-none focus:border-cyber-cyan/50"

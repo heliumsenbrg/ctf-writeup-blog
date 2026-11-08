@@ -29,6 +29,7 @@ const http = require('node:http')
 const https = require('node:https')
 const fs = require('node:fs')
 const path = require('node:path')
+const crypto = require('node:crypto')
 const { URL } = require('node:url')
 
 // 本地/部署环境的 .env（只放 TURNSTILE_SECRET 等运行态秘密，不提交仓库）。
@@ -134,6 +135,37 @@ function writeRateLimited(ip) {
   }
   b.count++
   return b.count > WRITE_LIMIT
+}
+
+// 验证码按收件人单独限流：避免同一手机号/邮箱被反复轰炸（前端 60s 可绕过）。
+const OTP_LIMIT = Number(process.env.OTP_LIMIT_PER_10MIN || 5)
+const OTP_WINDOW_MS = 10 * 60 * 1000
+const otpBuckets = new Map()
+
+function otpKey(body) {
+  try {
+    const data = JSON.parse(body.toString('utf8'))
+    const raw = data.email || data.phone || ''
+    if (!raw) return ''
+    // 只把哈希留在内存里，不在日志/内存桶里保存手机号或邮箱明文
+    return crypto.createHash('sha256').update(String(raw)).digest('hex')
+  } catch {
+    return ''
+  }
+}
+
+function otpRateLimited(key) {
+  const now = Date.now()
+  const b = otpBuckets.get(key)
+  if (!b || now - b.start > OTP_WINDOW_MS) {
+    otpBuckets.set(key, { start: now, count: 1 })
+    if (otpBuckets.size > 5000) {
+      for (const [k, v] of otpBuckets) if (now - v.start > OTP_WINDOW_MS) otpBuckets.delete(k)
+    }
+    return false
+  }
+  b.count++
+  return b.count > OTP_LIMIT
 }
 
 /** 仅当来源在白名单内才回 CORS 头；不在则不给 —— 浏览器侧读不到内容 */
@@ -336,23 +368,7 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({ error: 'rate_limited', retry_after: 60 }))
   }
 
-  // 人机校验（只对数据库写接口和认证的发送验证码生效）
-  const human = await verifyHuman(req, cloudPath)
-  if (!human.ok) {
-    return send(res, 403, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
-      JSON.stringify({ error: 'turnstile_failed', reason: human.reason }))
-  }
-
-  // 拼转发头（Origin / Referer / Cookie 等一律不带）
-  const out = {}
-  for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
-  // Auth 和已登录的数据写入要带用户 Bearer；匿名读不转发，
-  // 避免把平台边缘注入的 Authorization 带给云服务造成 invalid_grant。
-  const needsBearer = cloudPath.startsWith('/.cloud/auth/') || isDbWrite
-  if (needsBearer && req.headers.authorization) {
-    out.authorization = req.headers.authorization
-  }
-
+  // 读请求体（后面既要转发，也要给 OTP 限流解析收件人）
   let body
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     try {
@@ -365,6 +381,32 @@ const server = http.createServer(async (req, res) => {
       return send(res, 400, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
         JSON.stringify({ error: 'bad_request' }))
     }
+  }
+
+  // 人机校验（只对数据库写接口和认证的发送验证码生效）
+  const human = await verifyHuman(req, cloudPath)
+  if (!human.ok) {
+    return send(res, 403, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+      JSON.stringify({ error: 'turnstile_failed', reason: human.reason }))
+  }
+
+  // 验证码按收件人限流：放在 Turnstile 之后，避免匿名请求拿别人手机号刷限流
+  if (cloudPath.startsWith('/.cloud/auth/') && /\/v1\/verification$/.test(cloudPath)) {
+    const key = otpKey(body) || ('ip:' + clientIp(req))
+    if (otpRateLimited(key)) {
+      return send(res, 429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '600', ...cors },
+        JSON.stringify({ error: 'otp_rate_limited', retry_after: 600, message: '验证码发送太频繁，请稍后再试' }))
+    }
+  }
+
+  // 拼转发头（Origin / Referer / Cookie 等一律不带）
+  const out = {}
+  for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
+  // Auth 和已登录的数据写入要带用户 Bearer；匿名读不转发，
+  // 避免把平台边缘注入的 Authorization 带给云服务造成 invalid_grant。
+  const needsBearer = cloudPath.startsWith('/.cloud/auth/') || isDbWrite
+  if (needsBearer && req.headers.authorization) {
+    out.authorization = req.headers.authorization
   }
 
   try {

@@ -135,6 +135,9 @@ export function QuestSignIn({ quest }) {
         <input
           value={nickname}
           onChange={(e) => setNickname(e.target.value)}
+          readOnly
+          aria-readonly="true"
+          title="使用账号显示名"
           maxLength={20}
           placeholder="留个名进通关榜"
           className="min-w-0 flex-1 rounded-lg border border-white/15 bg-black/30 px-3 py-1.5 text-xs text-cyber-cyan placeholder:text-cyber-grid/40 outline-none focus:border-cyber-cyan/50"
