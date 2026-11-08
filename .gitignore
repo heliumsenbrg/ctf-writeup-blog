@@ -7,3 +7,7 @@ dist/
 .hermes/
 .superpowers/
 vite.config.js.timestamp-*.mjs
+
+# 本地环境变量：除公开的 .env.production（只有 sitekey）外一律不入库
+.env.*
+!.env.production

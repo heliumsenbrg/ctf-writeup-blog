@@ -72,10 +72,13 @@ BEGIN
   DECLARE
     body  text;
     nick  text;
+    uid   text;
     links int;
     n     int;
   BEGIN
     nick := coalesce(NEW.nickname, '');
+    -- 用 to_jsonb 取，避免 plpgsql 在编译期依赖某张表一定有 user_id 列
+    uid  := coalesce(to_jsonb(NEW)->>'user_id', '');
 
     -- quest_board 的正文列叫 quest 不是 content；
     -- plpgsql 的字段访问是运行时解析的，必须分支，不能直接写 NEW.content
@@ -110,19 +113,30 @@ BEGIN
       RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = '内容疑似刷屏，未发布';
     END IF;
 
-    -- 规则 5：同一昵称 5 分钟内已发 ≥3 条
-    EXECUTE format(
-      'SELECT count(*) FROM public.%I WHERE nickname = $1 AND created_at > now() - interval ''5 minutes''',
-      TG_TABLE_NAME) INTO n USING nick;
+    -- 规则 5：同一**账号** 5 分钟内已发 ≥3 条
+    --   2026-11-09 起写操作必须登录（RLS 已绑 user_id），所以按账号判比按昵称准：
+    --   昵称是账号显示名，改昵称绕不过去。没有账号的历史数据回退按昵称。
+    IF uid <> '' THEN
+      EXECUTE format(
+        'SELECT count(*) FROM public.%I WHERE user_id = $1 AND created_at > now() - interval ''5 minutes''',
+        TG_TABLE_NAME) INTO n USING uid;
+    ELSE
+      EXECUTE format(
+        'SELECT count(*) FROM public.%I WHERE nickname = $1 AND created_at > now() - interval ''5 minutes''',
+        TG_TABLE_NAME) INTO n USING nick;
+    END IF;
     IF n >= 3 THEN
       RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = '发送过于频繁，请稍后再试';
     END IF;
 
-    -- 规则 6：全局急刹车 —— 该表 1 分钟内新增 ≥12 条，说明正在被刷
+    -- 规则 6：全局急刹车 —— 该表 1 分钟内新增 ≥60 条
+    --   ⚠️ 原来是 12 条（2026-11-09 审计指出）：**12 条垃圾就能让全站留言停摆一分钟**，
+    --   循环发即可长期锁站 —— 防刷措施反过来成了拒绝服务开关。
+    --   配合规则 5（每账号 3 条/5 分钟），现在要锁站得先弄到约 20 个账号。
     EXECUTE format(
       'SELECT count(*) FROM public.%I WHERE created_at > now() - interval ''1 minute''',
       TG_TABLE_NAME) INTO n;
-    IF n >= 12 THEN
+    IF n >= 60 THEN
       RAISE EXCEPTION USING ERRCODE = '23514', MESSAGE = '当前提交过于频繁，请稍后再试';
     END IF;
 

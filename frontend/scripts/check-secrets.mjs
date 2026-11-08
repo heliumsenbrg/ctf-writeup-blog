@@ -23,13 +23,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-// 仓库根（frontend 的上一级）—— data.json / .github / db 不在前端目录里，
+// 仓库根（frontend 的上一级）—— .github / db 不在前端目录里，
 // 但它们在公开仓库中同样会被分发，必须纳入扫描范围。
 const REPO_ROOT = path.join(ROOT, '..')
 const SCAN_DIST = process.argv.includes('--dist')
 const SCAN_DIRS = ['src', 'public', 'scripts', 'relay', 'cloudflare']
 const SCAN_FILES = ['index.html', 'vite.config.js', 'package.json', '.env.production']
-const REPO_FILES = ['data.json', '.github/workflows/deploy.yml', 'db/moderation.sql']
+// data.json 已于 2026-11-09 移除（根目录遗留副本，代码里无人引用）
+const REPO_FILES = ['.github/workflows/deploy.yml', 'db/moderation.sql']
 
 // 硬规则：命中即失败
 const HARD = [
