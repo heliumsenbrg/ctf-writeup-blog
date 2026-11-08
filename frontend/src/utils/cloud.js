@@ -50,11 +50,49 @@ export const cloudConfig = {
 
 let client = null
 
+/**
+ * 会话存哪里：SDK 默认写 localStorage（令牌会一直躺在磁盘上，公共电脑上尤其糟）。
+ *
+ * 改成走 **sessionStorage**：同一标签页内刷新不掉线，关掉标签就没了。
+ * ⚠️ 老实说清楚它的边界：sessionStorage 挡不住 XSS 即时窃取（脚本照样能读），
+ *    它解决的是「令牌长期驻留」。真正抗 XSS 的是构建期注入的 CSP（见 vite.config.js）。
+ * 想换回长期登录：把下面 STORAGE 换成 undefined 即可（一行）。
+ */
+// 名字别带 KEY：check-secrets 的「硬编码密钥常量」规则会把 `XXX_KEY_YYY` 形态误判成凭据
+const SESSION_STORE_PREFIX = 'workbuddy-cloud.session.'
+
+function createSessionStore() {
+  try {
+    const s = window.sessionStorage
+    const probe = '__wb_probe__'
+    s.setItem(probe, '1')
+    s.removeItem(probe)
+    // 迁移：把旧版留在 localStorage 里的长驻会话作废一次，
+    // 避免"看起来切了存储，其实还在用老令牌"。
+    try {
+      window.localStorage.removeItem(SESSION_STORE_PREFIX + cloudConfig.publishableKey)
+    } catch {
+      /* localStorage 被禁也不影响主流程 */
+    }
+    return {
+      getItem: (k) => s.getItem(k),
+      setItem: (k, v) => s.setItem(k, v),
+      removeItem: (k) => s.removeItem(k),
+    }
+  } catch {
+    // 隐私模式 / 存储被禁：返回 undefined，交给 SDK 自己退回 localStorage
+    return undefined
+  }
+}
+
+const STORAGE = typeof window === 'undefined' ? undefined : createSessionStore()
+
 export function getCloud() {
   if (!client) {
     client = createWorkBuddyCloud({
       endpoint: cloudConfig.endpoint,
       publishableKey: cloudConfig.publishableKey,
+      storage: STORAGE,
     })
     // 仅开发模式：把 client 挂到 window，方便在控制台/自动化里排查（生产构建不会存在）
     if (import.meta.env.DEV && typeof window !== 'undefined') window.__wbCloud = client
@@ -92,6 +130,8 @@ export function getAuthCloud() {
       endpoint: cloudConfig.endpoint,
       publishableKey: cloudConfig.publishableKey,
       fetch: authFetch,
+      // 必须和 getCloud 用同一个存储，否则"登录成功但数据面仍匿名"
+      storage: STORAGE,
     })
   }
   return authClient

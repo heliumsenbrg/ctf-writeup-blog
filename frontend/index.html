@@ -17,8 +17,9 @@
       @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
     </style>
     <meta charset="UTF-8" />
-    <!-- GitHub Pages 无法设置响应头；CSP 暂不启用：实测会拦截 Turnstile 初始化。
-         这里保留点击劫持兜底，真正的 CSP/XFO 需要在自定义域名/CDN 层做。 -->
+    <!-- GitHub Pages 无法设置响应头：CSP 由 vite.config.js 的 cspPlugin 在**构建期**
+         注入 <head> 最前（开发服务器不注入，否则会拦掉 HMR 的 ws://）。
+         frame-ancestors / X-Frame-Options 不能通过 meta 生效，所以这里保留点击劫持兜底。 -->
     <script>
       try {
         if (window.top !== window.self) window.top.location = window.self.location

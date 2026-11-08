@@ -662,6 +662,57 @@ function seoStaticPlugin() {
   }
 }
 
+/**
+ * 内容安全策略（CSP）。
+ *
+ * GitHub Pages 不能设响应头，只能用 `meta` 落地。**只在构建产物里注入** ——
+ * 开发服务器有 HMR 的 ws:// 连接，注入会打断热更新，所以 `apply: 'build'`。
+ *
+ * 2026-11-08 实测定位（别再凭感觉改）：
+ *   · `connect-src` 少了 `blob:` → Turnstile **整块初始化失败**（`window.turnstile`
+ *     变 undefined、挂件空白），看起来像"脚本被拦"，实际是它用 blob 做内部通信。
+ *   · `script-src` **不需要** `'unsafe-eval'`：带/不带都能拿到 token，所以不放开。
+ *   · `frame-src` / `child-src` 必须放行 `challenges.cloudflare.com` 与 `data: blob:`，
+ *     否则真 key 下的人机验证 iframe 起不来。
+ *   · `frame-ancestors` 与 X-Frame-Options **无法通过 meta 生效**，
+ *     点击劫持仍由 index.html 里的 frame-busting 兜底。
+ *
+ * 验证方式：`node diag-csp2.js`（登录页/首页/留言板三页，要求违规数 0 且能出 token）。
+ */
+const CSP_POLICY = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self' blob: data: https://cloud-relay.app.workbuddy.host https://ctf-writeup-blog.app.workbuddy.host https://challenges.cloudflare.com https://*.challenges.cloudflare.com",
+  "frame-src 'self' data: blob: https://challenges.cloudflare.com https://*.challenges.cloudflare.com",
+  "child-src 'self' data: blob: https://challenges.cloudflare.com https://*.challenges.cloudflare.com",
+  "worker-src 'self' blob: https://challenges.cloudflare.com",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join('; ')
+
+function cspPlugin() {
+  return {
+    name: 'inject-csp',
+    apply: 'build',
+    transformIndexHtml: {
+      // pre：必须排在其它 index.html 处理之前，让 meta 位于 <head> 最前，
+      // 这样后面的内联样式与内联脚本（frame-busting）也在策略覆盖范围内。
+      order: 'pre',
+      handler(html) {
+        return html.replace(
+          /<head>/i,
+          `<head>\n    <meta http-equiv="Content-Security-Policy" content="${CSP_POLICY}" />`
+        )
+      },
+    },
+  }
+}
+
 export default defineConfig({
   // 环境感知：GitHub Pages 需要子路径，Vercel 根路径
   // VITE_BASE 优先（发布到 WorkBuddy 沙箱时挂在域名根路径 → VITE_BASE=/）；
@@ -669,7 +720,7 @@ export default defineConfig({
   // 用环境变量而不是命令行 --base=/ 有个额外好处：MSYS/Git-Bash 会把以 / 开头的
   // 命令行参数当路径转换，环境变量不受影响。
   base: process.env.VITE_BASE || (process.env.VERCEL ? '/' : '/ctf-writeup-blog/'),
-  plugins: [react(), devDataPlugin(), seoStaticPlugin()],
+  plugins: [react(), devDataPlugin(), seoStaticPlugin(), cspPlugin()],
   server: {
     host: '0.0.0.0',
     port: 3000,
