@@ -17,6 +17,15 @@
       @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
     </style>
     <meta charset="UTF-8" />
+    <!-- GitHub Pages 无法设置响应头；CSP 暂不启用：实测会拦截 Turnstile 初始化。
+         这里保留点击劫持兜底，真正的 CSP/XFO 需要在自定义域名/CDN 层做。 -->
+    <script>
+      try {
+        if (window.top !== window.self) window.top.location = window.self.location
+      } catch (e) {
+        document.documentElement.style.display = 'none'
+      }
+    </script>
     <link rel="icon" type="image/svg+xml" href="/ctf-writeup-blog/favicon.svg" />
     <link rel="icon" href="/ctf-writeup-blog/favicon.ico" sizes="any" />
     <link rel="manifest" href="/ctf-writeup-blog/manifest.webmanifest" />
@@ -73,7 +82,7 @@
          原来引 fonts.googleapis.com：国内基本被墙，实测访客那边
          永远 ERR_CONNECTION_TIMED_OUT，JetBrains Mono 从来没生效过
          （2026-10-21 运行时审计）。现在跟着站点一起发，不依赖任何外网。 -->
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-BZD65Z_7.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-22RCp_GP.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
     <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-hfGXlhUd.css">
