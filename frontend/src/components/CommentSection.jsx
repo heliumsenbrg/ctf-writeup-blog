@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { MessageSquare, Send, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
+import { getCloud, getAuthCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
 import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
+import LoginGate from './LoginGate.jsx'
+import { useAuthUser, displayName } from '../hooks/useAuthUser.js'
+import { recordActivity } from '../utils/activity.js'
 
 const TABLE = 'comments'
 const COOLDOWN_MS = 30 * 1000
@@ -10,7 +13,7 @@ const COOLDOWN_KEY = 'comment:last-post'
 
 /**
  * 文章/笔记页的评论区 —— 复用云数据库（同一个 app），按 page 字段分区。
- * 访客**不需要 GitHub 账号**（这是它相对 giscus 的优势）。
+ * 访客用本站账号登录后即可评论（不需要 GitHub 账号，这是它相对 giscus 的优势）。
  * 反刷：30 秒冷却 + 蜜罐字段 + 数据库侧长度约束 + 服务端关键词/规则
  * （见 db/moderation.sql）+ Turnstile 人机校验（配了 site key 才生效）。
  */
@@ -25,6 +28,11 @@ export default function CommentSection({ page }) {
   const [posting, setPosting] = useState(false)
   const [msg, setMsg] = useState(null)
   const tsRef = useRef(null)
+  const { user } = useAuthUser()
+
+  useEffect(() => {
+    if (user) setNickname((value) => value || displayName(user))
+  }, [user])
 
   const load = useCallback(async () => {
     if (!page) return
@@ -74,9 +82,10 @@ export default function CommentSection({ page }) {
       // 反垃圾在**服务端**：命中规则时整条 INSERT 被拒（SQLSTATE 23514），
       // 走 catch 分支由 friendlyDbError 给出友好文案。前端不拦截。
       // token 用 setHeader 带出去，Worker 校验完不会转发给后端。
-      let q = getCloud().database.from(TABLE).insert({ page, nickname: n, content: c })
+      let q = getAuthCloud().database.from(TABLE).insert({ page, nickname: n, content: c })
       if (tsToken) q = q.setHeader('x-turnstile-token', tsToken)
       await unwrap(q.select('id'))
+      recordActivity(user?.id, { type: '评论', text: c.slice(0, 80) })
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 隐私模式 */ }
       setNickname(''); setContent('')
       setMsg({ type: 'ok', text: '评论成功' })
@@ -95,6 +104,7 @@ export default function CommentSection({ page }) {
         <MessageSquare className="h-4 w-4" /> 评论{list.length ? ` · ${list.length}` : ''}
       </h2>
 
+      <LoginGate action="评论">
       <form onSubmit={submit} className="mb-5 flex flex-col gap-2">
         <div className="flex gap-2">
           <input
@@ -143,6 +153,7 @@ export default function CommentSection({ page }) {
           </div>
         )}
       </form>
+      </LoginGate>
 
       {loading && !list.length && (
         <div className="flex items-center justify-center gap-2 py-6 text-xs font-mono text-cyber-grid/60">

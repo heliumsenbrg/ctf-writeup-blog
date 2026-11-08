@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { MessageSquare, Send, Loader2, RefreshCw, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
+import { getCloud, getAuthCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
 import { safeHref, displayHost } from '../utils/safeUrl.js'
 import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
+import LoginGate from './LoginGate.jsx'
+import { useAuthUser, displayName } from '../hooks/useAuthUser.js'
+import { recordActivity } from '../utils/activity.js'
 
 const PAGE_SIZE = 10
 const TABLE = 'guestbook'
@@ -19,6 +22,11 @@ export default function Guestbook() {
   const [tsToken, setTsToken] = useState('')   // Turnstile 人机校验 token（未启用时恒为空）
   const [posting, setPosting] = useState(false)
   const [msg, setMsg] = useState(null) // { type: 'ok' | 'err', text }
+  const { user } = useAuthUser()
+
+  useEffect(() => {
+    if (user) setNickname((value) => value || displayName(user))
+  }, [user])
   const [list, setList] = useState([])
   const [total, setTotal] = useState(0)
   const [hasNext, setHasNext] = useState(false)
@@ -125,9 +133,10 @@ export default function Guestbook() {
       // 走 catch 分支、由 friendlyDbError 给出友好文案。前端这边不做拦截 ——
       // 前端过滤随手就能绕过，做了只会给人"防住了"的错觉。
       // token 用 setHeader 单独带出去：Worker 校验完就不会转发给后端。
-      let q = getCloud().database.from(TABLE).insert({ nickname: n, content: c, site: s || null })
+      let q = getAuthCloud().database.from(TABLE).insert({ nickname: n, content: c, site: s || null })
       if (tsToken) q = q.setHeader('x-turnstile-token', tsToken)
       await unwrap(q.select('id'))
+      recordActivity(user?.id, { type: '留言', text: c.slice(0, 80) })
 
       try { localStorage.setItem(COOLDOWN_KEY, String(Date.now())) } catch { /* 忽略隐私模式报错 */ }
       setNickname(''); setContent(''); setSite('')
@@ -150,7 +159,7 @@ export default function Guestbook() {
           <span className="text-cyber-cyan/70 text-sm font-mono tracking-widest">GUESTBOOK</span>
           <h1 className="text-3xl sm:text-4xl font-bold mt-2 anime-title text-gradient">留言板</h1>
           <p className="text-cyber-grid mt-3 font-mono text-sm">
-            不用注册，直接说两句 · 已收到 {total}{total >= 1000 ? '+' : ''} 条
+            登录后留言 · 已收到 {total}{total >= 1000 ? '+' : ''} 条
           </p>
         </motion.div>
 
@@ -162,6 +171,7 @@ export default function Guestbook() {
           transition={{ delay: 0.05 }}
           className="glass-card p-5 sm:p-6 mb-8 scroll-mt-24"
         >
+          <LoginGate action="留言">
           <form onSubmit={submit} className="flex flex-col gap-3">
             <div className="flex flex-col sm:flex-row gap-3">
               <label htmlFor="guestbook-nickname" className="sr-only">昵称（最多 20 字）</label>
@@ -238,6 +248,7 @@ export default function Guestbook() {
               </div>
             )}
           </form>
+          </LoginGate>
         </motion.div>
 
         {/* 留言列表 */}
