@@ -139,8 +139,13 @@ function writeRateLimited(ip) {
 
 // 验证码按收件人单独限流：避免同一手机号/邮箱被反复轰炸（前端 60s 可绕过）。
 const OTP_LIMIT = Number(process.env.OTP_LIMIT_PER_10MIN || 5)
+// 再加一道**全局配额**：平台侧不给限流配置（短信/邮件闸门不在我们的合同里），
+// 光靠"按收件人"能被换号 + 换 IP 绕过，把短信费刷穿。全局配额把总量钉死，
+// 代价只是极端情况下正常访客可能排队，个人站点这个值足够宽松。
+const OTP_GLOBAL_LIMIT = Number(process.env.OTP_GLOBAL_LIMIT_PER_10MIN || 30)
 const OTP_WINDOW_MS = 10 * 60 * 1000
 const otpBuckets = new Map()
+let otpGlobal = { start: 0, count: 0 }
 
 function otpKey(body) {
   try {
@@ -154,8 +159,16 @@ function otpKey(body) {
   }
 }
 
+/**
+ * 返回 false = 放行；'global' / 'recipient' = 被哪一道配额挡住。
+ * 只在 Turnstile 通过之后调用，所以这里的计数是"真人/已过验证"的发码量。
+ */
 function otpRateLimited(key) {
   const now = Date.now()
+  if (now - otpGlobal.start > OTP_WINDOW_MS) otpGlobal = { start: now, count: 0 }
+  otpGlobal.count++
+  if (otpGlobal.count > OTP_GLOBAL_LIMIT) return 'global'
+
   const b = otpBuckets.get(key)
   if (!b || now - b.start > OTP_WINDOW_MS) {
     otpBuckets.set(key, { start: now, count: 1 })
@@ -165,7 +178,7 @@ function otpRateLimited(key) {
     return false
   }
   b.count++
-  return b.count > OTP_LIMIT
+  return b.count > OTP_LIMIT ? 'recipient' : false
 }
 
 /** 仅当来源在白名单内才回 CORS 头；不在则不给 —— 浏览器侧读不到内容 */
@@ -393,9 +406,10 @@ const server = http.createServer(async (req, res) => {
   // 验证码按收件人限流：放在 Turnstile 之后，避免匿名请求拿别人手机号刷限流
   if (cloudPath.startsWith('/.cloud/auth/') && /\/v1\/verification$/.test(cloudPath)) {
     const key = otpKey(body) || ('ip:' + clientIp(req))
-    if (otpRateLimited(key)) {
+    const limited = otpRateLimited(key)
+    if (limited) {
       return send(res, 429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '600', ...cors },
-        JSON.stringify({ error: 'otp_rate_limited', retry_after: 600, message: '验证码发送太频繁，请稍后再试' }))
+        JSON.stringify({ error: 'otp_rate_limited', scope: limited, retry_after: 600, message: '验证码发送太频繁，请稍后再试' }))
     }
   }
 
