@@ -5,8 +5,10 @@ on:
     branches:
       - main
 
+# 最小权限：默认只读，写权限只在真正要推 gh-pages 的那一步给。
+# （2026-11-09 审计：原来在 workflow 级给 contents: write，任何步骤都能推仓库。）
 permissions:
-  contents: write
+  contents: read
 
 # 同一时间只跑一个部署；后 push 的排队而不是被取消，避免旧构建最后覆盖新构建。
 concurrency:
@@ -16,6 +18,9 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    # 只有这个作业需要写（推 gh-pages）；写权限收窄到作业级，不放到 workflow 级
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
