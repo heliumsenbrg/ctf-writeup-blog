@@ -306,11 +306,12 @@ function buildDevRouteMetadata() {
     '/about': ['关于', '关于本站、技能方向与友情链接。'],
     '/stats': ['战绩', 'CTF 战绩一览：解题时间线、平台与方向分布、技能标签云。'],
     '/login': ['登录', '访客登录与注册：手机号或邮箱验证码，Cloudflare Turnstile 人机校验。'],
+    '/me': ['我的', '登录后的个人账号与发言记录。'],
     '/secret-quest': ['隐藏关卡', '彩蛋页。'],
   }
   for (const [route, [title, description]] of Object.entries(staticPages)) {
     metadata[route] = makeMeta(route, `${title} | ${siteTitle}`, description, {
-      robots: route === '/secret-quest' || route === '/login' ? 'noindex, follow' : '',
+      robots: route === '/secret-quest' || route === '/login' || route === '/me' ? 'noindex, follow' : '',
     })
   }
   return metadata
@@ -391,6 +392,7 @@ function seoStaticPlugin() {
         '/guestbook',
         '/stats',
         '/login',
+        '/me',
         '/secret-quest',
         '/kb',
         ...Object.keys(articles).map((id) => `/article/${id}`),
@@ -468,6 +470,7 @@ function seoStaticPlugin() {
           // 线上实测 /stats/ 的 canonical 指向首页（外部审计第五轮抓到）。
           '/stats': ['战绩', 'CTF 战绩一览：解题时间线、平台与方向分布、技能标签云。'],
           '/login': ['登录', '访客登录与注册：手机号或邮箱验证码，Cloudflare Turnstile 人机校验。'],
+          '/me': ['我的', '登录后的个人账号与发言记录。'],
           '/secret-quest': ['隐藏关卡', '彩蛋页。'],
         }
         const hit = STATIC_META[route]
@@ -514,7 +517,7 @@ function seoStaticPlugin() {
           // 彩蛋页：它已经不在 sitemap 里了，但页面本身没有 noindex ——
           // "隐藏关卡"对搜索引擎其实完全可见（2026-10-21 审计）。这里补上。
           .replace(/<\/head>/, () =>
-            route === '/secret-quest' || route === '/login'
+            route === '/secret-quest' || route === '/login' || route === '/me'
               ? '    <meta name="robots" content="noindex, follow" />\n  </head>'
               : '</head>'
           )
@@ -582,7 +585,7 @@ function seoStaticPlugin() {
       // ② sitemap（urlOf 已在前面定义：末尾统一带斜杠）
       // 隐藏彩蛋不进 sitemap —— 注释里一直这么写，但代码直接把 routes 全量写进去了，
       // 实测线上 sitemap 里确实有 /secret-quest/。这里显式排除，让注释和代码一致。
-      const SITEMAP_EXCLUDE = new Set(['/secret-quest', '/login'])
+      const SITEMAP_EXCLUDE = new Set(['/secret-quest', '/login', '/me'])
       const sitemapRoutes = routes.filter((r) => !SITEMAP_EXCLUDE.has(r))
       writeFileSync(
         abs('sitemap.xml'),

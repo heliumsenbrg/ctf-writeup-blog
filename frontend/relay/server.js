@@ -237,6 +237,24 @@ function send(res, status, headers, body) {
   res.end(body)
 }
 
+/**
+ * 数据面写操作要求真实登录：拿浏览器带来的用户 Bearer 去 auth /user/me 验一次。
+ * 不能只在前端藏表单 —— 直接 POST 中转仍然能绕过。
+ */
+async function verifyUser(req) {
+  const auth = req.headers.authorization || ''
+  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const key = req.headers['x-wb-webapp-access-key']
+  const headers = { authorization: auth }
+  if (key) headers['x-wb-webapp-access-key'] = key
+  try {
+    const r = await upstreamRequest(BACKENDS[0], '/.cloud/auth/v1/user/me', 'GET', headers, null)
+    return r.status === 200
+  } catch {
+    return false
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''
   const cors = corsHeaders(origin)
@@ -303,6 +321,15 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({ error: 'not_found', hint: '只允许 guestbook / comments / quest_board 三张表与 auth 接口' }))
   }
 
+  const isDbWrite = WRITE_METHODS.has(req.method) &&
+    /^\/\.cloud\/database\/rest\/(guestbook|comments|quest_board)(?:\/|$)/.test(cloudPath)
+
+  // 写操作必须登录；前端 LoginGate 只是 UX，这里才是服务端门禁。
+  if (isDbWrite && !(await verifyUser(req))) {
+    return send(res, 401, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+      JSON.stringify({ error: 'login_required', message: '请先登录后再发言' }))
+  }
+
   // 写接口按 IP 限流：超限直接 429，不打到后端
   if (WRITE_METHODS.has(req.method) && writeRateLimited(clientIp(req))) {
     return send(res, 429, { 'Content-Type': 'application/json; charset=utf-8', 'Retry-After': '60', ...cors },
@@ -319,9 +346,10 @@ const server = http.createServer(async (req, res) => {
   // 拼转发头（Origin / Referer / Cookie 等一律不带）
   const out = {}
   for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
-  // Auth 必须带用户的 Bearer token（登录后 refresh/getUser 要用）；其他数据面请求不转发，
+  // Auth 和已登录的数据写入要带用户 Bearer；匿名读不转发，
   // 避免把平台边缘注入的 Authorization 带给云服务造成 invalid_grant。
-  if (cloudPath.startsWith('/.cloud/auth/') && req.headers.authorization) {
+  const needsBearer = cloudPath.startsWith('/.cloud/auth/') || isDbWrite
+  if (needsBearer && req.headers.authorization) {
     out.authorization = req.headers.authorization
   }
 

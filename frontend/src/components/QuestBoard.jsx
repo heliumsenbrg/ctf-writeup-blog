@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Trophy, Send, Loader2, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react'
-import { getCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
+import { getCloud, getAuthCloud, unwrap, friendlyDbError } from '../utils/cloud.js'
 import { timeAgo } from '../utils/timeAgo.js'
+import LoginGate from './LoginGate.jsx'
+import { useAuthUser, displayName } from '../hooks/useAuthUser.js'
+import { recordActivity } from '../utils/activity.js'
 
 const TABLE = 'quest_board'
 const NAME_KEY = 'quest:nickname'
@@ -9,7 +12,7 @@ const NAME_KEY = 'quest:nickname'
 /**
  * 隐藏彩蛋通关榜。
  * ⚠️ 诚实说明：彩蛋的 flag 每次加载动态生成，**服务端无法校验**，
- *    所以这里只是「自助留名」—— 谁都能提交自己的成绩。UI 上也标注了。
+ *    所以这里只是「自助留名」—— 登录用户都可以提交自己的成绩。UI 上也标注了。
  */
 export default function QuestBoard() {
   const [rows, setRows] = useState([])
@@ -98,6 +101,11 @@ export function QuestSignIn({ quest }) {
   const [nickname, setNickname] = useState('')
   const [state, setState] = useState(null)
   const [busy, setBusy] = useState(false)
+  const { user } = useAuthUser()
+
+  useEffect(() => {
+    if (user) setNickname((value) => value || displayName(user))
+  }, [user])
 
   useEffect(() => {
     try { setNickname(localStorage.getItem(NAME_KEY) || '') } catch { /* 隐私模式 */ }
@@ -109,7 +117,8 @@ export function QuestSignIn({ quest }) {
     if (!n) return setState({ type: 'err', text: '先起个名字' })
     setBusy(true)
     try {
-      await unwrap(getCloud().database.from(TABLE).insert({ nickname: n, quest }).select('id'))
+      await unwrap(getAuthCloud().database.from(TABLE).insert({ nickname: n, quest }).select('id'))
+      recordActivity(user?.id, { type: '通关留名', text: quest })
       try { localStorage.setItem(NAME_KEY, n) } catch { /* 隐私模式 */ }
       setState({ type: 'ok', text: '已记录，谢谢！' })
     } catch (e2) {
@@ -120,6 +129,7 @@ export function QuestSignIn({ quest }) {
   }
 
   return (
+    <LoginGate action="留名">
     <form onSubmit={submit} className="mb-3 w-full max-w-xs">
       <div className="flex items-center gap-2">
         <input
@@ -142,5 +152,6 @@ export function QuestSignIn({ quest }) {
         </div>
       )}
     </form>
+    </LoginGate>
   )
 }

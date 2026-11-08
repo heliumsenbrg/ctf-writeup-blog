@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search, MessageSquare, BarChart3, LogIn } from 'lucide-react'
+import { Terminal, Flag, BookOpen, ExternalLink, Menu, X, User, Circle, Library, Search, MessageSquare, BarChart3, MoreHorizontal } from 'lucide-react'
 
 const GARGANTUA_URL = `${import.meta.env.BASE_URL}gargantua/index.html`
 
 export default function Navbar() {
   const location = useLocation()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
+
+  useEffect(() => { setMoreOpen(false) }, [location.pathname])
 
   return (
     <motion.nav
@@ -48,52 +51,51 @@ export default function Navbar() {
               <Library className="w-4 h-4 mr-2" />
               知识库
             </NavLink>
-            <NavLink to="/about" active={location.pathname === '/about'}>
-              <User className="w-4 h-4 mr-2" />
-              About
-            </NavLink>
             <NavLink to="/guestbook" active={location.pathname === '/guestbook'}>
               <MessageSquare className="w-4 h-4 mr-2" />
               留言板
-            </NavLink>
-            <NavLink to="/stats" active={location.pathname === '/stats'}>
-              <BarChart3 className="w-4 h-4 mr-2" />
-              战绩
-            </NavLink>
-            <NavLink to="/login" active={location.pathname === '/login'}>
-              <LogIn className="w-4 h-4 mr-2" />
-              登录
             </NavLink>
             <button
               onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
               title="搜索（⌘K）"
               aria-label="搜索（⌘K）"
-              className="nav-link flex shrink-0 items-center gap-1.5 whitespace-nowrap text-cyber-grid hover:text-cyber-cyan transition-colors"
+              className="nav-link flex shrink-0 items-center whitespace-nowrap text-cyber-grid hover:text-cyber-cyan transition-colors"
             >
               <Search className="w-4 h-4" />
-              搜索
-              <kbd className="whitespace-nowrap rounded border border-cyber-grid/30 px-1 py-px text-[10px] font-mono leading-none">
-                ⌘K
-              </kbd>
+              <span className="sr-only">搜索（⌘K）</span>
             </button>
-            <a
-              href={GARGANTUA_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-link flex items-center text-cyber-grid hover:text-cyber-cyan transition-colors"
-            >
-              <Circle className="w-4 h-4 mr-2" />
-              Gargantua
-            </a>
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="nav-link flex items-center text-cyber-grid hover:text-cyber-cyan transition-colors"
-            >
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Platform
-            </a>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreOpen((v) => !v)}
+                aria-expanded={moreOpen}
+                aria-label="更多导航"
+                className="nav-link flex items-center gap-1.5 whitespace-nowrap text-cyber-grid hover:text-cyber-cyan transition-colors"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+                更多
+              </button>
+              {moreOpen && (
+                <div className="absolute right-0 top-full z-50 mt-3 w-52 overflow-hidden rounded-xl border border-cyber-grid/20 bg-cyber-darker/95 p-1.5 shadow-2xl backdrop-blur-xl">
+                  <Link to="/about" onClick={() => setMoreOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono text-cyber-grid hover:bg-cyber-cyan/10 hover:text-cyber-cyan">
+                    <User className="h-4 w-4" /> About
+                  </Link>
+                  <Link to="/stats" onClick={() => setMoreOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono text-cyber-grid hover:bg-cyber-cyan/10 hover:text-cyber-cyan">
+                    <BarChart3 className="h-4 w-4" /> 战绩
+                  </Link>
+                  <Link to="/me" onClick={() => setMoreOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono text-cyber-grid hover:bg-cyber-cyan/10 hover:text-cyber-cyan">
+                    <User className="h-4 w-4" />
+                    <span className="truncate">登录 / 我的</span>
+                  </Link>
+                  <a href={GARGANTUA_URL} target="_blank" rel="noopener noreferrer" onClick={() => setMoreOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono text-cyber-grid hover:bg-cyber-cyan/10 hover:text-cyber-cyan">
+                    <Circle className="h-4 w-4" /> Gargantua
+                  </a>
+                  <a href="https://github.com" target="_blank" rel="noopener noreferrer" onClick={() => setMoreOpen(false)} className="flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-mono text-cyber-grid hover:bg-cyber-cyan/10 hover:text-cyber-cyan">
+                    <ExternalLink className="h-4 w-4" /> Platform
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile hamburger */}
@@ -184,16 +186,16 @@ export default function Navbar() {
               战绩
             </Link>
             <Link
-              to="/login"
+              to="/me"
               onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-mono transition-all ${
-                location.pathname === '/login'
+                location.pathname === '/me' || location.pathname === '/login'
                   ? 'text-cyber-cyan bg-cyber-cyan/10'
                   : 'text-cyber-grid hover:text-cyber-cyan hover:bg-cyber-cyan/5'
               }`}
             >
-              <LogIn className="w-4 h-4" />
-              登录
+              <User className="w-4 h-4" />
+              登录 / 我的
             </Link>
             <button
               onClick={() => { setMobileOpen(false); window.dispatchEvent(new Event('open-command-palette')) }}
