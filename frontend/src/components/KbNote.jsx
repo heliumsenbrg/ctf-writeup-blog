@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from '../utils/rehypeHighlight.js'
+import { useKatex } from '../hooks/useKatex.js'
 import { ArrowLeft, ArrowRight, Copy, Check } from 'lucide-react'
 import remarkWikilinks from '../utils/remarkWikilinks.js'
 import { MarkdownCode } from './CodeBlock'
@@ -171,6 +170,8 @@ const markdownComponents = {
 export default function KbNote() {
   const { name = '' } = useParams()
   const [state, setState] = useState({ status: 'loading', note: null })
+  // 公式插件按需加载：没公式的笔记不再为 KaTeX 付 171KB 的下载（见 hooks/useKatex.js）
+  const katex = useKatex(state.note?.content)
   const [attempt, setAttempt] = useState(0)
   const [kbIndex, setKbIndex] = useState(null)
 
@@ -238,8 +239,8 @@ export default function KbNote() {
         </nav>
 
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath, remarkWikilinks]}
-          rehypePlugins={[rehypeKatex, rehypeHighlight]}
+          remarkPlugins={katex ? [remarkGfm, katex.remarkMath, remarkWikilinks] : [remarkGfm, remarkWikilinks]}
+          rehypePlugins={katex ? [katex.rehypeKatex, rehypeHighlight] : [rehypeHighlight]}
           urlTransform={(url) => url}
           components={markdownComponents}
         >

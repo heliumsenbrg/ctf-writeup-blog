@@ -5,9 +5,8 @@ import { ArrowLeft, ArrowRight, Terminal, Copy, Check } from 'lucide-react'
 import { useState, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import remarkMath from 'remark-math'
-import rehypeKatex from 'rehype-katex'
 import rehypeHighlight from '../utils/rehypeHighlight.js'
+import { useKatex } from '../hooks/useKatex.js'
 import ReadingProgress from './ReadingProgress'
 import ShareButton from './ShareButton'
 import CommentSection from './CommentSection'
@@ -41,6 +40,8 @@ function estimateReadingTime(content) {
 export default function Article() {
   const { id } = useParams()
   const article = articles[id]
+  // 公式插件按需加载：正文没有 $…$ 时完全不下载 KaTeX（见 hooks/useKatex.js）
+  const katex = useKatex(article?.content)
 
   // 计算当前文章的上一篇和下一篇
   const currentIndex = articleOrder.indexOf(id)
@@ -184,7 +185,7 @@ export default function Article() {
             className="cyber-card p-4 sm:p-8"
           >
             <div className="prose prose-invert max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex, rehypeHighlight]} components={components}>
+              <ReactMarkdown remarkPlugins={katex ? [remarkGfm, katex.remarkMath] : [remarkGfm]} rehypePlugins={katex ? [katex.rehypeKatex, rehypeHighlight] : [rehypeHighlight]} components={components}>
                 {article.content}
               </ReactMarkdown>
             </div>
