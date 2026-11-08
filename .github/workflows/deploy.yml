@@ -48,14 +48,11 @@ jobs:
         #       还留着 VITE_CLOUD_ENDPOINT，现在是**无效**的，建议删掉免得误导。
         #
         # ② 人机校验（Cloudflare Turnstile）
-        #    · 控制台 → Turnstile 建站点，拿到 site key / secret
-        #    · 这里加 Variables：VITE_TURNSTILE_SITE_KEY = <site key>
-        #    · 中转那边配 secret：见 frontend/relay/（TURNSTILE_SECRET 环境变量）
-        #    · ⚠️ 两边必须一起配：只配前端 → 校验被跳过（不报错也不设防）；
-        #      只配中转 → 访客拿不到 token，写操作全部 403
-        #    · 不设 → 挂件整体不渲染，站点行为与之前完全一样
-        env:
-          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
+        #    · site key 是公开值，已放在 **frontend/.env.production**（版本化，和云地址同一套机制）
+        #    · secret 只在掉端运行环境：frontend/relay/.env 的 TURNSTILE_SECRET，不进仓库
+        #    · ⚠️ 不要再在 workflow 里用 Variables 覆盖 VITE_TURNSTILE_SITE_KEY：
+        #      未设置时变量会展开成空串，反而把 .env.production 里的值盖掉（2026-11-08 实测踩过）。
+        #    · 两边必须一起配：只配前端 → 校验被跳过；只配中转 → 访客拿不到 token，发码全部 403
         run: npm run build
 
       - name: Deploy to gh-pages
