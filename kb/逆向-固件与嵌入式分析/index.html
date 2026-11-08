@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
   <head>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' blob: data: https://cloud-relay.app.workbuddy.host https://ctf-writeup-blog.app.workbuddy.host https://challenges.cloudflare.com https://*.challenges.cloudflare.com; frame-src 'self' data: blob: https://challenges.cloudflare.com https://*.challenges.cloudflare.com; child-src 'self' data: blob: https://challenges.cloudflare.com https://*.challenges.cloudflare.com; worker-src 'self' blob: https://challenges.cloudflare.com; media-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'" />
     <style>
       /* 首屏加载提示：内联样式 + 纯 HTML，网络再慢也能立刻显示，
          不会像原来那样"深色底 + 无内容"让人以为站点挂了 */
@@ -17,8 +18,9 @@
       @keyframes bootpulse { 0%, 100% { opacity: .25; transform: scale(.8) } 50% { opacity: 1; transform: scale(1) } }
     </style>
     <meta charset="UTF-8" />
-    <!-- GitHub Pages 无法设置响应头；CSP 暂不启用：实测会拦截 Turnstile 初始化。
-         这里保留点击劫持兜底，真正的 CSP/XFO 需要在自定义域名/CDN 层做。 -->
+    <!-- GitHub Pages 无法设置响应头：CSP 由 vite.config.js 的 cspPlugin 在**构建期**
+         注入 <head> 最前（开发服务器不注入，否则会拦掉 HMR 的 ws://）。
+         frame-ancestors / X-Frame-Options 不能通过 meta 生效，所以这里保留点击劫持兜底。 -->
     <script>
       try {
         if (window.top !== window.self) window.top.location = window.self.location
@@ -82,7 +84,7 @@
          原来引 fonts.googleapis.com：国内基本被墙，实测访客那边
          永远 ERR_CONNECTION_TIMED_OUT，JetBrains Mono 从来没生效过
          （2026-10-21 运行时审计）。现在跟着站点一起发，不依赖任何外网。 -->
-    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-22RCp_GP.js"></script>
+    <script type="module" crossorigin src="/ctf-writeup-blog/assets/index-DC1JDbbg.js"></script>
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/react-vendor-Dg1TH6cw.js">
     <link rel="modulepreload" crossorigin href="/ctf-writeup-blog/assets/framer-motion-CF6mB4Ev.js">
     <link rel="stylesheet" crossorigin href="/ctf-writeup-blog/assets/index-hfGXlhUd.css">
