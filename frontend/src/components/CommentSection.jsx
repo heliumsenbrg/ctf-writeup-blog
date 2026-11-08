@@ -110,6 +110,9 @@ export default function CommentSection({ page }) {
           <input
             value={nickname}
             onChange={(e) => setNickname(e.target.value)}
+            readOnly
+            aria-readonly="true"
+            title="使用账号显示名"
             maxLength={20}
             placeholder="昵称"
             className="w-32 shrink-0 rounded-lg border border-cyber-grid/30 bg-cyber-darker/60 px-3 py-1.5 text-xs text-cyber-cyan placeholder:text-cyber-grid/50 outline-none focus:border-cyber-cyan/50"
