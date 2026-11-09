@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, KeyRound, Loader2, LogIn, LogOut, Mail, ShieldCheck, Smartphone, User,
 } from 'lucide-react'
-import { getAuthCloud, setTurnstileToken, friendlyAuthError } from '../utils/cloud.js'
+import { getAuthCloud, setTurnstileToken, friendlyAuthError, clearStoredSession } from '../utils/cloud.js'
+import { shouldClearCredentials } from '@tencent-ai/workbuddy-cloud-sdk'
 import { useAuthUser } from '../hooks/useAuthUser.js'
 import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
 
@@ -96,6 +97,8 @@ export default function Login() {
       setCode('')
       setMsg({ type: 'ok', text: '验证码已发送。新账号会在验证后自动创建。' })
     } catch (err) {
+      // 旧会话被判失效时顺手清掉，避免下次还带着它
+      if (shouldClearCredentials(err)) clearStoredSession()
       setMsg({ type: 'err', text: friendlyAuthError(err) || '验证码发送失败，请稍后再试' })
     } finally {
       setSending(false)
@@ -129,6 +132,7 @@ export default function Login() {
       setStep('done')
       setMsg({ type: 'ok', text: '登录成功' })
     } catch (err) {
+      if (shouldClearCredentials(err)) clearStoredSession()
       setMsg({ type: 'err', text: friendlyAuthError(err) || '验证码不正确，请重试' })
     } finally {
       setVerifying(false)
