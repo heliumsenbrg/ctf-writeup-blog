@@ -118,7 +118,27 @@ export function setTurnstileToken(token) {
   turnstileToken = token || ''
 }
 
-function authFetch(input, init) {
+/** 清掉本地会话（令牌被后端判定失效时用，避免坏 token 一直污染后续请求） */
+function clearStoredSession() {
+  try {
+    if (STORAGE && typeof STORAGE.removeItem === 'function') {
+      STORAGE.removeItem(SESSION_STORE_PREFIX + cloudConfig.publishableKey)
+    }
+  } catch {
+    /* 存储被禁也不影响主流程 */
+  }
+}
+
+/**
+ * 登录类请求：这些接口**不需要**（也不应该）带旧身份。
+ * 原因：SDK 会把存储里的 accessToken 自动挂到每个请求上。如果本地存着一个
+ * 已被拒绝的旧会话（例如换过环境、或令牌过期），发验证码时就会带着它一起去，
+ * 云认证直接回 `invalid_grant: the session is invalid, expired or issued for
+ * another client` —— 用户看到的就是"登不进去，还报一句看不懂的错"（2026-11-09 实测）。
+ */
+const SIGNIN_PATH = /\/\.cloud\/auth\/v1\/(verification|signin|signup|otp|verify)/
+
+async function authFetch(input, init) {
   const headers = new Headers(init?.headers)
   const url = typeof input === 'string' ? input : input?.url || ''
   if (turnstileToken && /\/\.cloud\/auth\//.test(url)) {
@@ -126,16 +146,33 @@ function authFetch(input, init) {
   }
   // 登录态不能靠 Authorization 传给中转：
   // 托管平台的边缘层会给入站请求**注入它自己的** Authorization: Bearer <平台 JWT>，
-  // 中转看到就转发，云认证回 `invalid_grant: the session is invalid, expired or
-  // issued for another client`（2026-11-09 实测：客户端没带 token，中转却转了一个过去）。
+  // 中转看到就转发，云认证回 `invalid_grant`（客户端没带也可能被转发）。
   // 改成自定义头：SDK 设的 Authorization 搬进 x-wb-user-token 再删掉原头，
   // 中转只认这个头 —— 平台不会替我设它，语义就干净了。
   const auth = headers.get('authorization')
-  if (auth) {
+  let sentToken = false
+  if (auth && !SIGNIN_PATH.test(url)) {
     headers.set('x-wb-user-token', auth.replace(/^Bearer\s+/i, ''))
-    headers.delete('authorization')
+    sentToken = true
   }
-  return fetch(input, { ...init, headers })
+  headers.delete('authorization')
+
+  const res = await fetch(input, { ...init, headers })
+
+  // 带着令牌还被判"会话无效" → 本地这份已经没救了，清掉并通知界面回到未登录，
+  // 否则每个请求都会重复这个错（用户会以为站点坏了）。
+  if (sentToken && res.status === 401) {
+    res
+      .clone()
+      .text()
+      .then((body) => {
+        if (!/invalid_grant/.test(body)) return
+        clearStoredSession()
+        if (typeof window !== 'undefined') window.dispatchEvent(new Event('wb-auth-invalid'))
+      })
+      .catch(() => {})
+  }
+  return res
 }
 
 export function getAuthCloud() {
@@ -164,6 +201,21 @@ const safeStringify = (v) => {
 }
 
 /** 数据库错误 → 给用户看的话（不暴露原始细节） */
+/**
+ * 认证错误 → 说人话。
+ * 后端会把 `invalid_grant: the session is invalid, expired or issued for another client`
+ * 原样带回来，直接显示给访客等于让人一脸问号（2026-11-09 主人就这么被卡过）。
+ */
+export function friendlyAuthError(err) {
+  const msg = String(err?.message || err || '')
+  if (/invalid_grant|session is invalid|expired or issued/i.test(msg)) {
+    return '登录状态已失效，请重新获取验证码登录'
+  }
+  if (/rate|too many|频繁|429/i.test(msg)) return '操作太频繁，请稍后再试'
+  if (/verification code|otp|验证码/i.test(msg)) return '验证码不正确或已过期，请重试'
+  return msg || '请求失败，请稍后再试'
+}
+
 export function friendlyDbError(err) {
   // 给站点所有者留一条可诊断的原始日志（访客看不到，DevTools 里能看到）
   if (typeof console !== 'undefined') {

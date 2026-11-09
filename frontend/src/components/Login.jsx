@@ -4,7 +4,8 @@ import { motion } from 'framer-motion'
 import {
   ArrowLeft, KeyRound, Loader2, LogIn, LogOut, Mail, ShieldCheck, Smartphone, User,
 } from 'lucide-react'
-import { getAuthCloud, setTurnstileToken } from '../utils/cloud.js'
+import { getAuthCloud, setTurnstileToken, friendlyAuthError } from '../utils/cloud.js'
+import { useAuthUser } from '../hooks/useAuthUser.js'
 import TurnstileBox, { turnstileEnabled } from './TurnstileBox.jsx'
 
 const PHONE_RE = /^1\d{10}$/
@@ -21,27 +22,16 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0)
   const [sending, setSending] = useState(false)
   const [verifying, setVerifying] = useState(false)
-  const [checking, setChecking] = useState(true)
+  // 登录态统一走 useAuthUser：它会向服务端验一次，避免"本地有旧 token 就显示已登录"。
+  // 之前这里自己抄了一份 getSession()（只读存储、不校验），所以旧会话能一直装成已登录。
+  const { user: verifiedUser, loading: checking } = useAuthUser()
+  // 本地仍保留一份可写状态：验证码通过后要立刻显示账号，退出也要立刻清空，
+  // 不必等下一次校验。以 hook 的结果为基准同步过来。
   const [user, setUser] = useState(null)
+  useEffect(() => { setUser(verifiedUser || null) }, [verifiedUser])
   const [tsToken, setTsToken] = useState('')
   const [msg, setMsg] = useState(null)
   const tsRef = useRef(null)
-
-  useEffect(() => {
-    let alive = true
-    const client = getAuthCloud()
-    client.auth.getSession()
-      .then(({ data }) => { if (alive) setUser(data?.user || null) })
-      .catch(() => {})
-      .finally(() => { if (alive) setChecking(false) })
-    const unsubscribe = client.auth.onAuthStateChange((_event, session) => {
-      if (alive) setUser(session?.user || null)
-    })
-    return () => {
-      alive = false
-      if (typeof unsubscribe === 'function') unsubscribe()
-    }
-  }, [])
 
   useEffect(() => {
     if (cooldown <= 0) return undefined
@@ -106,7 +96,7 @@ export default function Login() {
       setCode('')
       setMsg({ type: 'ok', text: '验证码已发送。新账号会在验证后自动创建。' })
     } catch (err) {
-      setMsg({ type: 'err', text: err?.message || '验证码发送失败，请稍后再试' })
+      setMsg({ type: 'err', text: friendlyAuthError(err) || '验证码发送失败，请稍后再试' })
     } finally {
       setSending(false)
       setTsToken('')
@@ -139,7 +129,7 @@ export default function Login() {
       setStep('done')
       setMsg({ type: 'ok', text: '登录成功' })
     } catch (err) {
-      setMsg({ type: 'err', text: err?.message || '验证码不正确，请重试' })
+      setMsg({ type: 'err', text: friendlyAuthError(err) || '验证码不正确，请重试' })
     } finally {
       setVerifying(false)
     }
