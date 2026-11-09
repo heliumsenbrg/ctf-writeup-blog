@@ -82,6 +82,10 @@ const FORWARD_HEADERS = [
   'prefer',
   'x-client-info',
   'range',
+  // 用户令牌（自定义头，见下方 userToken()）。**刻意不转发 authorization**：
+  // 托管平台的边缘层会给入站请求注入它自己的 Authorization，转发出去云认证会回
+  // invalid_grant「issued for another client」（2026-11-09 实测复现）。
+  'x-wb-user-token',
 ]
 
 /** Turnstile token 只在浏览器↔中转之间用，不进后端 */
@@ -283,14 +287,31 @@ function send(res, status, headers, body) {
 }
 
 /**
- * 数据面写操作要求真实登录：拿浏览器带来的用户 Bearer 去 auth /user/me 验一次。
- * 不能只在前端藏表单 —— 直接 POST 中转仍然能绕过。
+ * 取"用户自己带来的"令牌。
+ *
+ * ⚠️ **不能用 req.headers.authorization**：托管平台的边缘层会给每个入站请求
+ * 注入它自己的 `Authorization: Bearer <平台 JWT>`。转发出去云认证会回
+ * `invalid_grant: the session is invalid, expired or issued for another client`
+ * —— 2026-11-09 实测：客户端啥都没带，中转照样把它转给后端（并把匿名请求
+ * 也变成了"令牌无效"，登录/发码跟着报错）。
+ *
+ * 所以前端把 SDK 设的 Authorization 搬进 `x-wb-user-token`（原始 token，不带 Bearer），
+ * 这里再拼回标准形式；平台不会替客户端设这个头，语义就干净了。
  */
+function userToken(req) {
+  const raw = String(req.headers['x-wb-user-token'] || '').trim()
+  if (!raw) return ''
+  const bare = raw.replace(/^Bearer\s+/i, '')
+  return /^\S+$/.test(bare) ? bare : ''
+}
+
+/** 数据面写操作要求真实登录：拿浏览器带来的用户 token 去 auth /user/me 验一次。
+ *  不能只在前端藏表单 —— 直接 POST 中转仍然能绕过。 */
 async function verifyUser(req) {
-  const auth = req.headers.authorization || ''
-  if (!/^Bearer\s+\S+/i.test(auth)) return false
+  const token = userToken(req)
+  if (!token) return false
   const key = req.headers['x-wb-webapp-access-key']
-  const headers = { authorization: auth }
+  const headers = { authorization: 'Bearer ' + token }
   if (key) headers['x-wb-webapp-access-key'] = key
   try {
     const r = await upstreamRequest(BACKENDS[0], '/.cloud/auth/v1/user/me', 'GET', headers, null)
@@ -416,12 +437,11 @@ const server = http.createServer(async (req, res) => {
   // 拼转发头（Origin / Referer / Cookie 等一律不带）
   const out = {}
   for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) out[h] = req.headers[h]
-  // Auth 和已登录的数据写入要带用户 Bearer；匿名读不转发，
-  // 避免把平台边缘注入的 Authorization 带给云服务造成 invalid_grant。
+  // Auth 和已登录的数据写入要带用户 token；匿名请求一律不带 ——
+  // 绝不能回落到 req.headers.authorization（那是平台注入的，见 userToken()）
   const needsBearer = cloudPath.startsWith('/.cloud/auth/') || isDbWrite
-  if (needsBearer && req.headers.authorization) {
-    out.authorization = req.headers.authorization
-  }
+  const token = needsBearer ? userToken(req) : ''
+  if (token) out.authorization = 'Bearer ' + token
 
   try {
     let lastErr = null

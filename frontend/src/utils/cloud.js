@@ -93,6 +93,9 @@ export function getCloud() {
       endpoint: cloudConfig.endpoint,
       publishableKey: cloudConfig.publishableKey,
       storage: STORAGE,
+      // 数据库请求也要走同一个包装：登录后写留言要带用户 token，
+      // 而 Authorization 会被平台注入污染（详见 authFetch 的注释）
+      fetch: authFetch,
     })
     // 仅开发模式：把 client 挂到 window，方便在控制台/自动化里排查（生产构建不会存在）
     if (import.meta.env.DEV && typeof window !== 'undefined') window.__wbCloud = client
@@ -120,6 +123,17 @@ function authFetch(input, init) {
   const url = typeof input === 'string' ? input : input?.url || ''
   if (turnstileToken && /\/\.cloud\/auth\//.test(url)) {
     headers.set('x-turnstile-token', turnstileToken)
+  }
+  // 登录态不能靠 Authorization 传给中转：
+  // 托管平台的边缘层会给入站请求**注入它自己的** Authorization: Bearer <平台 JWT>，
+  // 中转看到就转发，云认证回 `invalid_grant: the session is invalid, expired or
+  // issued for another client`（2026-11-09 实测：客户端没带 token，中转却转了一个过去）。
+  // 改成自定义头：SDK 设的 Authorization 搬进 x-wb-user-token 再删掉原头，
+  // 中转只认这个头 —— 平台不会替我设它，语义就干净了。
+  const auth = headers.get('authorization')
+  if (auth) {
+    headers.set('x-wb-user-token', auth.replace(/^Bearer\s+/i, ''))
+    headers.delete('authorization')
   }
   return fetch(input, { ...init, headers })
 }
