@@ -25,6 +25,11 @@ export function useAuthUser() {
 
   useEffect(() => {
     let alive = true
+    // 校验完成前，SDK 的 INITIAL_SESSION 事件会带着**存储里的旧会话**回来，
+    // 如果我们直接采信，就会把刚判定为失效的登录态又塞回去（2026-11-09 实测：
+    // /me 已经正确显示未登录，/login 却又显示「身份已验证」）。
+    // 所以：校验完成（verified=true）之前的 auth 事件一律不采信。
+    let verified = false
     const client = getAuthCloud()
 
     // 关键：**不能只信本地会话**。SDK 的 getSession() 只读存储、不访问网络，
@@ -42,6 +47,7 @@ export function useAuthUser() {
       if (!alive) return
       if (!session?.user) {
         setUser(null)
+        verified = true
         setLoading(false)
         return
       }
@@ -52,13 +58,17 @@ export function useAuthUser() {
       } catch {
         if (alive) setUser(null)
       } finally {
-        if (alive) setLoading(false)
+        if (alive) {
+          verified = true
+          setLoading(false)
+        }
       }
     }
     verify()
 
     const unsubscribe = client.auth.onAuthStateChange((_event, session) => {
-      if (alive) setUser(session?.user || null)
+      if (!alive || !verified) return
+      setUser(session?.user || null)
     })
     // 令牌被后端判无效时（见 utils/cloud.js 的 authFetch），本地会话已被清掉，
     // 这里同步把界面切回未登录，避免"显示已登录、实际每个请求都 401"
