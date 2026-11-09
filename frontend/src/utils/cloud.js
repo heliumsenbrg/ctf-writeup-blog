@@ -119,7 +119,7 @@ export function setTurnstileToken(token) {
 }
 
 /** 清掉本地会话（令牌被后端判定失效时用，避免坏 token 一直污染后续请求） */
-function clearStoredSession() {
+export function clearStoredSession() {
   try {
     if (STORAGE && typeof STORAGE.removeItem === 'function') {
       STORAGE.removeItem(SESSION_STORE_PREFIX + cloudConfig.publishableKey)
@@ -150,29 +150,15 @@ async function authFetch(input, init) {
   // 改成自定义头：SDK 设的 Authorization 搬进 x-wb-user-token 再删掉原头，
   // 中转只认这个头 —— 平台不会替我设它，语义就干净了。
   const auth = headers.get('authorization')
-  let sentToken = false
   if (auth && !SIGNIN_PATH.test(url)) {
     headers.set('x-wb-user-token', auth.replace(/^Bearer\s+/i, ''))
-    sentToken = true
   }
   headers.delete('authorization')
 
-  const res = await fetch(input, { ...init, headers })
-
-  // 带着令牌还被判"会话无效" → 本地这份已经没救了，清掉并通知界面回到未登录，
-  // 否则每个请求都会重复这个错（用户会以为站点坏了）。
-  if (sentToken && res.status === 401) {
-    res
-      .clone()
-      .text()
-      .then((body) => {
-        if (!/invalid_grant/.test(body)) return
-        clearStoredSession()
-        if (typeof window !== 'undefined') window.dispatchEvent(new Event('wb-auth-invalid'))
-      })
-      .catch(() => {})
-  }
-  return res
+  // 注意：这里**不做**"看响应体里有没有 invalid_grant 就清会话"的猜测。
+  // 官方约定是按 `error.kind` 判断（shouldClearCredentials），见 useAuthUser / friendlyAuthError。
+  // fetch 层只负责把令牌放到中转认得的头上。
+  return fetch(input, { ...init, headers })
 }
 
 export function getAuthCloud() {
@@ -203,10 +189,23 @@ const safeStringify = (v) => {
 /** 数据库错误 → 给用户看的话（不暴露原始细节） */
 /**
  * 认证错误 → 说人话。
+ *
+ * 按官方约定**先看 `error.kind`**（cloud-service · auth/code-generation.md · Error Handling：
+ * "Branch on stable error.kind, not message text"），再退回 message 兜底。
  * 后端会把 `invalid_grant: the session is invalid, expired or issued for another client`
- * 原样带回来，直接显示给访客等于让人一脸问号（2026-11-09 主人就这么被卡过）。
+ * 原样带回来，直接显示给访客等于让人一脸问号（2026-11-09 主人就被这句卡了半天）。
  */
 export function friendlyAuthError(err) {
+  const kind = err?.kind
+  const code = String(err?.code || '')
+  if (kind === 'unauthenticated' || code === 'invalid_grant') {
+    return '登录状态已失效，请重新获取验证码登录'
+  }
+  if (kind === 'rate-limited') return '操作太频繁，请稍后再试'
+  if (kind === 'network') return '网络连接失败，请检查网络后重试'
+  if (kind === 'backend-unavailable') return '服务暂时不可用，请稍后再试'
+  if (kind === 'invalid-request') return err?.message || '请求参数不正确'
+
   const msg = String(err?.message || err || '')
   if (/invalid_grant|session is invalid|expired or issued/i.test(msg)) {
     return '登录状态已失效，请重新获取验证码登录'
