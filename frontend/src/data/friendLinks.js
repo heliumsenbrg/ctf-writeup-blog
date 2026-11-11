@@ -19,4 +19,6 @@ export const friendLinks = [
   { name: '懒羊羊大佬', url: 'https://yangleduo0629-cloud.github.io/-/#/', avatar: 'friends/yangleduo.svg' },
   { name: 'ss0t-HACKED', url: 'https://blog.ss0t-hacked.top', avatar: 'friends/ss0t-128.png' },
   { name: '青岑黑奴', url: 'https://poachedegg.cn/', avatar: 'friends/poachedegg.svg' },
+  // 2026-11-11：CTFshow 萌新学习群里交换的友链（对方站点：恒烈的小窝）
+  { name: '恒烈的小窝', url: 'https://eb.xbdqwq.com/', avatar: 'friends/hengli-128.png' },
 ]
