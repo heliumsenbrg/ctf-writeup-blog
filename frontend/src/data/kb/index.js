@@ -1,7 +1,7 @@
 export default {
- "generatedAt": "2026-10-24T18:17:06.634Z",
+ "generatedAt": "2026-11-11T15:07:51.294Z",
  "vault": "C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记",
- "total": 72,
+ "total": 81,
  "sections": [
   {
    "id": "concept",
@@ -339,24 +339,59 @@ export default {
        "summary": "2026-08-25 ~ 08-26 跨天会战的一道七夕主题多阶段 Misc+Crypto 题（贡献者 VMV，私人赛事）：**4 层已破、3 层卡死**，最终未拿 flag，但留下了完整的排除法记录与可复用经验。这是唯一一场未打完就中断的大型战役。"
       },
       {
+       "name": "其他赛事-NestCTF2026预选赛",
+       "title": "其他赛事-NestCTF2026预选赛",
+       "summary": "第九届「强网」拟态防御国际精英挑战赛预选赛（2026-10-31 10:00 ~ 11-01 10:00，24h）：564 队、23 题三批；队伍「想想奶龙会怎么做」。已解 3 题；Premaster 止损、Crossed Signals 90%（11-01 01:38 快照，非终态）。"
+      },
+      {
        "name": "其他赛事题解履历",
        "title": "其他赛事题解履历",
        "summary": "主平台之外的所有实战：LitCTF/Cyclens、ISCC、MoeCTF、NepCTF，以及逆向/固件/隐写专项。**每题一行，完整 writeup 在 `~/CTF/writeups/` 与博客。**"
       },
       {
-       "name": "青岑-001-water-query",
-       "title": "青岑-001-water-query",
+       "name": "青岑-001-自来水查询",
+       "title": "青岑-001-自来水查询",
        "summary": "PS87 / 863「AA 自来水在线查询」：`/server.py` 源码直接暴露，admin/admin 弱口令，`/found.do` 带 token 返回 FLAG 行。2026-10-23 解出，285 分。"
       },
       {
-       "name": "青岑-003-zhgy",
-       "title": "青岑-003-zhgy",
+       "name": "青岑-003-智慧果园后台",
+       "title": "青岑-003-智慧果园后台",
        "summary": "PS87 / 864「003-zhgy（智慧果园后台管理系统）」：`/server.py` 源码泄露 + Spring Boot Actuator heapdump 未授权，直接读 secrets 还原 flag。2026-10-23 解出，285 分。"
       },
       {
        "name": "青岑-License授权管理系统",
        "title": "青岑-License授权管理系统",
        "summary": "主人在 **ctf.qingcen.net** 上做的题：`青岑 · License 授权管理系统`（SRC 类，500 分）。**当前卡点：第二段容器（License 服务）的密钥与数据格式。**"
+      },
+      {
+       "name": "青岑-PS11-web系列清库",
+       "title": "青岑-PS11-web系列清库",
+       "summary": "PS11 ez 系列（basic / ezphp / ezmd5 / ezinfoleak / ezfl / ezfu / ezsql）2026-10-23 打到 **99/100**（仅剩 ezsql_15），当日新解 11 题全部提交 WP。这批题**每关换一个防御点**，解法模板化但细节互斥——本页按关记套路，避免下次重复踩坑。"
+      },
+      {
+       "name": "青岑-PS12-卡点档案",
+       "title": "青岑-PS12-卡点档案",
+       "summary": "PS12（misc + 逆向 + crypto + pwn）2026-10-24 起的攻坚进度：misc 已解 37，逆向已解 13（5/6/7/8/9/10/12/13/14/15/16/17/20），crypto 已解 6（46/47/48/49/50/54），pwn 已解 9（154/155/158/159/160/161/162/168/173）；**33/34/18/19 四道仍是卡点，35 已突破待确认**（10-31 快照）。本页防止下次重复推导。"
+      },
+      {
+       "name": "青岑-PS84-misc逆向十连",
+       "title": "青岑-PS84-misc逆向十连",
+       "summary": "PS84 770-779「misc 逆向十连」2026-10-24 清完（9 解 1 跳过），当日 **+2909 分**。出题人是同一人，套路高度一致：**二进制校验器 + 层层迷魂阵，真校验都是简单变换**。"
+      },
+      {
+       "name": "青岑-PS84-pwn与crypto清库",
+       "title": "青岑-PS84-pwn与crypto清库",
+       "summary": "PS84「叁玖」题集的 pwn 748-757（9/10）与 crypto 760-769（10/10）与 AI 741-786（14）三块：**pwn 是 glibc 栈利用的完整梯度**，crypto 是 RSA 攻击族的标准九连。misc 十连见 [[青岑-PS84-misc逆向十连]]。"
+      },
+      {
+       "name": "青岑-PS85-LitCTF2026清库",
+       "title": "青岑-PS85-LitCTF2026清库",
+       "summary": "PS85 收录 LitCTF 2026（题集 85）已解 16 题：**Web 靠信息泄露、Misc 靠载体识别、Re/Crypto 靠标准算法变形**。全部已提交详细版 WP。这是主人第一次打 LitCTF 系赛题。"
+      },
+      {
+       "name": "青岑-PS89-xss-labs清库",
+       "title": "青岑-PS89-xss-labs清库",
+       "summary": "PS89 xss-labs 20 关 **20/20 全解**。经典 XSS 梯度靶场（reflected → 过滤绕过 → DOM → 事件注入 → 编码混淆），本页记有 WP 的 12 关速查，其余 8 关同型。"
       },
       {
        "name": "青岑与CTFShow-题解履历",
@@ -366,7 +401,7 @@ export default {
       {
        "name": "CTF-实战解题案例集",
        "title": "CTF-实战解题案例集",
-       "summary": "从 9 篇真实 writeup 与主人实战记录里抽出「卡点 → 证据 → payload → 可迁移打法」的闭环，用来在下一道同类题里快速判断该往哪个方向撞。"
+       "summary": "从 9 篇真实 writeup 与主人实战记录、以及青岑 PS84/85/89/11/12、891、小颖、860、003/001 等清库笔记里，抽出「卡点 → 证据 → payload → 可迁移打法」的闭环。**2026-10-31 扩至 37 例，补齐原案例集完全缺失的 Pwn / Crypto / 逆向 / Misc 四类**，覆盖五类题型，用来在下一道同类题里快速判断该往哪个方向撞。"
       },
       {
        "name": "CTF博客-建设与部署",
@@ -396,9 +431,19 @@ export default {
        "summary": "依据库内证据（不是感觉）定的四周训练路线：先清 7 篇待学，再补三块短板，边清欠账，最后打硬仗。"
       },
       {
+       "name": "CTF-全品类题型解题手册",
+       "title": "CTF-全品类题型解题手册",
+       "summary": "按方向的「题型识别信号 → 解题路径 → 高频 payload / 工具」速查手册。"
+      },
+      {
        "name": "CTF-知识体系速查手册",
        "title": "CTF 知识体系速查手册",
        "summary": "一页纸的总览：各方向 + 核心 checklist，考前 / 开局快速过一遍。"
+      },
+      {
+       "name": "CTF-知识与对话总集",
+       "title": "CTF-知识与对话总集",
+       "summary": "把全部对话存档（2026-05-22 → 2026-11-01）与库内 CTF 知识体系汇编成一份单页总集：对话编年 + 五方向知识全体系 + 实战履历与工具链；细节仍以各专题页与原料为准，本页是「一页看全」的查阅层（导航/手册页型）。"
       },
       {
        "name": "CTF-知识与对话总索引",
