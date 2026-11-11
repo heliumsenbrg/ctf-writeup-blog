@@ -1,0 +1,249 @@
+const e="CTF-知识与对话总集",n="CTF-知识与对话总集",s="把全部对话存档（2026-05-22 → 2026-11-01）与库内 CTF 知识体系汇编成一份单页总集：对话编年 + 五方向知识全体系 + 实战履历与工具链；细节仍以各专题页与原料为准，本页是「一页看全」的查阅层（导航/手册页型）。",a=`# CTF-知识与对话总集
+
+> 把全部对话存档（2026-05-22 → 2026-11-01）与库内 CTF 知识体系汇编成一份单页总集：对话编年 + 五方向知识全体系 + 实战履历与工具链；细节仍以各专题页与原料为准，本页是「一页看全」的查阅层（导航/手册页型）。
+
+## 一、定位与边界
+
+- 本页是**汇编层**：对话编年消化自 16 份档案语料，知识体系消化自 56 篇概念页，履历消化自 24 篇项目页——所有细节仍在原页，本页负责「一页看全」。
+- 知识要点按「方法论一句话 + 硬知识（常量/命令/参数/判据）」组织；标注「实测」的是本机验证过的；各概念页的「存疑」栏在本页不重复展开，复用 payload 前必须回原页核对。
+- 与 [[CTF-知识与对话总索引]] 的分工：总索引=导航检索入口，本页=内容汇编版；与 [[CTF-知识体系速查手册]]/[[CTF-全品类题型解题手册]] 的分工：那两页管「比赛时怎么查」，本页管「全库有什么」。
+
+## 二、对话全记录编年（2026-05-22 → 2026-11-01）
+
+### （一）档案来源总表
+
+| 来源 | 覆盖范围 | 话题与产出 | 完整度边界 |
+|---|---|---|---|
+| 〖内部笔记〗 | Claude 侧 05-22~09-25，199 会话/1224 条 | CTF 起步（ctf.show/LitCTF/Cyclens/青岑）→ 标注插曲 → 0xGame → 逐月回落 | 只有用户侧输入，非双向全文 |
+| 〖内部笔记〗 | 06-16~10-03，126 会话/93.7 万字 | 0xGame 618 题集、青岑 SSTI/docker、NepCTF zhie VM、MoeCTF AI、七夕碎片 | 月度文本导出，工具输出有截断 |
+| 〖内部笔记〗 | 06 起，115 会话 | xor/plzdebugme 逆向、博客重构、多智能体首战、CTFShow cron、0xGame、生活协作 | state.db 逐字底稿，脱敏 194 处 |
+| 〖内部笔记〗 | 10-03 04:52~09:29 | 四写手并行建库；凭据红线 57 处裁决；收口 64 篇零断链 | 各来源粒度不一 |
+| 〖内部笔记〗 | 10-04~05 | 同款指令转增量：新建 7 篇概念页，校验揪出 5 类硬伤 | 摘要级 |
+| 〖内部笔记〗、〖内部笔记〗 | 两次同款处理 | 10-05 建总索引；10-24 增量核对（笔记 83 篇） | 只存可见消息 |
+| 〖内部笔记〗 | ZCode 侧 10-03~11-01 总览 | 建库七轮 + 青岑全量攻坚 + NestCTF 战役索引 | 10-05~10-15 无记录 |
+| 〖内部笔记〗 | Hermes 侧归档补缺 | 补上 Hermes 侧最后一块拼图 | 摘要级 |
+| ZCode 会话导出（\`01-原料/收藏/ZCode会话导出/\`） | sess_8a7（96KB/1093 条，10-31~11-01 NestCTF 全程）、sess_sub（10-15 PS12 misc）、sess_subagent（10-23 PS12 misc：bkcrack/USBPcap/MIDI/RAR PIN）、sess_8e4/sess_a29（占位） | 最新的双向逐字材料 | 8e4 建库逐字稿、a29 青岑 40MB 原档已因 rollout 轮转**永久丢失** |
+| 〖内部笔记〗 | 07-18~09-22 | 历史 CTF 题目、考点、卡点 | 话题摘要非逐字 |
+| 〖内部笔记〗 | 沉淀页 | 协作方式、偏好、教学约定、安全红线 | 沉淀版 |
+
+### （二）编年大事记
+
+**起步期（2026-05~06 上旬）**
+- 05-22 首次对话（ciallo），当天即打青岑靶机；05-23 客服工单系统渗透题 55 条大会话，LitCTF/Cyclens 开打。
+- 05-27 CTF 博客立项（71 条）；ctf.show「token 无上限」连打。
+- 05-29~06-01 阿里 labelx 图片标注插曲。
+- 06-10~11 xor.exe（修正 0x6d 误读）、plzdebugme（GDB 直读 BSS）解出；博客重构+自动部署；「Hermes 改了我的博客」——多 agent 副作用首现。
+- 06-12~14 CTFShow 自动刷题 cron 22 次运行，结论：无人值守不可靠。
+- 06-14~15 多智能体首战：PS71 9 题/2966 分（含积分商城 1000 并发竞态），固化为 ctf-multi-agent 技能。
+
+**0xGame 与夏季（2026-06-16~08）**
+- 06-16~27 0xGame2025 主战役（三 agent 分工）：529/684/545 三连；496 Ez_LLL、309 两轮 DES 已知明文、493 Ez_ECC 等硬题攻坚。
+- 07-26 「你觉得现在打 ctf 还缺什么」——刷题转补短板的转折点。
+- 08-20~31 七夕碎片谜题（461 条）；MoeCTF AI/prompt injection/LCG。
+
+**教学约定与建库（2026-09~10 上旬）**
+- 09-22 教学约定确立：做题时苏格拉底式引导，不给 payload。
+- 10-03 建库日：同一条指令并行投 4 个写手；凭据红线裁决（7 文件 57 处清理+误判保护）；收口 64 篇零断链。
+- 10-04~05 指令被多工具重发：Claude 转 7 篇增量补缺、Codex 建总索引、Hermes 全量归档 115 会话，库 64→78 篇。
+
+**青岑全量战役（2026-10-16~11-01）**
+- 10-16 青岑全量攻坚 sess_a296 启动，任务书：全部做完、没做的不许看别人 WP、做不出跳过、WP 详细+通俗。
+- 10-20~25 ZCode 建库第 4/5 轮归档：9~10 月战役 8 篇 + PS11/PS84/PS12 三篇；10-22 agent 配额重置。
+- 10-23~24 战果爆发：PS84 Pwn 9/10、misc 9 解 1 跳（+2909 分/日）；PS89 xss-labs 20/20；PS90 密码学 48/54；PS11 ez 系列 99/100；WP 补交约 305 篇中已写 90。平台 JWT 废弃改 cookie+CSRF。
+- 10-31 凌晨对账轮：PS12-35 音频题突破、PS84/85/89 清库、全品类手册成稿；sess_8e4/a29 rollout 轮转丢失（导出事故两起）。
+
+**NestCTF 战役（2026-10-31~11-01，24h 强网拟态预选赛，564 队/23 题三批，队伍「想想奶龙会怎么做」）**
+- 10-31 10:00 开赛；逆向平台 JS 摸清 API（登录 DES-ECB、\`Authorization: JWT\`），浏览器自动登录+抽 token。
+- Causal Mosaic：容器反复 502 crash loop，后台轮询约 20 分钟拿稳，拓扑排序解出，446PT（Misc 1/3）。
+- 10-31 16:20 平台整站「比赛已暂停」；匿名无凭据请求对照法证明是网关全局开关而非账号风控；17:27 恢复。
+- Premaster：教科书 Bleichenbacher oracle；修 3 个实现 bug、真靶 2048-bit 约 500 q/s，补 r-band 全扫描后数学证明区间冻结在 2^2003、需算 19 天 → 止损切快分模式。
+- Off the Curve（另一会话解出）：6 把 legacy 公钥全在曲线外，diag receipt tag 爆破 4 把小阶余数 → CRT 还原 doc-kek 私钥标量；SilentWeights 亦由另一会话解出。团队 3 题 ≈1578PT。
+- 深夜：Crossed Signals——MCP 网关按 \`Mcp-Name\` 头鉴权、按 body.name 执行，三通道错位越权拿 restricted bundle，突破到 release_state=pending 卡审批；Ghost-in-the-Queue 的 MQTT 端口平台侧故障死透，转 HTTP 侧。
+- 11-01 01:38 sess_8a7 快照定格；08:00 第三批 3 题发布，10:00 比赛结束。
+
+### （三）对话中沉淀的裁决与偏好
+
+1. **凭据红线**（10-03 裁决）：flag/口令/密钥/token 一律不落库，占位保留形状+「已略」；知识性常量保留；考点方法一字不动。
+2. **同款指令重发规矩**：建库指令会以逐字相同形式在多个工具重发——每次先核实增量、只做缺口、绝不重复建页（「重发指令≠重做」）。
+3. **多写手并发规矩**：先查最近改动、等静默、只做不重叠部分；重复页按内容质量合并；冲突「登记不覆盖」。
+4. **刷题三律**：未解出的题不看别人 WP；做不出就跳过；WP 内容详细完整但语言通俗（管理员反馈后主人补「写简单点」）。
+5. **教学约定**：主人做题时不给答案/payload/完整 exploit，用提问引导；主人汇报「试了什么→回显是什么」后再给下一步。
+6. **交流风格**：中文、极简指令（「继续」「好了吗」）、默认选「推荐」项、讨厌冗余与反复追问。
+7. **工具偏好**：交互式用浏览器图形化操作（HackBar），拒绝 curl 混写 GET/POST；代码极简不加注释。
+8. **长任务纪律**：中间结论必须写进记忆文件；允许多 agent 并行但注意配额；单题 40 分钟上限。
+9. **比赛纪律敏感**：flag 只提交一次、不写自动重试循环；被质疑违规时用匿名请求对照法自证。
+
+### （四）卡点与进行中（截至 2026-11-06）
+
+- **NestCTF 收尾**：Crossed Signals 90%（攻「信任客户端声明」把 pending 翻 approved）；Ghost-in-the-Queue 等 MQTT 恢复即可开火（脚本已备）；Pwn 0/4、Reverse 0/1 未动；若进前 30 需赛后 2 小时内交 WP。
+- **青岑**：PS11 仅剩 ezsql_15（下次试 SQL quine）；PS90 剩 6 题（919/966/967/968/969/971）数学全解卡封装格式，计划做「密钥材料序列化形态矩阵穷举器」；PS12 待清 pwn 9 题+逆向子集约 10 题；License #871 按教学约定只记进度不代做；WP 欠账约 215 篇。
+- **老题悬案**：MoeCTF 胡言乱语卡图像加密层；七夕 star.dat/moon.bin 未破、winoxar.rar 从未打开；891 李华的英语课卡 spammimic 解码器；854 文档系统判定部署损坏（全站 0 解）；CTFShow 28 道 dynamic_docker；0xGame 495/497/528/706 待补（Coppersmith 类缺 SageMath）。
+- **知识库工程**：\`说明.md\` 六.4 路径层级歧义待主人裁决；全库「关键点」栏两种体例已在 10-31 lint 轮统一；博客仓 10 文件待提交。
+
+## 三、CTF 知识全体系
+
+### （一）通用解题流程
+
+1. 读题面（标题双关、描述藏暗示）→ 2. 收信息（nmap/file/strings/binwalk/源码/robots/.git/tshark）→ 3. 按证据分类（按「能拿 flag 的路径」归类，不被平台标签限制）→ 4. 提出可证伪假设（一次改一个因素，最小探针，回显是唯一老师）→ 5. 逐步建立能力（先证明能读/能控/能触发，再放大成完整链）→ 6. 复现并写题解（没写 WP=白做）。
+战术：hint 便宜且关键；解出人数跳变=有人发非预期解；卡超 1 小时换题；链条思维（信息泄露→凭据→换入口→提权）。
+详见 [[CTF-竞赛总览与解题流程]]、[[CTF-知识体系速查手册]]、[[CTF-全品类题型解题手册]]。
+
+### （二）Web
+
+- **信息收集与源码泄露**（[[Web-源码泄露与信息收集]]）：JS 格式化后搜 api/token/admin；重点路径 .git/.env/www.zip/.DS_Store//actuator/composer.json；.git 用 \`/.git/HEAD\` 验证→GitHack 还原，\`.git/logs/HEAD\` 里的回滚版本常藏 flag；扫不到≠没有（要看 200 空页与 302 内容）。
+- **SQL 注入**（[[Web-SQL注入]]）：固定顺序「制造差异→定类型→再利用」；UNION 前 \`order by N\` 定列数；能报错就报错（updatexml/extractvalue/floor(rand(0)*2)），盲注只在没有回显时用；方言决定语句（information_schema/COPY TO PROGRAM/sqlite_master/xp_cmdshell）；WAF 绕过：\`/*!50000select*/\`、GBK 宽字节 \`%df'\`、参数污染；注入点可能在 JSON/cookie/header；sqlmap 手工确认后再上。
+- **命令执行与 SSTI**（[[Web-命令执行与SSTI]]）：空格用 \`$IFS\`/\`%09\`/\`{cat,/flag}\`；关键词拼接与 \`$(printf '\\x63\\x61\\x74')\`；无回显走写文件或 DNSlog 外带；SSTI 判型 \`{{7*'7'}}\`=7777777 是 Jinja2、49 是 Twig；Jinja2 爬 \`__class__.__mro__[1].__subclasses__()\` 找 subprocess.Popen，禁点用 \`|attr()\`。
+- **文件包含与上传**（[[Web-文件包含与上传]]）：\`php://filter/convert.base64-encode/resource=\` 读源码永远第一试；日志包含、\`.htaccess\`/\`.user.ini\` 翻盘；上传绕过分黑名单（.pHp/.phtml/图片马）与白名单（Nginx \`/1.jpg/x.php\`、IIS \`1.asp;.jpg\`）；组合链：图片马+包含→RCE，phar://+上传→反序列化。
+- **反序列化**（[[Web-反序列化漏洞]]）：指纹 O:4/rO0AB/Shiro rememberMe/pickle gASV；PHP POP 链=魔术方法里找危险函数，注意 protected 的 \`\\0*\\0\`；Java 用 ysoserial 按 classpath 选链，Fastjson 打 JNDI（8u191+ 需本地 factory）；Python \`__reduce__\` 一行出 RCE。
+- **SSRF 与 XXE**（[[Web-SSRF与XXE]]）：SSRF 主战场是内网横向——gopher 打 Redis/FastCGI/Docker API；IP 绕过表（0177.0.0.1/2130706433/127.1/@evil.com/自家 302）；云元数据 169.254.169.254；XXE 无回显走 OOB 参数实体+自家外部 DTD，\`php://filter\` 套进 SYSTEM 读源码。
+- **认证与会话**（[[Web-认证与会话漏洞]]）：JWT 排查顺序 alg→none→弱密钥爆破→RS/HS 混淆→kid 穿越；\`0e...\` 弱类型碰撞；IDOR 双账号抓包互换；CORS 反射 Origin+Credentials 即跨域读。
+- **逻辑与支付**（[[Web-逻辑漏洞与支付安全]]）：核心是「服务端信任了不该信的」；支付四连=金额改 0/负、sign 删除、伪造回调、订单遍历；画业务流程图逐节点问「服务端判断了吗、顺序能跳吗」。
+- **竞态条件**（[[Web-竞态条件攻击]]）：TOCTOU 专治积分/优惠券/一次性令牌；打法梯度 ThreadPool→asyncio→HTTP/2 单包（Turbo Intruder）；实测 1000 并发是甜点、3000+ 反降；成功信号=余额变负/权益重复发放。
+- **请求走私**（[[Web-请求走私与协议层攻击]]）：前后端对「请求到哪结束」理解不一致；CL.TE/TE.CL/TE.TE/H2.CL；铁律：必须同一 keep-alive 连接；照抄 payload 大概率不中，先探测双方栈。
+- **前端与客户端**（[[Web-客户端攻击与前端安全]]）：XSS 判型看响应体有无 payload；CSP 绕过缺 base-uri 时 \`<base>\` 劫持；原型链污染要找 gadget（lodash merge→Pug AST）；Node vm 不是安全边界（this.constructor.constructor 逃逸）；DOM clobbering 与 mXSS。
+- **CVE 复现**（[[Web-CVE复现与已知漏洞利用]]）：指纹→版本→区间比对→公开 PoC→环境适配，跳过版本比对是最大浪费；快判据 rememberMe=deleteMe→Shiro、/actuator→Spring、\`/index.php?s=\`→ThinkPHP；速查：S2-045、Log4j \`\${jndi:ldap://}\`、Spring4Shell、Shiro-550、Tomcat AJP、Next.js 2025-29927。
+
+### （三）Pwn
+
+- **栈溢出与 ROP**（[[Pwn-栈溢出与ROP]]）：checksec 定路线（NX off→shellcode；Canary→泄漏/fork 爆破，首字节必 \\x00；PIE→部分覆写低 1-2 字节）；ret2libc 两段式 puts 泄 libc；movaps 崩=栈未 16 字节对齐垫 ret；ret2csu 控 rdx；libc 反查末三位只算初筛、两函数差值才可靠。
+- **堆利用**（[[Pwn-堆利用]]）：版本分界是骨架——2.26 tcache、2.29 key 检查、2.32 safe-linking、2.34 移除 hook 转 FSOP/exit_funcs；tcache 取出不验 size，dup 撞 key 清第二 qword；打 fastbin 前先填满 7 个 tcache；unsorted 泄漏 fd=main_arena+0x60；原语四件套 UAF/double free/off-by-one/off-by-null；House of Orange 无 free 题、Apple 2 走 _wide_vtable 绕校验。
+- **格式化字符串与沙箱**（[[Pwn-格式化字符串与沙箱绕过]]）：%k$s 任意读、%k$hn 任意写，64 位地址含 \\x00 放 payload 末尾；seccomp-tools dump 看系统调用号定 ORW（open=2/read=0/write=1）；fd 不保证 3，用 rax 返回值 xchg rdi,rax；ROP 入栈顺序 rdx→rsi→rdi；x32 ABI 号|0x40000000 绕精确匹配。
+- **高级原语**（[[Pwn-高级利用原语]]）：缺 pop rdx→SROP/csu；Partial RELRO 无泄漏→ret2dlresolve；SROP 只要 pop rax+syscall，rax=15 恢复全部寄存器；House of Apple 2 字段表（_flags=" sh"、+0xd8=_IO_wfile_jumps、wide vtable+0x68 放 system）；write 禁→按字节比较+时间侧信道。
+- **内核利用**（[[Pwn-内核利用]]）：第 0 步读 run.sh 定保护档位；越界读一次拿 canary+kbase；提权三路 ret2usr/kROP/AAW→modprobe_path；KPTI 回用户态走 swapgs_restore_regs+22；堆喷按 kmalloc 缓存选 victim（tty_struct/seq_operations/user_key_payload）。
+- **浏览器与 V8**（[[Pwn-浏览器与V8利用]]）：CTF d8 多 sandbox=false；类型混淆根源在 PACKED_DOUBLE 裸 double vs PACKED_ELEMENTS 压缩指针；addrof/fakeobj 靠数组互通；OOB 靠新生代顺序分配；code exec 走 WASM RWX 页；sandbox cage 逃逸向量 EPT/WASM 跳表/Mojo。
+
+### （四）逆向
+
+- **方法论**（[[逆向-Reverse方法论]]）：file→strings（宽字符 -e l）→xxd 魔数三步判类；BSJB→dnSpy、pyi-→pyinstxtractor、go.buildid→GoReSym、UPX!→upx -d；定位比较点=提示语 Xref 命中率最高；断 strcmp 看第二参数；魔数指纹 0x9E3779B9=TEA 系、0x67452301=MD5、0x6A09E667=SHA-256；铁律：静态看不懂就下断，把算法写成 Python。
+- **算法识别**（[[逆向-算法识别与实战案例]]）：常量指纹库（MD5 IV/SHA-1 第五常量/ChaCha20 "expand 32-byte k"）；识别顺序=块长→常量→轮数；2 轮 DES 已知明文攻击可反推主密钥；Z3 从汇编提约束时小心 sscanf 参数顺序。
+- **多语言多平台**（[[逆向-多语言与多平台]]）：Go 用 GoReSym、Rust 先 grep "panicked"、.NET dnSpy 开箱即源码；布局硬知识 GoString{ptr,len} 非 \\0 结尾、GoSlice 与 Rust Vec 字段顺序相反；Python marshal 掐头 16 字节、opcode 被改建映射 patch 回标准；JNI 动态注册搜 RegisterNatives、反调试常在 JNI_OnLoad。
+- **反调试与混淆**（[[逆向-反调试与混淆对抗]]）：反调试杀伤在「悄悄走假分支」；Windows 看 PEB BeingDebugged/NtGlobalFlag；绕过四路=静态 patch/LD_PRELOAD/调试器侧（handle SIGTRAP nostop pass）/Qiling 模拟；自校验 CRC 类必须硬件断点；OLLVM 平坦化按 state 序列重排（D-810）、MBA 恒等式 (x&y)+(x|y)=x+y。
+- **动态调试与模拟**（[[逆向-动态调试与模拟执行]]）：ltrace 看库函数参数、strace -e signal 看信号驱动、Frida 改行为、Unicorn 跑片段；gdb 万能套路 break strcmp+commands 打印参数当 oracle；LD_PRELOAD 改 memcmp 返回匹配字节数造逐字节 oracle；XOR 类喂 AAAA 拿 keystream。
+- **固件与嵌入式**（[[逆向-固件与嵌入式分析]]）：熵 ~8.0=加密/压缩但魔数是第一判据；hsqs→unsquashfs（魔改换 sasquatch）；rootfs 挖点 grep passwd/shadow/api_key→init.d 后门→CGI 命令注入；模拟优先级 chroot+qemu-arch-static>FirmAE>Unicorn；UART 115200 进 U-Boot 改 bootargs 拿 shell。
+- **恶意软件分析**（[[逆向-恶意软件分析]]）：隔离→固定（sha256 身份证）→归类→分析；INetSim/FakeNet 假网；导入表只剩 LoadLibrary+GetProcAddress=动态解析 loader；熵>7.0 加密压缩；持久化六处（Run 键/schtasks/服务/WMI 订阅/启动文件夹/COM 劫持）；IOC 优先网络类。
+
+### （五）密码学
+
+- **古典密码**（[[密码学-古典密码]]）：三把尺子 IC≈0.066 单表/≈0.038 多表/居中=短密钥；字符集不变=置换；Kasiski 间距 gcd=密钥长；单表 quipqiup 最快；置换类必须 n-gram 打分；博福特 P=K-C 与变体都试。
+- **对称与哈希**（[[密码学-对称加密与哈希]]）：MODE_ECB→块重排 oracle；IV 可控→CBC 字节翻转；Padding oracle 从末块推 0x01 再 0x0202（padbuster）；长度扩展 hashpump（MD5 小端 SHA 大端）；算法指纹 AES S-box 首行 0x63 7c 77 7b、SM4 FK=0xa3b1bac6。
+- **PRNG 与流密码**（[[密码学-PRNG与流密码]]）：恢复量判据——MT19937 要 624 个连续 32bit、XorShift128+ 只要 5~10 个（64 长 LIFO 缓存必须反序）、LCG 3~6 个、C rand 0 个（ctypes 同 libc 爆秒种子）；untemper 必须迭代逆；流复用先试 crib 拖拽；GCM nonce 重用可伪造 tag。
+- **RSA**（[[密码学-RSA攻击]]）：体检先行——n<512bit→factordb、同 e 多 n→Håstad、同 n 多 e→共模、多 n→gcd 共享素因子；「多给」的参数几乎一定是考点；e=3 先判 m^e<n 直接 iroot（≠直接开方是最高频错误）；dp 泄漏枚举 k 整除 n；Coppersmith small_roots（已知 p 一半高位 β=0.5）；Wiener 连分数要求 q<p<2q；LSB oracle 二分 ~log2(n) 次。
+- **格与 LLL**（[[密码学-格与LLL]]）：植入向量须「数一数二短」LLL 才捞得出，否则是参数问题不是脚本错；造格四步=方程→定基→配平 scaling→逐行正负都试；Coppersmith 界 X<N^(β²/δ)；背包 CJLOSS 用 ±1 化；维度 ≲40 用 LLL、60~150 靠 BKZ；没 sage 别硬刚 500+bit 纯 Python LLL。
+- **椭圆曲线**（[[密码学-格与椭圆曲线]]）：上机四动作算 #E/分解阶/看判别式/看服务端校验；Smart attack 打 #E=p 异常曲线（必须 sage）；超奇异→MOV 配对转 F_p^k；无效曲线=服务端不验方程就造阶光滑曲线 CRT；ECDSA nonce 复用 k=(z1-z2)(s1-s2)⁻¹——网上把 d 公式写混是常见坑；NestCTF「Off the Curve」即小阶点+CRT 实战。
+- **哈希攻击与签名伪造**（[[密码学-哈希攻击与签名伪造]]）：总判据 H(secret‖data)+MD 族→长度扩展；CRC→GF(2) 线性（CRC(a⊕b)=CRC(a)⊕CRC(b)⊕CRC(0)）；MD5 碰撞 fastcoll/chosen-prefix；Bleichenbacher 三兄弟——'06 签名伪造（e=3 开立方）、'98/ROBOT 加密 oracle、Manger；RSA 同态 sign(m·r^e)·r⁻¹。
+- **ZKP 与约束求解**（[[密码学-ZKP与约束求解]]）：求解器选型——纯线性位→GF(2) 高斯消元、位运算+比较→z3 BitVec、非线性 S-box→z3 局部+差分降维；z3 三件套=变量选对/取值域约束/已知前缀锚点，解必须回代验证；Schnorr r 复用与 ECDSA 同数学；Groth16 送分漏洞 vk_delta_2==vk_gamma_2。
+
+### （六）杂项 · 取证 · OSINT
+
+- **隐写与编码**（[[杂项-隐写与编码]]）：起手五连 file/exiftool/strings/binwalk/xxd 看尾部；图片 zsteg -a/StegSolve 逐通道；PNG 宽高改后须重算 CRC；音频 Audacity 频谱图；SSTV 用 qsstv；zip 伪加密=加密标志改 00，已知明文 bkcrack；编码识别按字母表特征逐层剥，CyberChef Magic 先猜。
+- **流量分析**（[[杂项-取证与流量分析]]）：pcap 概览三连 io,phs/conv,tcp/follow,tcp,ascii——先统计再细看省 80% 盲找；HTTP 导出对象、TLS 靠 SSLKEYLOGFILE；USB 键盘流量按 HID 码表转 ASCII、鼠标流量转轨迹画图；DNS/ICMP 隐蔽信道看子域拼接。
+- **磁盘与内存取证**（[[杂项-磁盘与内存取证]]）：判容器 file+头部+512/4096 整倍+熵；分区 GUID 可藏魔数；删除恢复硬知识——FAT 首字节 0xE5、NTFS MFT 记录头翻转、SI 远早于 FN=timestomp；加密卷 aeskeyfind 从内存找 key schedule；内存兜底 GIMP 按屏宽当帧缓冲看桌面。
+- **主机取证**（[[杂项-Windows与Linux主机取证]]）：PSReadLine 的 ConsoleHost_history.txt 命中率最高；日志被清后 USN/MFT/Prefetch/MPLog 仍存活；EventID 1102=清日志强信号、4624/4625 登录、RDP 1149；时间戳头号坑——Chrome=WebKit epoch 自 1601、Firefox=Unix 微秒；浏览器凭据 Chrome=AES-GCM master key 在 Local State。
+- **信号与硬件**（[[杂项-信号与硬件取证]]）：音频先切频谱图一眼分 DTMF/摩斯/SSTV；IQ 无文件头按后缀读（.cf32/.cs16/.cu8）；星座图诊断圆环=频偏、螺旋=漂移；USB 鼠标 7 字节相对位移须累加；3D 打印 G-code 是坐标列表，XZ/YZ 投影常直接出字。
+- **DNS 与网络怪题**（[[杂项-DNS与网络怪题]]）：先分「信道」（高熵子域名=隧道）与「语义」（AXFR/NSEC/ECS/rebinding）；AXFR 被拒试 IXFR=0 拉历史；隧道数据先试 base32；rebinding TTL=1 奇偶轮换；TCP Fast Open 数据塞 SYN（nc 不支持，Scapy 手搓）。
+- **PyJail/NodeJail**（[[杂项-沙箱逃逸-PyJail与NodeJail]]）：三层=绕字符过滤（chr/拼接/getattr 代点）→找回内建（__subclasses__ 找 os._wrap_close）→执行 os.system；下划线过滤用 getattr(obj,'_'*2+'class'+'_'*2)；Node 主线 this.constructor.constructor('return process')()；过滤越狠越靠对象可达性而非函数名。
+- **BashJail**（[[杂项-BashJail与受限Shell]]）：第 0 步判笼子（不闭合引号看报错、尾部加 \\ 判壳类型）；拼接 c'a't、通配 /bin/c?t、$IFS 代替空格；极小字符集用 $'\\142\\141…' 八进制；rvim 挡 ：! 不挡 ：python3/:lua；无 nc 用 /dev/tcp 回传、stdout 被关用 1>&0 借 fd0。
+- **Linux 提权**（[[杂项-Linux本地提权]]）：顺序清单 id→sudo -n -l→SUID→getcap→cron→docker 组；SUID 对照 GTFObins（bash 必须 -p）；sudo 三类错=fnmatch 不带 FNM_PATHNAME 跨空格塞参/glob 只比字符串软链混淆/TOCTOU 抢窗口；tar \\* 通配符注入 --checkpoint-action；polkit UID>INT_MAX 跳过认证。
+- **口令破解**（[[杂项-口令破解与哈希爆破]]）：三段式 hashid 认类型→信号选模式→选工具；慢哈希只能字典+规则、掩码等于自杀；hashcat 四旋钮 -O/-w/-d/--restore；加密容器一律先 \\*2john；字典策略时间紧先 best64.rule。
+- **游戏与 VM**（[[杂项-游戏与虚拟机]]）：游戏题优先找验证漏洞而非真赢；WASM 作弊 wasm2wat 改比较指令；博弈算 Grundy 值异或为 0 必败；VM 四步=找 dispatch 循环→建 opcode 表→写反汇编器→按语义解；De Bruijn 序列一次覆盖全部随机码。
+- **OSINT**（[[OSINT-开源情报]]）：图片 exiftool→反向图搜→地理推理（影子方向判半球与时间）；crt.sh 查子域、Shodan/FOFA 搜暴露；Sherlock 跨平台用户名；GitHub 翻 git 历史找密钥；方法论=拼图+交叉验证。
+
+### （七）交叉与新兴方向
+
+- **区块链**（[[区块链-智能合约安全]]）：先找 isSolved() 判定条件反推；cast storage 直读 private 变量、cast index 算 mapping slot；重入=转账后才扣账，攻击合约 receive 里再 withdraw；initialize() 缺 initializer 修饰符→任何人重调改 owner；随机数同交易内恒定可预测；delegatecall 对方代码改自己 storage；selfdestruct 强推余额塞 1 wei 让 balance==0 永假；闪电贷回调内操纵现货价。
+- **云安全**（[[云安全-常见攻击面]]、[[云安全-AWS渗透实战]]）：核心套路 SSRF→元数据→偷 IAM 临时凭据→横向；0 号动作 \`aws sts get-caller-identity\`（AKIA=长期、ASIA=临时必须配 SESSION_TOKEN）；权限盲扫 enumerate-iam.py；提权三类=改自己权限/造身份/借身份（PassRole+run-instances 或 lambda update-function-code）；取数终点 secretsmanager/ssm --with-decryption/lambda get-function 预签名 URL；ssm send-command=EC2 的 RCE。
+- **容器与 Docker**（[[容器逃逸技术]]、[[Docker-Registry与远程API利用]]）：0 号动作看 CapEff 定特权档位（0000003fffffffff 即 privileged）；特权链 mount /dev/sda1+chroot 或 nsenter 更干净；CAP_SYS_ADMIN+cgroup v1→release_agent 链；CVE 表 2019-5736/2020-15257/2022-0492/dirty pipe；K8s 先 SelfSubjectRulesReview 问 RBAC，有 pods/create 造 hostPID+privileged Pod；Registry v2 探测序 /v2/→_catalog→tags→manifests→blobs，「前一层删掉的文件」在后面层仍存在；核心澄清：容器内 root≠宿主 root。
+- **移动与 IoT**（[[移动与IoT安全]]）：apktool+jadx 主力；flag 常藏 strings.xml/assets/.so；Manifest 攻击面 exported/scheme/allowBackup；Frida hook .implementation 改返回值，加固壳 frida-dexdump 内存脱壳；重打包三步 apktool b→zipalign→apksigner（v2 必须）；固件 binwalk -e→/etc/shadow/rcS/硬编码口令。
+- **AI-ML 安全**（[[AI-ML安全]]）：四形态=LLM 套 flag/模型文件逆向/成员推断/对抗样本；提示词注入话术含角色扮演/上下文淹没/伪造 system 分隔符；.pt 是 pickle 有反序列化风险；.onnx 用 Netron 看图，flag 可能藏权重数值/层名。
+- **无线与射频**（[[无线与射频安全]]）：pcap 看 EAPOL 判握手/PMKID；hashcat -m 22000（已取代老 2500）；PMKID 免抓客户端 hcxdumptool；WPS Pixie Dust 离线秒级；433M 固定码录制即重放、滚动码必须拿算法；.sub 文本打开看 RAW_Data 不用真设备。
+
+### （八）高手 WP 可复用套路
+
+来源 〖内部笔记〗（公开 WP 归纳，未逐条实测）：
+- Flask SECRET_KEY=random.seed(time·1000+偏移) 按日志时间戳爆破；上传 zip+软链 unzip 保留 symlink 读任意文件；Jinja2 取 os 六路（lipsum/url_for/config/request/__subclasses__）；pydash.set_ class pollution 改 jinja_env.variable_start_string。
+- SSRF 打 Docker API 用两次 DNS 解析 TOCTOU+rbndr.us，/containers/create 带 Binds 挂宿主；XS-Leak 把搜索命中差异当布尔 oracle；Java 反序列化回显用 ThreadLocal 改 lastServicedRequest。
+- Pwn：canary 偏移=距离差/8 直接 %31$08x 泄；canary 尾字节 0x00 覆盖+PIE 低 12 位不变赌 1/16；沙箱 ORW 用 openat(-100) 替代 open；先建原语再谈控制流。
+- Misc：零宽字符 U+200B/200C/FEFF 当比特流；PNG 宽高修复爆破 4095² 比 IHDR CRC；音频藏 zip 偶数字节 [0::2] 拼接。
+- 心法：源码审计优先于 fuzz；框架安全常量先污染守卫再污染目标。
+
+### （九）多智能体协作方法论
+
+来源 [[CTF-多智能体协作]]：
+- 适用判断：发散题（注入/绕过/逻辑）收益最高；环境重（缺 SageMath）会让所有代理卡同一堵墙，先补环境再并行。
+- 四代理分工：主线管侦察/简报/调度/验真提交，其余各攻一条**不同**路线（同路线并行=重复劳动）。
+- 流程四步：30 秒侦察探针→写自包含简报（子代理不共享状态，上下文必须前置）→并行→收口验真提交记留言板。
+- 纪律：单题 40 分钟上限；同时最多 1-2 个容器（约 60 分钟寿命、端口会变）；实测竞态题 1000 并发最佳；delegate_task 在 Windows 偶发整批失败→降级主线串行。
+
+## 四、实战履历与工具链
+
+### （一）赛事与平台履历
+
+| 赛事/平台 | 时间 | 战绩与代表题 | 卡点 |
+|---|---|---|---|
+| [[青岑平台]]（主力） | 2026-02 至今 | 5 月 120 题全通关含一血；10 月全量推进：PS89 xss-labs 20/20、PS11 99/100、PS90 crypto 48/54、PS84 misc 9解1跳+pwn 9/10+crypto 10/10、PS85 LitCTF 16 题全 WP；PS12 进行中 | License #871、PS12 多题、WP 欠账约 215 篇 |
+| 0xGame2025 | 2026-06 | 多智能体首场全流程战役约 74 题，单题集 8168 分/榜 #7；618 class pollution、620 POP 链、622 SoapClient SSRF→Redis、309 两轮 DES | 495/497 Coppersmith 类缺 SageMath、528 磁盘取证、706 平台拒收 |
+| [[CTFShow平台]] | 2026-06 | web6-11、入门 3 题具名记录 | 反自动化强（浏览器登录/session 易丢）、28 道 dynamic_docker |
+| LitCTF2026/Cyclens | 2026-07 | 16 题，RCELABS 命令注入全套（bashFuck 八进制/PHP 取反/BASH_FUNC） | （无） |
+| MoeCTF2025（PS70） | 2026-08 | dog-app Java 反序列化、玄天手镯 jsjiami v5 | 胡言乱语卡最后图像层 |
+| ISCC | 2026-05 | JWT 伪造、PassKey TOCTOU、Pwn 1-4 | （无） |
+| 七夕私人赛 | 2026-08-25~26 | 七碎片 4/7 层破（零宽/DNS 隐蔽通道/PyInstaller 内嵌 3.14/LSB） | star.dat/moon.bin 未破，唯一中断的大型战役 |
+| NestCTF2026 预选赛 | 2026-10-31~11-01 | 3 题 ≈1578PT：Causal Mosaic（拓扑排序）、Off the Curve（曲线外公钥+CRT）、SilentWeights（float32 LSB） | Crossed Signals 90%、Ghost-in-the-Queue 平台故障、Premaster 数学止损 |
+| [[其他赛事题解履历]] | — | NepCTF 探测、Hexagon/drv_game.sys 逆向等 | 见各页 |
+
+### （二）单题攻坚亮点
+
+1. **MoeCTF 胡言乱语**：pcap→tls.log→TLS 解密→secret.wav 偶数字节藏 ZipCrypto→bkcrack 用三段固定头明文解出内层 pcapng（〖内部笔记〗）。
+2. **青岑 891 老叟戏顽童**（476 分 2 解）：自实现 freelist 不摘链 UAF→泄漏裸指针解 key→任意写→.bss 假对象→配平校验锁→vtable 二级解引用劫持 win，约 26 步（〖内部笔记〗）。
+3. **PS12-19 Dancing Keys**：魔改 TEA（114 轮/sum 起 0xdeadbeef/xorshift32 种子=hash(.text)）gdb 对拍 100% 验证，只差无调试器种子。
+4. **0xGame 618**：Python class pollution 把 os.path.pardir 污染成 \`!\` 绕 Jinja2 路径检查→读 /proc/self/environ。
+5. **dog-app（870）**：HashSet→hashCode→纯反射→TemplatesImpl→defineClass，须 JDK8 对齐 serialVersionUID，flag 在 /proc/1/environ。
+6. **PS12-37 星期四的狂想**：flag 藏响应 Cookie 头（非 Set-Cookie），每 10 字符随机 str_rev/rot13 共 32 种组合暴力枚举。
+7. **PS11-ezfl_6**：PHP8+nginx 日志污染必须单引号（双引号转义后只能重建容器）；\`curl -G --data-urlencode\` 保 \`../\`。
+8. **PS84-755/756**：fork 常驻服务共享 canary 逐字节爆破；printf(buf) 泄 canary/PIE/libc 后溢出回跳 vuln 组成「泄漏循环」。
+9. **Golden Spiral LSB**：从元数据与红鲱鱼文本读出 step=Fib(17)=1597、start=Fib(18)=2584、RGB 轮转提取。
+10. **PS12-35 美妙的音乐**：MIDI 所有 tick 均为 24 倍数→tick/24 为像素列渲染出文字（[[青岑-PS12-卡点档案]]）。
+
+更多案例见 [[CTF-实战解题案例集]]（37 例，按「题面→卡点→证据→解法→可迁移经验」）与各项目页。
+
+### （三）工具链与环境
+
+- **本机**：Windows 11 + Git Bash 主终端；双 Python 坑——Git Bash python=3.11 带 CTF 全家桶（pwntools/pycryptodome/z3/angr/unicorn/gmpy2/scapy/volatility3/sqlmap/numpy/torch），PowerShell python=3.14 仅标准库，装包前先 \`which python\`。
+- **WSL Ubuntu**（用户 ctf）：pwntools、gdb+GEF、qemu-user、one_gadget、ROPgadget、seccomp-tools、binwalk、zsteg/steghide/foremost、pari/gp（**无 SageMath**——Coppersmith/格题的既知短板）；Windows 无 binwalk，重活走 WSL。
+- **反编译三件套**：Ghidra 12.1.3（headless 可用）、x64dbg、IDA Freeware 8.4；另有 010 Editor、Wireshark、Yakit。
+- **工具分组**：Web=sqlmap/Burp/ysoserial/jwt_tool；Crypto=RsaCtfTool/gmpy2/hashcat；Pwn=checksec/pwntools/one_gadget/seccomp-tools；Misc=zsteg/StegSolve/bkcrack/tshark/Volatility/CyberChef（[[CTF-常用工具清单]]）。
+- **多智能体阵容**：Claude Code/Codex/OpenCode/MimoCode/Hermes；分工=一个管容器+提交+分发，其余并行攻题。
+- **[[青岑平台]] API**：Cookie 会话+X-CSRF-Token（JWT 已废弃）；容器上限 1 个、TTL 约 1 小时、重建端口变；销毁须浏览器；附件只能浏览器下载。
+- **WP 工程化**：qc_wp_lib.py+qc_wp_sender.py 队列限流；PUT /community/posts/{id} 可编辑；正文含字面 \`\\x00\` 触发平台 50000、单篇 ≤2500 字符。
+- **博客**：React18+Vite+Tailwind GitHub Pages（ctf-writeup-blog），数据驱动；vault 改动必须重跑 \`node scripts/build-kb.mjs\`（当前 79 篇），否则 CI 卡 kb check（[[CTF博客-建设与部署]]）。
+- **Obsidian**：6 件插件（orphan 体检/Dataview/Templater/Git 回滚/QuickAdd/Omnisearch 中文检索）；插件本体不入 git（〖内部笔记〗）。
+- **网络与路径**：GitHub 直连常被重置→ghfast.top 镜像；本机代理 127.0.0.1:7890；目录约定 \`~/CTF/{scripts,writeups,ctf_downloads,temp,projects}\`；凭据一律存库外（[[本机环境与CTF工具链]]）。
+
+## 关键点
+
+- 本页是「一页看全」的汇编层：编年覆盖 16 份语料、知识覆盖五方向+交叉域 56 页、履历覆盖 9 个赛事平台；查细节回原页，查「全库有什么」看本页。
+- 最新的知识增量在 2026-10-31/11-01：NestCTF 的 Off the Curve（无效曲线+CRT）与 Premaster（Bleichenbacher 止损证明）已沉淀进编年与密码学节。
+- 三条不可破的线贯穿全部对话史：凭据不落库（「已略」占位）、未解不看 WP、原料只读不改。
+- 主人的最高频裁决是「重发指令≠重做」：同款指令每次只做增量缺口，本页即为 2026-11-06 轮的增量产物（汇编层此前不存在）。
+
+## 关联
+
+- [[index]] — 总目录入口；〖内部笔记〗 — 流水账。
+- [[CTF-知识与对话总索引]] — 导航版总索引（本页是内容汇编版，两者互补）。
+- [[CTF-知识体系速查手册]] / [[CTF-全品类题型解题手册]] — 一页纸 vs 展开版速查，比赛时用。
+- [[CTF-竞赛总览与解题流程]] — 通用方法论入口；[[CTF-实战解题案例集]] — 37 例案例库。
+- [[CTF-成长路线-2026年10月]] — 训练路线；[[协作附录-非CTF事项与存档导览]] — 非 CTF 协作线与产物导览。
+- 各会话档案：〖内部笔记〗、〖内部笔记〗、〖内部笔记〗、〖内部笔记〗、〖内部笔记〗、〖内部笔记〗 — 编年部分的一手来源。
+
+## 存疑 / 矛盾
+
+- 各会话来源「全量」口径不同：199 次记录不是 199 份双向全文；sess_8e4 建库逐字稿与 sess_a29 青岑 40MB 原档已永久丢失（rollout 轮转两起事故），编年表中相应段落以库内叙事版为准。
+- 本页知识要点由并行探员从各概念页消化而来，压缩过程中可能丢失版本限定条件（如「仅 PHP<5.3.4」「glibc 2.23-2.31」）——复用 payload 前必须回原页核对存疑栏。
+- NestCTF 团队得分「≈1578PT」与「≈1490PT」两种数法并存于 [[其他赛事-NestCTF2026预选赛]] 与项目记忆，⚠️ 以赛后终榜为准。
+- ZKP 页、无线页、口令破解页等多页自标「未逐条实测」；本页如实继承，不因汇编而升级置信度。
+
+## 来源
+
+- 五路并行只读探员消化：16 份会话语料 + \`02-笔记/概念/\` 56 篇 + \`02-笔记/项目/\` 24 篇 + \`02-笔记/实体/\` 5 篇 + 输出区 4 篇 + \`.workbuddy/memory/2026-10-31.md\` + 青岑战役项目记忆 4 份 · 2026-11-06
+- 主人同款指令「整理全部对话+CTF 知识写入文件」2026-11-06 轮；同日并行会话维护的库外私有归档 \`C:\\Users\\hwh\\CTF-全集归档.md\`（私有不发布，2026-11-06 23:35 重建至 322KB/6917 行，覆盖 2026-10-03~11-06 的 698 条可见消息）——它存逐字 transcript，本页是库内可检索汇编层，互不替代
+- 编排依据：〖内部笔记〗（导航/手册页型 + 骨架七段）· 2026-11-06
+`,t="output",o="output",i={internal:["AI-ML安全","CTF-全品类题型解题手册","CTF-多智能体协作","CTF-实战解题案例集","CTF-常用工具清单","CTF-成长路线-2026年10月","CTF-知识与对话总索引","CTF-知识体系速查手册","CTF-竞赛总览与解题流程","CTFShow平台","CTF博客-建设与部署","Docker-Registry与远程API利用","OSINT-开源情报","Pwn-内核利用","Pwn-堆利用","Pwn-栈溢出与ROP","Pwn-格式化字符串与沙箱绕过","Pwn-浏览器与V8利用","Pwn-高级利用原语","Web-CVE复现与已知漏洞利用","Web-SQL注入","Web-SSRF与XXE","Web-反序列化漏洞","Web-命令执行与SSTI","Web-客户端攻击与前端安全","Web-文件包含与上传","Web-源码泄露与信息收集","Web-竞态条件攻击","Web-认证与会话漏洞","Web-请求走私与协议层攻击","Web-逻辑漏洞与支付安全","index","云安全-AWS渗透实战","云安全-常见攻击面","其他赛事-NestCTF2026预选赛","其他赛事题解履历","区块链-智能合约安全","协作附录-非CTF事项与存档导览","容器逃逸技术","密码学-PRNG与流密码","密码学-RSA攻击","密码学-ZKP与约束求解","密码学-古典密码","密码学-哈希攻击与签名伪造","密码学-对称加密与哈希","密码学-格与LLL","密码学-格与椭圆曲线","无线与射频安全","本机环境与CTF工具链","杂项-BashJail与受限Shell","杂项-DNS与网络怪题","杂项-Linux本地提权","杂项-Windows与Linux主机取证","杂项-信号与硬件取证","杂项-取证与流量分析","杂项-口令破解与哈希爆破","杂项-沙箱逃逸-PyJail与NodeJail","杂项-游戏与虚拟机","杂项-磁盘与内存取证","杂项-隐写与编码","移动与IoT安全","逆向-Reverse方法论","逆向-动态调试与模拟执行","逆向-反调试与混淆对抗","逆向-固件与嵌入式分析","逆向-多语言与多平台","逆向-恶意软件分析","逆向-算法识别与实战案例","青岑-PS12-卡点档案","青岑平台"],unresolvedCount:17},r={name:e,title:n,summary:s,content:a,section:t,group:o,links:i};export{a as content,r as default,o as group,i as links,e as name,t as section,s as summary,n as title};
