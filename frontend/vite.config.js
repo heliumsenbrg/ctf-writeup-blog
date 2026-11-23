@@ -722,11 +722,15 @@ export default defineConfig({
   base: process.env.VITE_BASE || (process.env.VERCEL ? '/' : '/ctf-writeup-blog/'),
   plugins: [react(), devDataPlugin(), seoStaticPlugin(), cspPlugin()],
   server: {
-    host: '0.0.0.0',
+    // 只在环回地址监听。dev 服务器会按请求读本地源码，绑 0.0.0.0 等于把
+    // 整个工作区暴露给同网段（校园网/公共 WiFi 尤其危险）。
+    // 要真机调试就临时 DEV_HOST=0.0.0.0 npm run dev，别改回默认。
+    host: process.env.DEV_HOST || '127.0.0.1',
     port: 3000,
-    // 发布到 WorkBuddy 沙箱后是经反向代理访问的，不放行主机会被 Vite 拦成
-    // "Blocked request. This host is not allowed."
-    allowedHosts: true,
+    // 沙箱/反向代理会带自己的 Host 头，完全不拦就成了 DNS rebinding 的入口。
+    // 只放行本地与 WorkBuddy 托管域名（前导点 = 含子域）。
+    // ⚠️ Vite 对纯 IPv4 的 Host 一律放行，所以真正的防线是上面的 host，不是这个列表。
+    allowedHosts: ['localhost', '127.0.0.1', '.workbuddy.host', '.workbuddy.cn'],
   },
   preview: {
     host: '0.0.0.0',

@@ -90,8 +90,13 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(3000, '0.0.0.0', () => {
-  console.log('🚀 Blog static server on http://localhost:3000');
+// 只绑环回地址：本脚本会把 /api/ 无条件代理到本机 4000 端口，
+// 绑 0.0.0.0 等于让同网段（校园网/公共 WiFi）任何人借道访问你本地的测试后台。
+// 需要在手机上调试时用 HOST=0.0.0.0 node serve.js 显式打开，别默认开着。
+const LISTEN_HOST = process.env.HOST || '127.0.0.1';
+
+server.listen(3000, LISTEN_HOST, () => {
+  console.log(`🚀 Blog static server on http://${LISTEN_HOST}:3000`);
   console.log('📡 API proxy → http://localhost:4000');
 });
 

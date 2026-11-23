@@ -334,8 +334,10 @@ const server = http.createServer(async (req, res) => {
 
   // 非预检请求也要校验来源：只回 CORS 头只能挡住"跨站读取"，挡不住"跨站写入"——
   // 别的站点可以直接 POST 过来，拿不到响应也照样触发写入（2026-10-24 审计）。
-  // ⚠️ Origin 是客户端自我声明，改不了脚本请求，所以这里是**提高门槛**不是鉴权；
-  //    真正的护栏仍是 IP 限流 + 数据面 RLS。
+  // ⚠️ Origin 是客户端自我声明，脚本可以不带它，所以这里是**提高门槛**不是鉴权。
+  //    真正的护栏是下面的 verifyUser（写操作必须带有效用户令牌）+ 数据面 RLS。
+  //    2026-11-23 实测三种情况：无 Origin → 401 login_required；伪造 Origin → 403；
+  //    白名单 Origin 但未登录 → 401 login_required。即"绕过 Origin"本身拿不到任何东西。
   if (origin && !ALLOWED_ORIGINS.includes(origin)) {
     return send(res, 403, { 'Content-Type': 'application/json; charset=utf-8' },
       JSON.stringify({ error: 'origin_not_allowed' }))
