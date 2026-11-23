@@ -444,11 +444,18 @@ const server = http.createServer(async (req, res) => {
   if (token) out.authorization = 'Bearer ' + token
 
   try {
+    // sharecode 只是平台发布站点的访问门槛（前端为了过门槛加的），
+    // 不能原样转给云数据面 —— PostgREST 会把未知查询参数当错误。
+    const fwdQuery = new URLSearchParams(url.search)
+    fwdQuery.delete('sharecode')
+    const qs = fwdQuery.toString()
+    const upstreamPath = cloudPath + (qs ? '?' + qs : '')
+
     let lastErr = null
     let upstream = null
     for (const base of BACKENDS) {
       try {
-        upstream = await upstreamRequest(base, cloudPath + url.search, req.method, out, body)
+        upstream = await upstreamRequest(base, upstreamPath, req.method, out, body)
         break
       } catch (e) {
         lastErr = e
