@@ -27,7 +27,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 // 但它们在公开仓库中同样会被分发，必须纳入扫描范围。
 const REPO_ROOT = path.join(ROOT, '..')
 const SCAN_DIST = process.argv.includes('--dist')
-const SCAN_DIRS = ['src', 'public', 'scripts', 'relay', 'cloudflare']
+const SCAN_DIRS = ['src', 'public', 'scripts', 'relay']
 const SCAN_FILES = ['index.html', 'vite.config.js', 'package.json', '.env.production']
 // data.json 已于 2026-11-09 移除（根目录遗留副本，代码里无人引用）
 const REPO_FILES = ['.github/workflows/deploy.yml', 'db/moderation.sql']

@@ -8,7 +8,7 @@
  *     Origin = heliumsenbrg.github.io              → 403 access_denied
  * 博客放在 GitHub Pages 上，浏览器发的跨域请求必被拒。
  *
- * 原本的方案是 Cloudflare Worker（frontend/cloudflare/），但实测
+ * 原本的方案是 Cloudflare Worker（已废弃，2026-11-23 删除该目录），但实测
  * **`*.workers.dev` 在国内被 DNS 污染 + SNI 阻断**，代理也救不回来 ——
  * 对国内访客等于没修。所以改把同样的逻辑跑在**国内可达**的托管域上。
  *

@@ -236,7 +236,7 @@ export function friendlyDbError(err) {
   if (code === '42501') return '服务器拒绝了这次操作（权限不足）'
   if (code === '42P01') return '留言表不存在，请稍后再试'
 
-  // Cloudflare Worker 挡下的（见 frontend/cloudflare/cloud-proxy-worker.js）：
+  // Cloudflare Worker 挡下的（该方案已废弃，frontend/cloudflare/ 于 2026-11-23 移除）：
   // 人机校验没通过 / 来源不在白名单 / 上游连不上。
   // Worker 返回的是自造 JSON，字段名不固定，所以整条错误串起来匹配，别只认某个字段。
   const all = `${code} ${rawMsg} ${safeStringify(err)}`
