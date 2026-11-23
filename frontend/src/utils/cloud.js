@@ -138,9 +138,22 @@ export function clearStoredSession() {
  */
 const SIGNIN_PATH = /\/\.cloud\/auth\/v1\/(verification|signin|signup|otp|verify)/
 
+// 平台当前要求访问发布站点必须带分享码（裸域名返回「链接不完整」）。
+// 这是给访客的公开值，不是密钥；只对 workbuddy.host 的请求补，避免污染其它域名。
+const SHARE_CODE = import.meta.env.VITE_RELAY_SHARECODE || ''
+
+function withShareCode(u) {
+  if (!SHARE_CODE || typeof u !== 'string') return u
+  if (!u.includes('.app.workbuddy.host')) return u
+  if (/[?&]sharecode=/.test(u)) return u
+  return u + (u.includes('?') ? '&' : '?') + 'sharecode=' + SHARE_CODE
+}
+
 async function authFetch(input, init) {
   const headers = new Headers(init?.headers)
-  const url = typeof input === 'string' ? input : input?.url || ''
+  const rawUrl = typeof input === 'string' ? input : input?.url || ''
+  const url = withShareCode(rawUrl)
+  const target = url === rawUrl ? input : url
   if (turnstileToken && /\/\.cloud\/auth\//.test(url)) {
     headers.set('x-turnstile-token', turnstileToken)
   }
@@ -158,7 +171,7 @@ async function authFetch(input, init) {
   // 注意：这里**不做**"看响应体里有没有 invalid_grant 就清会话"的猜测。
   // 官方约定是按 `error.kind` 判断（shouldClearCredentials），见 useAuthUser / friendlyAuthError。
   // fetch 层只负责把令牌放到中转认得的头上。
-  return fetch(input, { ...init, headers })
+  return fetch(target, { ...init, headers })
 }
 
 export function getAuthCloud() {
