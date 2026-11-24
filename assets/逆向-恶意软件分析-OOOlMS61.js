@@ -1,0 +1,295 @@
+const n="逆向-恶意软件分析",e="逆向-恶意软件分析",t="给一个来路不明的样本，回答三个问题——**这是什么（静态）、干了什么（动态）、怎么通信（网络 IOC）**。这页给的是「先隔离后动手」的操作顺序、一张「看到什么 ⇒ 用哪个手法」的判据表，以及静态/动态/脱壳/持久化/IOC/YARA 的可跑骨架；CTF 里它对应样本分析题、勒索木马题、IOC 提取题。",a=`# 逆向-恶意软件分析
+
+> 给一个来路不明的样本，回答三个问题——**这是什么（静态）、干了什么（动态）、怎么通信（网络 IOC）**。这页给的是「先隔离后动手」的操作顺序、一张「看到什么 ⇒ 用哪个手法」的判据表，以及静态/动态/脱壳/持久化/IOC/YARA 的可跑骨架；CTF 里它对应样本分析题、勒索木马题、IOC 提取题。
+
+## 一、0 号动作：先把「不炸到自己」做掉
+
+恶意样本和普通逆向题最大的区别是**它会反击你的分析环境**（反 VM、反调试、改主机、联网回连）。所以顺序永远是 **隔离 → 固定 → 归类 → 分析**，不要在本机双击。
+
+\`\`\`bash
+# 起手三件套（本机 Git Bash / WSL 都行，只做「不执行」的读取）
+file      sample.bin
+sha256sum sample.bin                       # 先哈希：查 VT / 入库 / 写报告都用它
+xxd sample.bin | head -4                   # 看魔数：MZ / \\x7fELF / PK / \\xca\\xfe\\xba\\xbe / hsqs
+\`\`\`
+
+**隔离环境最低配置（写进脑子，别省）**：
+
+- **快照可回滚的虚拟机**（VMware/VirtualBox/Hyper-V），跑完 \`回滚快照\` 而不是「删文件」；宿主装分析机、样本只进分析机。
+- **断网或假网**：真分析用 **INetSim / FakeNet-NG** 伪造 DNS+HTTP+SMTP，让样本「以为连上了」从而吐出完整 C2 行为；CTF 里若只是静态题，直接拔网卡更省事。
+- **不放真凭据**：分析机里别登任何真实账号（样本会偷浏览器 profile、SSH key、token）。
+- **宿主机与样本不同网段**，禁用共享文件夹与剪贴板（有些样本主动找 VMware 共享目录）。
+
+> ⚠️ 红线：本页只讲**防御性/取证性**分析（CTF、应急响应、威胁情报）。不写、也不帮你写能实际传播、回连、持久化的成品恶意代码。
+
+## 二、判据表：观测到什么 ⇒ 用哪个手法
+
+这是本页最该记住的一张表，**边看样本边对照**，比背工具清单有用：
+
+| 观测到的现象 | 用哪个手法 | 关键细节 / 一眼判据 |
+|---|---|---|
+| \`file\` 说是 PE，但 \`strings\` 几乎无可用串 | 样本**加壳**或字符串加密 | 先上 \`diec\`/\`exeinfope\` 看壳名，再进 §五 脱壳 |
+| 高熵区段（\`.text\` 熵 > 7.0） | 加密/压缩载荷、壳 | \`python\` 算 Shannon 熵，见 §三 |
+| 区段名是 \`UPX0/UPX1\`、文件里有 \`UPX!\` | UPX 壳 | \`upx -d\` 一条命令直接脱 |
+| 导入表极小（只有 \`LoadLibrary\`+\`GetProcAddress\`） | 运行时动态解析 API（规避静态导入分析） | 看字符串里有没有 \`kernel32.dll\` 或 API 名明文 |
+| \`strings\` 出 IP + 端口 / 长 URL / UA | C2 线索 | 提取成 IOC，见 §七 |
+| 出现 \`IsDebuggerPresent\`/\`NtQueryInformationProcess\` | 反调试 | 交叉 [[逆向-反调试与混淆对抗]] |
+| 出现 \`CreateRemoteThread\`+\`VirtualAllocEx\` | 进程注入 / hollowing | 动态跑，Procmon 看它注入了谁 |
+| 出现 \`HKCU\\...\\CurrentVersion\\Run\` | 注册表 Run 持久化 | 见 §六 持久化表 |
+| 出现 \`schtasks\`/\`sc create\`/WMI 串 | 计划任务/服务/WMI 持久化 | 见 §六 |
+| 样本只打印一句话就退出 | 多为 CTF 自写样本，逻辑在静态里 | 直接 IDA/Ghidra 抠算法，别上沙箱 |
+| 有 \`flag\`/异或/RC4 常量 | 明文字符串/载荷解密 | 找解密函数喂密文，见 §五 |
+| 文件名带 \`locker\`/\`encrypt\`/\`.locked\` 扩展 | 勒索行为 | 找加密算法、密钥生成、勒索信 |
+
+## 三、静态分析：不执行也能拿到一半答案
+
+顺序固定：**文件类型 → 哈希 → 字符串 → PE 头 → 导入表 → 熵 → 壳**。
+
+\`\`\`bash
+# 1) 字符串：先 ASCII 后宽字符（UTF-16LE），恶意软件常用宽字符藏串
+strings -a -n 6 sample.bin | head -100
+strings -a -e l sample.bin | grep -Ei 'http|\\.dll|cmd|powershell|schtasks|SELECT|pass'
+FLOSS sample.bin            # 还原被混淆/栈上拼接的字符串（比 strings 强）
+
+# 2) 壳 / 编译器识别
+diec sample.bin             # Detect It Easy：壳名、编译器、熵图
+exeinfope sample.bin        # 备选
+
+# 3) 导入表（判断「能干什么」最快的一步）
+rabin2 -i sample.bin        # radare2：导入函数清单
+dumpbin /imports sample.bin # Windows 下 MSVC 自带
+objdump -x sample.bin | grep -A50 'Import'   # Linux/PE 通吃
+
+# 4) 时间戳 / 编译信息（配合主机取证做时间线）
+exiftool sample.bin
+\`\`\`
+
+**PE 头里几个必看字段**：
+
+- \`TimeDateStamp\`（编译时间）——**可被伪造**，只能当线索，配合 [[杂项-Windows与Linux主机取证]] 的时间线交叉。
+- 区段表：\`.text/.rdata\` 正常；\`UPX0/UPX1\`=UPX；乱码名如 \`.packed\`、无名可执行段 = 可疑壳。
+- 区段**熵值**：用 Python 现算，> 7.0 基本是加密/压缩。
+
+\`\`\`python
+# entropy.py —— 算每个区段的 Shannon 熵，判壳/加密
+import math
+from collections import Counter
+
+def ent(b: bytes) -> float:
+    c = Counter(b); n = len(b)
+    return -sum((v/n) * math.log2(v/n) for v in c.values())
+
+with open("sample.bin", "rb") as f:
+    data = f.read()
+print("whole file entropy: %.2f" % ent(data))
+# 逐区段：可用 pefile 解析后对每段 data 调 ent()
+\`\`\`
+
+\`\`\`bash
+pip install pefile && python -c "
+import pefile; pe=pefile.PE('sample.bin')
+for s in pe.sections:
+    print(s.Name.decode(errors='replace').strip(chr(0)), hex(s.PointerToRawData), len(s.get_data()))
+"
+\`\`\`
+
+**能力分类（capa 一把梭）**：\`capa sample.bin\` 直接按 MITRE ATT&CK 风格输出「这个样本具备哪些能力」（持久化/注入/C2/加解密），**离线、只静态**，是快速定性的好起点。旧样本 / 非 PE 平台可能识别不全，此时回退到手读导入表 + 字符串。
+
+## 四、动态分析：让它自己招供
+
+动态分析的产出是**行为清单**，不是「跑没跑起来」。工具组合固定：
+
+| 工具 | 看什么 | 起手 |
+|---|---|---|
+| Process Monitor (Procmon) | 文件、注册表、进程/线程、网络四类事件 | 先设 Filter 排除自身噪声，再启动样本 |
+| Process Hacker / Process Explorer | 进程树、内存区、线程、句柄、注入 | 看「谁起了谁」「谁注入了谁」 |
+| API Monitor / x64dbg 日志 | Win32 API 调用序列 | 定位到具体 API 判断行为 |
+| Wireshark | 网络流量、真 C2 | 配合 FakeNet 抓「连了谁、发了什么」 |
+| Regshot | 注册表前后快照 diff | 跑前拍一次、跑后拍一次，diff 出持久化键 |
+| FakeNet-NG / INetSim | 伪造网络服务 | 断网时让样本吐出完整 C2 请求 |
+
+**标准流程**：起监控 → 跑样本 → 观察 5~10 分钟（恶意软件常 \`Sleep\` 数分钟才动，见反沙箱）→ 手动触发联网功能 → 记录四类行为：**网络连接 / 文件增删改 / 注册表改动 / 新起进程**。
+
+\`\`\`powershell
+# PowerShell 侧的可疑网络/进程快照（动态跑样本时另开窗口）
+Get-NetTCPConnection -State Established | Select-Object RemoteAddress,RemotePort,OwningProcess
+Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine
+# 父进程可疑（如 winword.exe 起了 powershell）→ 宏投递/注入
+\`\`\`
+
+**沙箱（不改本机就能看行为）**：
+
+- **ANY.RUN**：交互式云沙箱，能看实时屏幕、点「可疑动作」。**默认公开**，别传未脱敏的敏感样本。
+- **Hybrid Analysis / VirusTotal**：上传即出行为报告，VT 的 Behavior 页就是动态摘要。同样**公开**。
+- **CAPE / Cuckoo**：自建。**Cuckoo 已停更（Python2）**，新环境用 **CAPE**（Cuckoo 的分支，加了配置提取、调试器）。
+- Joe Sandbox：商业，企业环境。
+
+> 沙箱结果的坑：**假阴性**很常见——样本检测到 VM/CPU 核数/鼠标不动就休眠不干活。沙箱报告「无恶意行为」≠ 干净，要配合静态与 [[逆向-反调试与混淆对抗]] 判断。
+
+## 五、脱壳与去混淆
+
+**脱壳两条路：静态脱（能直接还原）和动态脱（dump 内存）**。
+
+\`\`\`bash
+# UPX：最常见也最好脱，一条命令
+upx -d sample.bin -o sample_unpacked.bin
+
+# 通用壳：先 diec 看壳名，再决定
+# - 单步/内存壳（自定义、VMProtect 等）：动态 dump + 重建 IAT
+\`\`\`
+
+**动态脱壳思路**：壳的特征是「运行时先把真实代码解密/解压到内存，再跳过去执行」。所以**脱壳点 = 原始入口点（OEP）**。做法：
+
+1. x64dbg 载入，在 \`VirtualAlloc\`/\`VirtualProtect\`（内存变为可执行）处下断。
+2. 单步到壳把控制权交还真实代码的瞬间（常见特征：向 \`.text\` 大跳转、\`pushad\`/\`popad\` 配对）。
+3. **Scylla** 插件 dump 进程内存 + 重建 IAT；\`OllyDumpEx\` 类似。
+4. **PE-sieve**：不手动找 OEP，直接扫描进程，检测被 hollow/注入/替换的内存区域并 dump 出来——对抗进程挖空（process hollowing）省事。
+5. **Unipacker**：面向「单步/内存壳」的自动化脱壳框架，可先试。
+
+**去混淆**（壳内逻辑常见）：
+
+| 混淆形态 | 去法 |
+|---|---|
+| 字符串异或/加减常量 | 找到解密函数，喂密文；或写脚本按同一算法解 |
+| 栈上拼串（\`mov\`+\`add\` 逐字符） | 动态在写入点下断看结果，或模拟执行 |
+| 控制流平坦化（大 \`switch\` 分发） | 交叉 [[逆向-算法识别与实战案例]]，可上 \`angr\`/符号执行还原 |
+| API 动态解析（\`LoadLibrary\`+\`GetProcAddress\`） | 记录运行时解出的 API 名，补回导入表 |
+| 载荷二次解密（自身是 loader） | 抓内存里解密后的第二段，单独 dump 成新样本再分析 |
+
+## 六、持久化机制识别（Windows 为主）
+
+跑完样本，第一件事是**「它怎么活下来的」**。对照下表逐处查注册表/系统：
+
+| 机制 | 位置 / 命令 | 判据 |
+|---|---|---|
+| 注册表 Run 键 | \`HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\`（及 \`HKLM\`、\`RunOnce\`、\`Wow6432Node\` 变体） | 自启动最常见的第一落点 |
+| 计划任务 | \`schtasks /query /fo LIST /v\`、\`C:\\Windows\\System32\\Tasks\\\` | 看触发器与执行命令 |
+| 服务 | \`sc query\`、\`HKLM\\SYSTEM\\CurrentControlSet\\Services\\\` | \`ImagePath\` 指向样本 |
+| WMI 事件订阅 | \`Get-WmiObject -Namespace root\\subscription -Class __EventFilter\` 等 | 隐蔽，无文件落盘的持久化 |
+| 启动文件夹 | \`%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\` | 放个 lnk/脚本 |
+| DLL 劫持 / COM 劫持 | 搜索路径缺 DLL；\`HKCR\\CLSID\\{...}\\InprocServer32\` | 改注册表指向恶意 DLL |
+| 引导记录 | MBR/VBR 修改 | 少见，勒索/rootkit 层 |
+
+\`\`\`powershell
+# 一次性盘点持久化面（主机侧，跑完样本后查）
+Get-CimInstance Win32_StartupCommand | Select-Object Name,Command,Location,User
+Get-ScheduledTask | Where-Object { $_.State -ne 'Disabled' } | Select TaskName,TaskPath
+Get-CimInstance Win32_Service | Where-Object { $_.PathName -notmatch 'C:\\\\Windows' } | Select Name,PathName,StartMode
+\`\`\`
+
+Linux 侧对应 \`~/.bashrc\`、\`/etc/cron*\`、systemd unit、\`~/.config/autostart\`（提权链另见 [[杂项-Linux本地提权]]）。
+
+## 七、C2 与 IOC 提取
+
+**IOC（Indicators of Compromise）**要按类别扫，扫到的每一条都是可查、可写进 YARA/SIEM 的资产：
+
+\`\`\`yaml
+Network:            # 最值钱，优先提取
+  - IP / 域名 / URL / URI 路径
+  - User-Agent 字符串
+  - JA3 / JA3S TLS 指纹          # 换个 IP 也认得出来
+File System:
+  - 落盘的路径与文件名
+  - 样本及子文件哈希（MD5/SHA1/SHA256）
+  - Mutex 名（同一家族常复用）
+Registry:
+  - 被改的键（尤其持久化位置）
+Process:
+  - 进程名 / 命令行参数 / 被注入的宿主进程
+\`\`\`
+
+**C2 通信形态**（决定你抓不抓得到）：HTTP/HTTPS 混在正常流量里、DNS 隧道（看超长/高频子域）、DGA 域名（每次生成一批候选、连不上再换）、fast-flux、Tor/I2P、走社交平台/云服务（Pastebin、云 API）。**HTTPS 抓不到明文时改用 JA3 指纹 + 证书字段 + 连接时序**做 IOC。
+
+\`\`\`bash
+# 从 pcap 里批量抽 IOC（离线，安全）
+tshark -r c2.pcap -Y 'dns' -T fields -e dns.qry.name | sort -u          # DNS 域名
+tshark -r c2.pcap -Y 'http.request' -T fields -e http.host -e http.user_agent | sort -u
+tshark -r c2.pcap -Y 'ip' -T fields -e ip.dst | sort -u                  # 目标 IP
+# 详细流量手法见 [[杂项-取证与流量分析]]
+\`\`\`
+
+**YARA：把「一个样本」变成「一类样本」的检测规则**。要素 = 特征串 + 布尔条件：
+
+\`\`\`yara
+rule Malware_Generic_Packer
+{
+    meta:
+        description = "Detects common packer characteristics"
+        author = "Analyst"
+    strings:
+        $mz      = { 4D 5A }          // MZ 头
+        $upx     = "UPX!" ascii
+        $section = ".packed" ascii
+    condition:
+        $mz at 0 and ($upx or $section)
+}
+\`\`\`
+
+\`\`\`bash
+yara -r rules.yar ./samples/          # 递归扫目录
+\`\`\`
+
+更实用的 CTF 规则用**该题专属的硬编码常量**（异或密钥、特征 URL 段、勒索扩展名）当 \`strings\`，命中率远高于通用壳特征：
+
+\`\`\`yara
+rule CTF_Ransom_Tell
+{
+    strings:
+        $ext   = ".locked" ascii nocase
+        $note  = "recover" ascii nocase
+        $xor   = { 9C E7 1B 4A }      // 从题里抠出的密钥/魔数
+    condition:
+        any of them
+}
+\`\`\`
+
+## 八、CTF 结合点
+
+| 题型 | 典型入口 | 首选动作 |
+|---|---|---|
+| **样本分析题**（给你一个 exe/elf 说「分析它」） | 静态为主 | \`file\`→\`strings\`→IDA/Ghidra 找 compare/解密逻辑，逻辑多半就在静态里 |
+| **勒索/木马题**（复原被加密数据） | 找加密算法+密钥 | 定位密钥生成（常硬编码/PRNG），写解密脚本；见 [[密码学-对称加密与哈希]] |
+| **IOC 提取题**（问「C2 地址是什么」「UA 是什么」） | \`strings\`/pcap | 直接抠字符串或 \`tshark\` 出字段，见 §七 |
+| **混淆/脱壳题** | \`diec\`→脱壳 | UPX 直接 \`upx -d\`；自定义壳用动态 dump + IAT 重建 |
+| **内存取证 + 恶意进程** | 镜像 | Volatility 的 \`malfind\`/\`netscan\`，见 [[杂项-磁盘与内存取证]] |
+
+**CTF 样本与真实恶意软件的关键差异**：CTF 样本通常**不含真正的破坏/回连能力**，沙箱可能毫无反应——这时**别死磕动态，回到静态**（IDA/Ghidra）抠算法，往往十分钟出 flag。
+
+## 关键点
+
+- **先隔离后动手，先哈希后分析**：\`sha256sum\` 是样本的身份证，VT/入库/报告全靠它；分析环境必须能回滚快照，且不放真凭据。
+- **静态顺序固定**：\`file\`→\`strings\`(ASCII+宽字符)→\`FLOSS\`→\`diec\`→\`rabin2 -i\`/\`dumpbin\`→算熵。导入表极小（只有 \`LoadLibrary\`+\`GetProcAddress\`）几乎必定是动态解析 API 的壳/loader。
+- **熵 > 7.0 的区段 = 加密/压缩**，先想到壳；\`UPX!\` 直接 \`upx -d\`，其余壳走「找 OEP → Scylla dump + 重建 IAT」或直接上 **PE-sieve**。
+- **动态分析产出行为清单，不是「跑起来了」**：Procmon（文件/注册表/进程/网络）+ Regshot（注册表 diff）+ Wireshark/FakeNet（网络）是最小组合。样本常 \`Sleep\` 数分钟才动。
+- **沙箱「无恶意行为」≠ 干净**：反 VM 会造大量假阴性。云沙箱（ANY.RUN/VT/Hybrid）**默认公开**，别传敏感样本。
+- **持久化查六处**：Run 键、计划任务、服务、WMI 订阅、启动文件夹、DLL/COM 劫持。查注册表 + \`schtasks\` + \`sc query\` 三连即可覆盖九成。
+- **IOC 优先提网络类**；HTTPS 抓不到明文时用 **JA3 指纹 + 证书 + 连接时序**当替代指标。
+- **YARA 用本题专属常量**（异或密钥、特征 URL、勒索扩展名）远比通用壳特征耐用。
+- **CTF 里动态没反应就回静态**：样本大概率是「无害的模拟木马」，答案在 IDA/Ghidra 的比较与解密逻辑里。
+
+## 关联
+
+- [[逆向-Reverse方法论]] —— 本页是它在「恶意样本」场景的特化：那份「判类型→选工具链」的表先跑一遍，再进本页的隔离与行为分析流程。
+- [[逆向-反调试与混淆对抗]] —— 样本的 anti-VM/anti-debug/控制流平坦化直接决定动态分析能否生效，脱壳与去混淆的对抗细节在那页更全。
+- [[杂项-Windows与Linux主机取证]] —— 分析成品样本是「前因」，主机取证是「后果」；Run 键、计划任务、Amcache/Prefetch 的落地痕迹两边交叉验证。
+- [[杂项-取证与流量分析]] —— §七 的 C2/IOC 提取要靠 pcap 手法（tshark follow/导出对象），那页有完整协议级工具链。
+- [[杂项-磁盘与内存取证]] —— 无文件/注入型样本只活在内存里，靠 Volatility \`malfind\`/\`netscan\` 抓，与本页动态分析互补。
+- [[逆向-多语言与多平台]] —— 非 PE 样本（Linux ELF、macOS Mach-O、脚本化投递）的格式与工具链在那页。
+- [[逆向-固件与嵌入式分析]] —— IoT 恶意样本（Mirai 类）落在固件/嵌入式，是同一方法论的另一载体。
+
+## 存疑 / 矛盾
+
+- ⚠️ **本页全部内容提炼自一份技能文档，未逐条上机实测**：命令语法（尤其 \`diec\`/\`capa\`/\`FLOSS\`/\`rabin2\` 的参数）随工具版本变化，落地前先 \`--help\` 确认，别照抄报错。
+- ⚠️ **沙箱与云服务状态会过期**：Cuckoo 停更（Python2 遗留），现行自建方案是 **CAPE**；ANY.RUN/VT/Hybrid 都是**公开上传**，条款与隐私策略会变，敏感样本一律不上云。
+- ⚠️ **动态分析结论是「这一次运行」的观测，不是定理**：反 VM/反沙箱、时间触发（等特定日期）、需要交互才触发的样本，在沙箱里安静不代表无害；反之 CTF 自写样本可能毫无行为，别把「沙箱没报」当结论。
+- ⚠️ **TimeDateStamp 与区段熵都是可伪造的线索**：时间戳能被改、熵能被 padding 拉低；只当启发式，不做定论。
+- ⚠️ **与 [[逆向-反调试与混淆对抗]] 有明确重叠**：脱壳、去混淆、反调试三块两页都讲；本页从「样本行为」视角切入，算法级对抗细节以那页为准，避免两边越写越分叉。
+- ⚠️ **YARA 小节里的通用壳规则（\`UPX!\`/\`.packed\`）误报率高**：只适合教学/快速筛，生产检测要用本题专属常量 + 严格条件与 \`condition\` 组合，否则一条规则能匹配半个良性软件池。
+- ⚠️ **持久化位置随 Windows 版本变化**：\`Run\`/\`RunOnce\` 仍有 \`Wow6432Node\` 重定向，WMI 订阅与 COM 劫持的查询姿势在新版也有差异；以目标机实际 Windows 版本为准。
+- ⚠️ **CTF 样本 ≠ 真实恶意软件**：真实分析（应急响应）讲究「不触发、不泄露、留证据」，CTF 可放开跑；两套纪律不要互相套用。
+
+## 来源
+
+- 糯米内建知识整理 · 2026-10-05，提炼自 malware-analyst/SKILL.md 技能文档（正文未逐条上机实测，边界见「存疑 / 矛盾」）
+- [SKILL 原文](../../01-原料/收藏/技能文档/malware-analyst/SKILL.md) —— 2026-10-05 归档进库
+`,s="concept",r="reverse",o={internal:["密码学-对称加密与哈希","杂项-Linux本地提权","杂项-Windows与Linux主机取证","杂项-取证与流量分析","杂项-磁盘与内存取证","逆向-Reverse方法论","逆向-反调试与混淆对抗","逆向-固件与嵌入式分析","逆向-多语言与多平台","逆向-算法识别与实战案例"],unresolvedCount:0},i={name:n,title:e,summary:t,content:a,section:s,group:r,links:o};export{a as content,i as default,r as group,o as links,n as name,s as section,t as summary,e as title};

@@ -1,0 +1,217 @@
+const n="杂项-游戏与虚拟机",e="杂项-游戏与虚拟机",o='Misc 里"看起来像游戏/像一台机器"的两类题：一类是**交互式游戏**（要赢、要最优策略、或压根不走正路），一类是**自定义 VM/字节码**（先反汇编成伪码再解题）。这页先教分类，再给判据和骨架。',t=`# 杂项-游戏与虚拟机
+
+> Misc 里"看起来像游戏/像一台机器"的两类题：一类是**交互式游戏**（要赢、要最优策略、或压根不走正路），一类是**自定义 VM/字节码**（先反汇编成伪码再解题）。这页先教分类，再给判据和骨架。
+
+## 一、先分类：三种题，三套打法
+
+拿到题先归位，别拿一套手法去套所有题：
+
+| 类别 | 典型形态 | 核心动作 |
+|---|---|---|
+| **游戏交互型** | 服务端/浏览器里跑一局游戏，赢才能拿 flag | 先找"验证是否独立于玩得好不好"，再考虑破解状态或求最优策略 |
+| **VM / 字节码型** | 给一段自定义指令流（.bin/.vm）、或一个解释器 | 逆出 opcode 表 + 解释器循环 → 反汇编成伪码 → 按语义解 |
+| **小游戏解谜** | 迷宫、数独、nonogram、拼图、扫雷、序列题 | 把题目降维成图论/线性代数/SAT 问题，写脚本自动解 |
+
+**第一反应永远是读题面找 hint**：关键词"最优""最少步数""impossible""fortune""time travel"几乎都在指向某一类策略。
+
+## 二、判据表：看到什么 ⇒ 用什么
+
+| 观察到的现象 | 首选解法 | 关键细节 |
+|---|---|---|
+| 游戏有"proof/校验"但只校验走法位置 | 改游戏逻辑（patch WASM/memory）而非求胜 | 验证不依赖"是否最优"就能作弊 |
+| 有 /api/start、/api/win 之类端点 | 直接调 API，跳过前端 | 服务器若只校验"耗时够长"就能睡够时间直接 win |
+| State 存在 cookie 里 | \`flask-unsign -d\` 解码 / 存 restore cookie 当存档 | Flask 会话默认**只签名不加密** |
+| 浏览器游戏、状态在 JS 对象里 | 控制台直接改 \`player.x/y\` 再调校验函数 | WebSocket 题同理 |
+| 组合游戏（取石子/翻硬币类） | Sprague-Grundy，异或 Nim-value | 有 GF(2^8) 运算时先算 Grundy |
+| 概率"不可能赢"（连赢 N 次） | 找浮点误差 / 改 WASM 线性内存 / 改 RNG | 见第四节 |
+| 每局随机码必须包含在输入里 | De Bruijn 序列，一次覆盖全部 | 长度 = k^n + n - 1 |
+| 速度要求人类不可能完成 | 把画面/状态转成网格，BFS 自动走 | 采样"格子中心"像素 |
+| 给了一坨自定义指令 | 逆 opcode 表 + 写反汇编器 | 先找 dispatch 循环 |
+| 给了解释器二进制 + 字节码文件 | 纯静态逆解释器，或动态 trace | trace 每条指令的副作用最快 |
+
+## 三、游戏逻辑"不走正路"
+
+大多数游戏题**不要求你真会玩**，只要找到验证的漏洞。按成本从低到高：
+
+**1. 直接调 API 绕过前端。** 找 \`start/collect/win\` 这类端点。经典模式：服务器只校验"从开始到现在经过了 \`map_length/speed\` 秒"，那就 \`sleep\` 够时间再提交：
+
+\`\`\`python
+import requests, time
+s = requests.Session()
+sid = s.post(f"{T}/api/start").json()['session_id']
+time.sleep(25)                                  # 只需"看起来"走了够久
+s.post(f"{T}/api/collect_flag", json={'session_id': sid})
+print(s.post(f"{T}/api/win", json={'session_id': sid}).json())
+\`\`\`
+
+**2. 篡改客户端状态 / cookie。** 浏览器游戏直接改内存里的对象；服务端把进度放 cookie 时：Flask 会话用 \`flask-unsign -d -c '<cookie>'\` 就能**只读地**解码出正确答案（默认不加密）：
+
+\`\`\`bash
+flask-unsign -d -c '<session_cookie>'   # 得到 {"correct_pos": {...}, ...}
+\`\`\`
+
+更通用的是**把 cookie 当存档**：每次尝试前存一份，失败就回滚，从而无惩罚地爆破。
+
+\`\`\`python
+ck = s.cookies.get_dict()          # 存档
+r = s.post(f"{T}/api/click", json={'tile': t})
+if not r.json().get('correct'):
+    s.cookies.clear(); s.cookies.update(ck)   # 读档
+\`\`\`
+
+**3. Patch 逻辑 / 改内存。** 客户端校验独立于"玩得多好"时，把游戏改成陪你演：
+
+- **WASM 改指令**：\`wasm2wat\` → 把 minimax 的 \`bestScore\` 初值取反 / 翻转比较指令（\`i64.lt_s\`→\`i64.gt_s\`）→ \`wat2wasm\`。AI 变菜但 proof 依旧有效。
+- **WASM 改数据**：不碰二进制，加载后在 Node 里直接写**线性内存**的固定偏移，把"连胜计数"设成差一次、把胜率设成 100%：
+
+\`\`\`javascript
+const { instance } = await WebAssembly.instantiate(buf, imports);
+const mem = new DataView(instance.exports.memory.buffer);
+mem.setInt32(0x102918, 14, true);    // 连胜计数器 = 14（再赢一次即可）
+mem.setInt32(0x102898, 100, true);   // 胜率 = 100%
+instance.exports.flipCoin();          // 必赢
+\`\`\`
+
+定位偏移：\`wasm-objdump -x game.wasm\` 或搜索已知常量。
+
+**4. 浮点精度套利。** 大倍数放大会暴露 float64 的表示误差：\`0.56 * 1e15 = 560000000000000.0625\`，把**整数部分**卖掉、把 \`.0625\` 的尾数留下当"白送的钱"。判据信号：题面出现"时间旅行放大一切""不允许小数""初始值正常数学赢不了"。
+
+\`\`\`python
+def find_exploit(mult, need_bal, need_inv):
+    for i in range(1, 500):
+        x = i/100.0
+        inv = x*mult; bal = (5.0-x)*mult
+        sell = int(inv)                      # 只卖整数部分
+        if bal+sell >= need_bal and inv-sell >= need_inv:
+            return x, sell
+# find_exploit(1e15, 5e15, 0.05) -> (0.56, 560000000000000)
+\`\`\`
+
+## 四、博弈与最优策略
+
+**组合博弈看 Nim-value**：局面胜负只看"各堆 Grundy 值的异或"是否为 0；要赢就找一堆把它异或成 0。GF(2^8) 变体（取石规则在有限域上）不能靠异或，要按域运算算 Grundy：
+
+\`\`\`python
+def gf256_mul(a, b, poly=0x11b):          # GF(2^8) 乘法，poly 取 0x11b
+    r = 0
+    while b:
+        if b & 1: r ^= a
+        a <<= 1
+        if a & 0x100: a ^= poly
+        b >>= 1
+    return r
+# 先对每个子状态算 Grundy，再按域运算合成；异或为 0 = 必败局面
+\`\`\`
+
+**状态空间大就用记忆化搜索**（返回"当前玩家能否必胜"）：
+
+\`\`\`python
+from functools import lru_cache
+@lru_cache(maxsize=None)
+def win(state):
+    for mv in moves(state):
+        if not win(apply(state, mv)):     # 能走到一个对手必败局面
+            return True
+    return False
+# Python 太慢（>10s）就换 C++，把局面压成一个整数做 key；C++ 可以抄这个结构
+\`\`\`
+
+**经典"不可能"概率题 = 记住最优策略**：
+
+- **100 prisoners**：每个囚犯从**自己的号码**出发沿着排列环走，全员成功率约 \`1 - ln2 ≈ 30.7%\`（随机策略是 \`(1/2)^N\`）。若盒子排列已知，先检查有没有环长超过 \`N/2\`。
+- **15-puzzle 可解性当编码位**：\`(逆序数 + 空格所在行距底行数) 为偶\` = 可解；128 个拼图每个编码 1 bit，拼成 flag。
+- **Levenshtein 距离 oracle**：空串先测长度，再逐字符/二分定位。
+
+## 五、自定义 VM / 字节码逆向
+
+**四步走**：① 找 **dispatch 循环**（通常是 \`while(pc < len) switch(op[pc++])\`）；② 建 **opcode 表**（每个 case 动了哪个寄存器/内存）；③ 写 **反汇编器**把字节流翻成可读伪码；④ 按伪码语义解（常常等价于一个小检查循环）。
+
+先标出虚拟机状态：寄存器数组、内存数组、栈、pc、标志位。然后逐条记录"读哪些、写哪些"。
+
+\`\`\`python
+# 反汇编骨架：先人工看解释器填好这张表
+OPS = {
+    0x10: ('PUSH', 1),   # (助记符, 立即数/操作数字节数)
+    0x20: ('POP', 0),
+    0x30: ('ADD', 0),
+    0x40: ('JMP', 4),
+    0x50: ('JZ', 4),
+    0x60: ('XOR', 3),
+    # ...
+}
+def disasm(code):
+    pc, out = 0, []
+    while pc < len(code):
+        op = code[pc]
+        if op not in OPS:
+            out.append((pc, 'DB', code[pc])); pc += 1; continue
+        name, n = OPS[op]
+        imm = code[pc+1:pc+1+n]
+        out.append((pc, name, int.from_bytes(imm, 'big') if imm else None))
+        pc += 1 + n
+    return out
+# 更稳的做法：动态 trace 解释器，记录每条指令执行前后改了哪个寄存器
+# 在解释器 switch 的每个分支打点，或 hook 内存写，比纯静态猜 opcode 表快得多
+\`\`\`
+
+**判断"是 VM 还是真 CPU"**：VM 的字节码里出现重复的"取字节→查表→跳转"结构，且数据与代码混在一个数组里；真 CPU 有对齐的指令、固定的 ABI。**别把 VM 当算法题硬解**——先反汇编成伪码，通常一眼看出是逐字符比较。
+
+## 六、小游戏解谜套路
+
+| 题型 | 打法 | 关键点 |
+|---|---|---|
+| 每局随机码要作为子串出现 | De Bruijn 序列 \`B(k,n)\` | 线性化补 \`n-1\` 字符，长度 \`k^n+n-1\`，一次发送覆盖全部 |
+| 迷宫（图片流转网格） | 采样格子中心像素 → BFS | 采**中心**不采边界，避免墙厚污染；\`CELL\` 先量一次 |
+| Nonogram → 二维码 | 解析约束 → 求解 → 渲染 → 解码 | 补白边（quiet zone）再解 |
+| Brainfuck 逐字符校验 | 给解释器插桩，找"错误计数"单元，逐位爆破 | 每位试 95 个可打印字符，3800 次几分钟出 |
+| XSLT/纯模板语言 | 当成 VM，用它的递归/条件搭原语 | 先搭二分/取位，再提数据 |
+| 序列题（给前 N 项求下一项） | OEIS 一次查询搞定 | 难点在 PoW/captcha 包装，不在数学 |
+| 线性递推 + 巨大 N | 矩阵快速幂 \`O(log N)\` | 爬楼梯步数 {1..k} 一定是线性递推 |
+| 本地找茬（截图/碎片） | 像素边缘 Hamming 距离贪心拼接 | 边缘 bitmask 异或 + popcount |
+
+\`\`\`python
+# De Bruijn：一次发送覆盖所有 n 位二进制码
+def de_bruijn(k, n):
+    a = [0]*k*n; seq = []
+    def db(t, p):
+        if t > n:
+            if n % p == 0: seq.extend(a[1:p+1])
+        else:
+            a[t] = a[t-p]; db(t+1, p)
+            for j in range(a[t-p]+1, k):
+                a[t] = j; db(t+1, t)
+    db(1, 1); return seq
+seq = ''.join(map(str, de_bruijn(2, 12)))
+payload = seq + seq[:11]           # 长度 4096 + 11 = 4107，含全部 12 位码
+\`\`\`
+
+## 关键点
+
+- **归位第一**：交互游戏 / VM 字节码 / 小游戏解谜，三套打法不要混；题面关键词是最强 hint。
+- 游戏题优先找"验证漏洞"：只校验耗时、只校验位置、cookie 存答案、客户端可改状态——**真去赢通常最难**。
+- 组合博弈 = Nim-value/Grundy；大概率"不可能"题 = 记住经典最优策略（100 prisoners、15-puzzle 可解性编码）。
+- VM 题的顺序是**逆 dispatch 循环 → 建 opcode 表 → 反汇编 → 解语义**；动态 trace 常比纯静态猜表快。
+- 解谜题一律"降维成图/线性代数/SAT"后用脚本解，别手推。
+
+## 关联
+
+- [[逆向-Reverse方法论]] —— VM 题的一半工作量是逆解释器循环，通用逆向手法（找循环、建映射）在那边。
+- [[逆向-算法识别与实战案例]] —— 序列/递推/校验算法常直接考算法识别，与本页第六节互通。
+- [[杂项-沙箱逃逸-PyJail与NodeJail]] —— "自定义语言/VM 的沙箱逃逸"是同一族题的另一半，那边讲逃逸、这边讲逆向。
+- [[杂项-隐写与编码]] —— 迷宫图片采样、二维码重组用到的图像/编码基础。
+- [[Web-竞态条件攻击]] —— 并行连接共享 PRNG（牺牲一条连接探测答案）属于"多连接 oracle"思路。
+- [[CTF-常用工具清单]] —— wasm2wat/wat2wasm、flask-unsign、z3 等入口。
+
+## 存疑 / 矛盾
+
+- **"patch 游戏逻辑"要确认 proof 独立性**：如果 proof 确实绑定了"最优性"（如签名覆盖整条决策路径），改逻辑会生成无效 proof。先读校验代码再动手。
+- **WASM 内存偏移不是稳定的**：\`0x102918\` 这类偏移是某个编译产物的属性，**换一个 wasm 就得重新 \`wasm-objdump\`/搜常量**，不能照抄。
+- **flask-unsign \`-d\` 只能读不能改**：要伪造状态还需 secret（常见弱 secret 可用 \`flask-unsign --wordlist\` 爆破）；只读泄漏答案是一个子集，别当成万能。
+- **De Bruijn 的长度按 \`k^n + n - 1\` 卡**：若题面字符预算明显小于该值，说明它要的是别的构造（如允许重叠的贪心拼接），先核对长度再写。
+- **浮点套利的成功依赖具体语言/版本的四舍五入行为**：同一算式在 Python 与 C 的 \`printf\` 下未必一致，务必在**目标同款环境**里验证过的 x 值再发。
+- 本页绝大多数手法出自 2016–2026 各赛事 writeup，**具体偏移/端口/常量随题而变**；判据（找 dispatch 循环、找验证漏洞、降维）比结论更耐用。
+
+## 来源
+
+- 糯米内建知识整理 · 2026-10-03，提炼自 ctf-misc skill \`games-and-vms.md\` / \`-2.md\` / \`-3.md\` / \`-4.md\`（Pragyan 2026 Tac Tic Toe、BearCatCTF 2026 De Bruijn/Brainfuck/WASM memory、BYPASS CTF 2025 cookie/flask/time-only、EHAX 2026 多阶段密码博弈、Sharif CTF 100 prisoners 与 15-puzzle、Sharp 34C3 二分 oracle 等）。
+`,s="concept",i="misc",a={internal:["CTF-常用工具清单","Web-竞态条件攻击","杂项-沙箱逃逸-PyJail与NodeJail","杂项-隐写与编码","逆向-Reverse方法论","逆向-算法识别与实战案例"],unresolvedCount:0},r={name:n,title:e,summary:o,content:t,section:s,group:i,links:a};export{t as content,r as default,i as group,a as links,n as name,s as section,o as summary,e as title};

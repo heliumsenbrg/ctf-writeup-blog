@@ -1,0 +1,1 @@
+const a="nuomi:activity:";function i(t,c){if(t)try{const e=a+t,r=JSON.parse(localStorage.getItem(e)||"[]");r.unshift({...c,at:Date.now()}),localStorage.setItem(e,JSON.stringify(r.slice(0,20)))}catch{}}function n(t){if(!t)return[];try{return JSON.parse(localStorage.getItem(a+t)||"[]")}catch{return[]}}export{n as a,i as r};

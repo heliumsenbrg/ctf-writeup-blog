@@ -1,0 +1,49 @@
+const n="青岑-PS84-misc逆向十连",r="青岑-PS84-misc逆向十连",e="PS84 770-779「misc 逆向十连」2026-10-24 清完（9 解 1 跳过），当日 **+2909 分**。出题人是同一人，套路高度一致：**二进制校验器 + 层层迷魂阵，真校验都是简单变换**。",s=`# 青岑-PS84-misc逆向十连\r
+\r
+> PS84 770-779「misc 逆向十连」2026-10-24 清完（9 解 1 跳过），当日 **+2909 分**。出题人是同一人，套路高度一致：**二进制校验器 + 层层迷魂阵，真校验都是简单变换**。\r
+\r
+## 一、总套路（先读这个再做题）\r
+\r
+1. **先跑再逆**：本地可执行文件本身就是 oracle（喂输入看输出）\r
+2. **常量从 pxb 抠**：IDA 的 ASCII 列视图会骗人，hex 视图（pxb）才可靠\r
+3. **迷魂阵识别**：恒等变换（反转两次、memcmp 恒等链）都是烟雾弹，找真正的比较点\r
+4. **flag 格式惯例**：全 43 字节 \`flag{...}\` 双括号存储，**提交时交单括号**\r
+\r
+## 二、逐关速查\r
+\r
+| 关 | 名字 | 真校验 | 一句话解法 |\r
+|---|---|---|---|\r
+| 770 | 迷雾重重 | \`buf[i] ^ (37+13i) == key[i]\` | main 的 scramble（两次反转）=恒等烟雾；.rdata 抠 key 异或即出 |\r
+| 771 | 千层饼 | doVerify 五类 op 状态机（轮数 \`(3+7i)%30\`） | 恒等 memcmp 链是烟幕；**静态读漏两处派生**（\`ebp=r10^0x3b\`、\`r12d=r10^0x17\`），gdb 单步对拍揪出 |\r
+| 772 | 藏头诗 | \`pass[i] = (7i+35) ^ dll表[i]\` | dllOpen 的 GetProcAddress **赋值顺序陷阱**——\`[rbp+8]\` 是 Get 不是 Len；无换行喂 stdin |\r
+| 773 | 拼图缺一块 | **未解（唯一跳过）** | APK RC4 变体（KSA key=\`DATA[:16]\`）+ 第二遍 \`(137+55i)^rol3\`；Unicorn ARM64 模拟成功但 **idx23 数学上不可打印**——\`EncData.DATA\` 疑似被改一位（呼应题面"缺一块"）；若重启：修正 DATA[23] 后再逆 |\r
+| 774 | 老六行为 | C++ 五类五段 XOR | base 递进 0x1b（0/0x1b/0x36/0x51/0x6c）；**读表必须 pxb** |\r
+| 775 | 信号灯 | 裸 x86-64 syscall shellcode | 链式 XOR：\`bl\` 初 0x37，\`bl = tbl[i-1]^0x37\` |\r
+| 776 | 洋葱圈 | TEA（输入加密后比常量） | **no-section-header 的 ELF 照跑**；flag = 常量 TEA 解密；key = \`cafebabe/deadbeef/8badf00d/feedface\` 四 dword |\r
+| 777 | 马赛克 | 4-class \`dynamic_cast\` 分发 = 分块 XOR 'A'-'D' | 块 1 由 \`flag{\` 前缀钉死 0x43；剩 3! 排列本地跑 exe 验证 |\r
+| 778 | 快递到了 | host+dll 拆箱 | 无校验，运行就打印 |\r
+| 779 | 盲盒 | 大端 MIPS ELF | WSL \`qemu-mips\` 一行跑出 |\r
+\r
+## 关键点\r
+\r
+- **771 的"静态读漏派生寄存器"**：复杂状态机静态分析漏了 \`ebp/r12d\` 两处运行时派生，导致模型对不上——**gdb 单步对拍**（同一输入下静态预测值 vs 实际寄存器值）是兜底手段。\r
+- **772 的 GetProcAddress 顺序陷阱**：连续多个 \`GetProcAddress\` 赋值时，变量与函数的对应关系要逐个核对，别按声明顺序脑补。\r
+- **776 的 stripped ELF**：section header 被抹掉不影响运行（动态加载只看 program header）；工具打不开时直接跑。\r
+\r
+## 关联\r
+\r
+- [[逆向-Reverse方法论]] —— "先跑再逆 / 找比较点"的决策流程\r
+- [[逆向-反调试与混淆对抗]] —— 花指令与迷魂阵\r
+- [[逆向-多语言与多平台]] —— MIPS/ARM（qemu）\r
+- 〖内部笔记〗 —— 所属总战役\r
+- 〖内部笔记〗 —— 同平台的 Pwn 深度题\r
+\r
+## 存疑 / 矛盾\r
+\r
+- 773 的"DATA[23] 被改一位"是从"数学上不可打印"反推的，未验证；8MB data.bin 判定为噪声同样未验证。\r
+- 各关 key/常量取自当时静态分析，重新出题会变。\r
+\r
+## 来源\r
+\r
+- ZCode 项目记忆 \`qingcen-ps84-misc-series.md\`（2026-10-24）· 归档于 \`01-原料/收藏/ZCode会话导出/项目记忆-青岑战役/\`\r
+`,c="project",t="project",d={internal:["逆向-Reverse方法论","逆向-反调试与混淆对抗","逆向-多语言与多平台"],unresolvedCount:2},i={name:n,title:r,summary:e,content:s,section:c,group:t,links:d};export{s as content,i as default,t as group,d as links,n as name,c as section,e as summary,r as title};
