@@ -2,12 +2,24 @@ import { useEffect, useState } from 'react'
 import { shouldClearCredentials } from '@tencent-ai/workbuddy-cloud-sdk'
 import { getAuthCloud, clearStoredSession } from '../utils/cloud.js'
 
+// 访客昵称：每个账号一个随机会话名，不再从邮箱前缀/手机尾号拼。
+// 邮箱前缀常是真名或 QQ 号，手机尾号也能缩小范围 —— 这些一旦被预填进留言框，
+// 访客不改直接发布就等于把自己的账号线索贴上公屏（2026-11-24 审计）。
+const anonCache = new Map()
+
+function randomTag() {
+  const bytes = new Uint8Array(3)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) crypto.getRandomValues(bytes)
+  else for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256)
+  return Array.from(bytes, (b) => b.toString(36).padStart(2, '0')).join('').slice(0, 4)
+}
+
 export function displayName(user) {
-  const name = user?.name || user?.user_metadata?.name
-  if (name) return name
-  if (user?.email) return user.email.split('@')[0]
-  if (user?.phone) return `访客${user.phone.slice(-4)}`
-  return '已登录访客'
+  const explicit = user?.name || user?.user_metadata?.name
+  if (explicit) return explicit
+  const key = user?.id || user?.email || user?.phone || 'anon'
+  if (!anonCache.has(key)) anonCache.set(key, '访客-' + randomTag())
+  return anonCache.get(key)
 }
 
 export function maskAccount(user) {

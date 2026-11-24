@@ -21,3 +21,19 @@ export function maskUnpublished(text, resolvable) {
     return alias || MASK
   })
 }
+
+/**
+ * 把本机绝对路径里的用户名换成 `<user>`（2026-11-24 审计：`C:\Users\<user>\...` 会随
+ * 笔记正文与 index.js 的 `vault` 字段一起被发布到线上，等于把 Windows 用户名公开）。
+ *
+ * 保留原分隔符的数量：JSON 里是 `C:\\Users\\<user>`（双反斜杠），Markdown 正文里是单反斜杠；
+ * 若统一替换成固定写法，其中一种就会显示成怪样子。
+ * 只改用户名那一段，其余路径结构（CTF/scripts 之类）保留 —— 那些不指向人。
+ */
+const USER_PATH = /((?:[A-Za-z]:|\\?\/[a-z])?[\\/]{1,2}Users[\\/]{1,2})([^\\/"'`\s<>]+)/g
+
+export function maskUserPaths(text, placeholder = '<user>') {
+  return String(text ?? '').replace(USER_PATH, (whole, prefix, name) =>
+    name === placeholder ? whole : prefix + placeholder
+  )
+}

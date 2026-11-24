@@ -1,6 +1,6 @@
 export default {
- "generatedAt": "2026-11-23T04:31:00.909Z",
- "vault": "C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记",
+ "generatedAt": "2026-11-24T04:33:04.082Z",
+ "vault": "<vault>",
  "total": 78,
  "sections": [
   {

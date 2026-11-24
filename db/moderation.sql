@@ -80,6 +80,10 @@ BEGIN
     -- 用 to_jsonb 取，避免 plpgsql 在编译期依赖某张表一定有 user_id 列
     uid  := coalesce(to_jsonb(NEW)->>'user_id', '');
 
+    -- 时间戳一律由服务端定（2026-11-24 审计）：anon 有 created_at 的 INSERT 权限，
+    -- 客户端只要传一个很早的时间，下面按时间窗口统计的限流就一次都数不到。
+    NEW.created_at := now();
+
     -- quest_board 的正文列叫 quest 不是 content；
     -- plpgsql 的字段访问是运行时解析的，必须分支，不能直接写 NEW.content
     IF TG_TABLE_NAME = 'quest_board' THEN

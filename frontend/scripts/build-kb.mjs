@@ -5,14 +5,17 @@
  * 全部校验通过后才落盘；重跑会整体重建 notes/（删除多余旧文件）。
  */
 import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { WIKILINK, MASK, maskUnpublished } from './kb-mask.mjs'
+import { WIKILINK, MASK, maskUnpublished, maskUserPaths } from './kb-mask.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = path.join(HERE, '..', 'src', 'data', 'kb')
 const NOTES_DIR = path.join(OUT_DIR, 'notes')
-const VAULT = process.env.KB_VAULT || 'C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记'
+// 默认路径用 os.homedir() 拼：写死用户名等于把 Windows 账号名公开（2026-11-24 审计）
+const VAULT =
+  process.env.KB_VAULT || path.join(os.homedir(), 'Desktop', '知识库', 'hsb的第二大脑', '02-笔记')
 
 const CONCEPT_GROUPS = [
   { id: 'web', title: 'Web', prefix: 'Web-' },
@@ -95,12 +98,16 @@ for (const n of notes.values()) {
   n.content = maskUnpublished(n.content, resolvable)
   // 对账数组同样不外发：数组里的每一项就是私人页标题本身 → 只保留条数
   n.links = { internal: n.links.internal, unresolvedCount: n.links.unresolved.length }
+  // 正文里的本机绝对路径（C://Users//<user>//CTF//…）同样不外发，只抹掉用户名那一段
+  n.content = maskUserPaths(n.content)
+  if (n.summary) n.summary = maskUserPaths(n.summary)
 }
 
 // ---------- 组装 index ----------
 const index = {
   generatedAt: new Date().toISOString(),
-  vault: VAULT,
+  // 不再外发 vault 绝对路径：前端没有任何地方读它，外发只会泄露本机目录结构
+  vault: '<vault>',
   total: notes.size,
   sections: SECTIONS.map(sec => ({
     id: sec.id,

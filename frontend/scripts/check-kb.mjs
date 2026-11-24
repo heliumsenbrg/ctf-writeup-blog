@@ -8,14 +8,17 @@
  */
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import kbIndex from '../src/data/kb/index.js'
-import { maskUnpublished } from './kb-mask.mjs'
+import { maskUnpublished, maskUserPaths } from './kb-mask.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 const KB_DIR = path.join(HERE, '..', 'src', 'data', 'kb')
 const NOTES_DIR = path.join(KB_DIR, 'notes')
-const VAULT = process.env.KB_VAULT || 'C:\\Users\\hwh\\Desktop\\知识库\\hsb的第二大脑\\02-笔记'
+// 默认路径用 os.homedir() 拼，别把 Windows 用户名写死进公开仓库（2026-11-24 审计）
+const VAULT =
+  process.env.KB_VAULT || path.join(os.homedir(), 'Desktop', '知识库', 'hsb的第二大脑', '02-笔记')
 // CI 或别人的机器上没有这个 vault → 跳过"与源文件字节一致"这一项，其余检查照跑
 const HAS_VAULT = fs.existsSync(VAULT)
 
@@ -48,7 +51,9 @@ for (const meta of flat) {
       // 与 vault 比对时，也要套用与生成端**同一套**屏蔽规则（kb-mask.mjs），
       // 否则会把"未发布引用被屏蔽"误判成快照漂移
       if (src) {
-        const expected = maskUnpublished(fs.readFileSync(src, 'utf8'), new Set([...names, 'index']))
+        // 脱敏也要对齐：生成端会把本机用户名换成 <user>，比对时若还原原样必然误报漂移
+        const expected = maskUserPaths(
+          maskUnpublished(fs.readFileSync(src, 'utf8'), new Set([...names, 'index'])))
         check(expected === note.content, `${meta.name}: 与 vault 源文件不一致（快照漂移？重跑 build-kb.mjs）`)
       }
     }

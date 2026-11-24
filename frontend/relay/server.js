@@ -122,8 +122,14 @@ const writeBuckets = new Map()
 
 function clientIp(req) {
   const xff = req.headers['x-forwarded-for']
-  const first = (Array.isArray(xff) ? xff[0] : String(xff || '')).split(',')[0].trim()
-  return first || req.socket.remoteAddress || 'unknown'
+  const list = (Array.isArray(xff) ? xff.join(',') : String(xff || ''))
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  // 取**最右**一跳：最左那一段是客户端自己写的，随手就能伪造；最右是最近一层代理追加的。
+  // 若平台是覆盖写（只有一个值），最右就是它，行为不变（2026-11-24 审计）。
+  if (list.length) return list[list.length - 1]
+  return req.socket.remoteAddress || 'unknown'
 }
 
 function writeRateLimited(ip) {
@@ -221,6 +227,9 @@ async function verifyHuman(req, cloudPath) {
     const data = await res.json().catch(() => ({}))
     return data && data.success ? { ok: true } : { ok: false, reason: (data['error-codes'] || []).join(',') || 'verify_failed' }
   } catch (e) {
+    // 连不上 Cloudflare 时**不能**放行发码：否则只要掐断到 siteverify 的网络就等于绕过人机验证。
+    // 非发码的写操作仍放行（有登录门禁 + 触发器限流兜底）。
+    if (isAuthVerify) return { ok: false, reason: 'siteverify_unreachable' }
     return { ok: true, skipped: true, reason: 'siteverify_unreachable' }
   }
 }
@@ -343,36 +352,8 @@ const server = http.createServer(async (req, res) => {
       JSON.stringify({ error: 'origin_not_allowed' }))
   }
 
-  // 诊断路由：排查"本地通、线上不通"这类环境差异（**默认关闭**，只在 ENABLE_DIAG=1 时开）
-  if (url.pathname === '/__diag' && process.env.ENABLE_DIAG === '1') {
-    const probe = {}
-    // ① 我收到的头（看托管反代给我加了什么）
-    probe.incoming = { ...req.headers }
-    // ② 我会发给后端的头
-    const wouldSend = {}
-    for (const h of FORWARD_HEADERS) if (req.headers[h] !== undefined) wouldSend[h] = '<有值>'
-    probe.outbound = wouldSend
-    // ③ 用**生产同款**通道探一次后端（https.request，不带 Origin）
-    try {
-      const h1 = req.headers['x-wb-webapp-access-key'] ? { 'x-wb-webapp-access-key': req.headers['x-wb-webapp-access-key'] } : {}
-      const r1 = await upstreamRequest(BACKENDS[0], '/.cloud/database/rest/guestbook', 'GET', h1, null)
-      probe.backend = { status: r1.status, body: r1.body.toString('utf8').slice(0, 200), via: 'https.request' }
-    } catch (e) { probe.backend = { error: String(e && e.message).slice(0, 160) } }
-    // ③b 对照：fetch 通道（历史上被沙箱注入 Origin 的那条路）
-    try {
-      const h2 = req.headers['x-wb-webapp-access-key'] ? { 'x-wb-webapp-access-key': req.headers['x-wb-webapp-access-key'] } : {}
-      const r2 = await fetch(BACKENDS[0] + '/.cloud/database/rest/guestbook', { headers: h2 })
-      probe.backendViaFetch = { status: r2.status, body: (await r2.text()).slice(0, 160) }
-    } catch (e) { probe.backendViaFetch = { error: String(e && e.message).slice(0, 160) } }
-    probe.clientHadOrigin = Boolean(req.headers.origin)
-    // ④ 出口自检：把请求打到外部回声服务，看沙箱到底带了哪些头出去
-    try {
-      const r2 = await fetch('https://httpbin.org/anything', { headers: { 'x-probe': 'relay' } })
-      const j = await r2.json().catch(() => ({}))
-      probe.egress = { status: r2.status, headers: j.headers || null }
-    } catch (e) { probe.egress = { error: String(e && e.message).slice(0, 160) } }
-    return send(res, 200, { 'Content-Type': 'application/json; charset=utf-8', ...cors }, JSON.stringify(probe, null, 1))
-  }
+  // 2026-11-24：原 /__diag 诊断路由已删除 —— 它会把入站头（含平台注入的
+  // Authorization 与用户令牌）原样回显，即便默认关闭也不该留在生产代码里。
 
   // 剥掉对外前缀，还原成后端认识的 /.cloud/…
   // 兼容两种入口：/api/.cloud/…（线上，绕开平台拦截）与 /.cloud/…（本地直测）
