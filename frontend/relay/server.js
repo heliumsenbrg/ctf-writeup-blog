@@ -112,7 +112,9 @@ const ALLOW_METHODS = 'GET, POST, PATCH, PUT, DELETE, OPTIONS'
 
 // 只放行博客实际使用的三张表。原实现放行整个 /.cloud/，
 // 等于把云应用的 OpenAPI、LLM 等端点也交给任何拿到公开 key 的人。
-const ALLOWED_REST = /^\/\.cloud\/(?:(?:database\/rest\/(?:guestbook|comments|quest_board))|(?:auth\/(?:v1|v2)))(?:\/|$)/
+// 表接口只认精确路径（查询串不在 pathname 里，不受影响）；
+// auth 只认 v1 —— SDK 里根本不存在 v2，放 v2 等于给未知路由开门（2026-11-24 审计）
+const ALLOWED_REST = /^\/\.cloud\/(?:database\/rest\/(?:guestbook|comments|quest_board)$|auth\/v1(?:\/|$))/
 
 // 请求体上限：防止超大 POST 把中转进程内存打满
 const MAX_BODY = Number(process.env.MAX_BODY_BYTES || 64 * 1024)
@@ -137,10 +139,7 @@ function writeRateLimited(ip) {
   const b = writeBuckets.get(ip)
   if (!b || now - b.start > 60_000) {
     writeBuckets.set(ip, { start: now, count: 1 })
-    // 顺手清理过期桶，避免 Map 无限增长
-    if (writeBuckets.size > 5000) {
-      for (const [k, v] of writeBuckets) if (now - v.start > 120_000) writeBuckets.delete(k)
-    }
+    capBuckets(writeBuckets)
     return false
   }
   b.count++
@@ -157,15 +156,41 @@ const OTP_WINDOW_MS = 10 * 60 * 1000
 const otpBuckets = new Map()
 let otpGlobal = { start: 0, count: 0 }
 
+/**
+ * 收件人归一化：同一个收件人的不同写法必须落进同一个桶，否则限流等于没有。
+ * 2026-11-24 审计：`Victim@qq.com`、`victim@qq.com `、`+86138…`、`138…` 各算一个人，
+ * 每人 5 次额度，实际只剩全局配额兜底。
+ * （+ 号别名、Gmail 点号这类仍能分出变体，属已知残余；不额外归一化是为了不把不同用户并成一个。）
+ */
+function normRecipient(raw) {
+  let s = String(raw).trim().toLowerCase().replace(/[\s\-()]/g, '')
+  if (!s.includes('@')) s = s.replace(/^(?:\+86|0086|86)(?=1[3-9]\d{9}$)/, '')
+  return s
+}
+
 function otpKey(body) {
   try {
     const data = JSON.parse(body.toString('utf8'))
-    const raw = data.email || data.phone || ''
+    const raw = normRecipient(data.email || data.phone || '')
     if (!raw) return ''
     // 只把哈希留在内存里，不在日志/内存桶里保存手机号或邮箱明文
-    return crypto.createHash('sha256').update(String(raw)).digest('hex')
+    return crypto.createHash('sha256').update(raw).digest('hex')
   } catch {
     return ''
+  }
+}
+
+/**
+ * 桶表上限：超了按插入顺序丢最旧的一批（Map 保序，O(1) 摊销）。
+ * 原来是 size>5000 时全表扫一遍找过期的 —— 攻击者用大量不同的 key 能让
+ * 每个新 key 都触发一次 O(n) 扫描（2026-11-24 审计）。
+ */
+function capBuckets(map, max = 5000) {
+  if (map.size <= max) return
+  let drop = map.size - max
+  for (const k of map.keys()) {
+    map.delete(k)
+    if (--drop <= 0) break
   }
 }
 
@@ -182,9 +207,7 @@ function otpRateLimited(key) {
   const b = otpBuckets.get(key)
   if (!b || now - b.start > OTP_WINDOW_MS) {
     otpBuckets.set(key, { start: now, count: 1 })
-    if (otpBuckets.size > 5000) {
-      for (const [k, v] of otpBuckets) if (now - v.start > OTP_WINDOW_MS) otpBuckets.delete(k)
-    }
+    capBuckets(otpBuckets)
     return false
   }
   b.count++
@@ -207,7 +230,8 @@ function corsHeaders(origin) {
 /** 人机校验：配了密钥就强制；没配/连不上校验端点则降级放行（数据面还有服务端反垃圾兜底） */
 async function verifyHuman(req, cloudPath) {
   const secret = process.env.TURNSTILE_SECRET
-  const isAuthVerify = cloudPath.startsWith('/.cloud/auth/') && /\/v1\/verification$/.test(cloudPath)
+  // 只认「发送验证码」这一条，末尾斜杠变体也纳入守卫（2026-11-24 审计）
+  const isAuthVerify = /^\/\.cloud\/auth\/v1\/verification\/?$/.test(cloudPath)
   if (!secret) {
     // 登录的发码接口必须 fail-closed：没配 secret 就明确拒绝，不能静默放行。
     if (isAuthVerify) return { ok: false, reason: 'turnstile_not_configured' }
@@ -361,6 +385,13 @@ const server = http.createServer(async (req, res) => {
   if (cloudPath === PATH_PREFIX || cloudPath.startsWith(PATH_PREFIX + '/')) {
     cloudPath = cloudPath.slice(PATH_PREFIX.length) || '/'
   }
+  // 路径变体一律拒（2026-11-24 审计）：网关若先解码 %2f/%5c，白名单会被绕出；
+  // 重复斜杠、`.`/`..` 段也会被不同实现解读成别的路由。合法请求不会长这样。
+  if (/%2f|%5c|%2e|%00|\/\/|;|\\/i.test(url.pathname) || url.pathname.split('/').includes('..')) {
+    return send(res, 400, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
+      JSON.stringify({ error: 'bad_path' }))
+  }
+
   if (!cloudPath.startsWith('/.cloud/')) {
     return send(res, 404, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
       JSON.stringify({ error: 'not_found', hint: `这个中转只转发 ${PATH_PREFIX}/.cloud/ 下的云数据面请求` }))
@@ -454,8 +485,10 @@ const server = http.createServer(async (req, res) => {
     if (human.skipped && process.env.TURNSTILE_SECRET === undefined) respHeaders['X-Turnstile'] = 'disabled'
     return send(res, upstream.status, respHeaders, upstream.body)
   } catch (e) {
+    // 不回显 e.message：里面可能带后端主机名或内网地址，只写服务端日志（2026-11-24 审计）
+    console.error('[relay] upstream failed:', String(e && e.message).slice(0, 300))
     return send(res, 502, { 'Content-Type': 'application/json; charset=utf-8', ...cors },
-      JSON.stringify({ error: 'relay_upstream_failed', detail: String(e && e.message).slice(0, 200) }))
+      JSON.stringify({ error: 'relay_upstream_failed' }))
   }
 })
 
