@@ -23,10 +23,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        # v4.2.2 固定到 commit SHA：tag 可被上游移动，SHA 不会（2026-11-24 审计）
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        # v4.1.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '20'
           cache: 'npm'
@@ -61,13 +63,18 @@ jobs:
         run: npm run build
 
       - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+        # v4.1.0
+        uses: peaceiris/actions-gh-pages@84c30a85c19949d7eee79c4ff27748b70285e453
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./frontend/dist
           # 关键：不加 keep_files 时，action 会删除 gh-pages 上上一版的全部文件
           #（实测上一次部署的 17 个旧哈希 chunk 被删）。
           # 缓存窗口内旧 index.html 引用的 chunk 会 404 → 白屏。keep_files: true 保留旧文件。
+          # ⚠️ 代价：旧 chunk 永不自动清理，会一直挂在线上（2026-11-24 审计就翻出了
+          #    32 个含本机路径的旧包 + 6 个已下架笔记的懒加载 chunk）。
+          #    所以每次改完敏感内容（脱敏、下架笔记）都要手动清一次 gh-pages：
+          #    列出现有文件 → 与 dist 比对 → 用 trees API 把多余项 sha 设 null。
           keep_files: true
           # 不要 force_orphan：它会把 gh-pages 上**上一次部署的产物全删掉**。
           # 后果：访客浏览器缓存的旧入口包，其引用的 vendor 分包（带哈希）直接 404
